@@ -1,0 +1,60 @@
+name: bbtools
+channels:
+  - nodefaults
+  - https://conda.anaconda.org/pytorch
+  - https://conda.anaconda.org/nvidia
+  - https://conda.anaconda.org/conda-forge
+dependencies:
+  # General
+  - python=3.10
+  - pip>=24.0  # Installs python packages
+  # Automatic linters / checkers / tests / CI
+  - pre-commit  # Runs pre commit/push hooks
+  - black  # Code formatter
+  - flake8  # PEP8 linter
+  - autoflake  # Remove unused imports / variables
+  - mypy  # Type checker
+  # Non automatic CI
+  - pytest  # Python testing framework
+  - cruft # Keep up with cookiecutter updates
+  # CLI
+  - typer  # Handy cli library with support for type checking
+  - rich  # Colorful styles and terminal outputs
+  # Docs
+  - sphinx  # Documentation framework, uses restructured text (.rst)
+  # - sphinx_rtd_theme  # Nice theme for sphinx
+  # - sphinx-gallery  # Sphinx plugin for example galleries
+
+  # # Numerical
+  # - numpy  # Multidimensional array support
+  # - pandas  # CSV support
+
+  # # Data
+  # - pyarrow  # Parquet
+  # - h5py  # HDF5
+  # - zarr  # Zarr
+
+  # # Scientific / math
+  # - plotly  # Interactive plotting
+  # - matplotlib  # Plotting
+  # - pint  # Units
+  # - scipy  # General scientific utils
+  # - sympy  # Symbolic mathematical manipulation
+
+  # # DL
+  # - mkl=2024.0.0  # Intel Math Kernel Library
+  # - pytorch=2.3  # Deep learning and cuda accelerated matrix computation
+  # - pytorch-cuda=11.8  # Deep learning and cuda accelerated matrix computation
+  # - lightning  # Pytorch wrapper framework
+  # - torchmetrics  # Lightning companion framework for metrics
+  # - wandb  # Logging DL runs to cloud
+
+  # # Utils
+  # - psutil  # Process management
+  # - pydantic  # Data validation for BaseModels
+  # - pyyaml  # Yaml parser
+  # - tqdm  # Progress bars
+
+  # # Web
+  # - requests  # For http(s)
+  # - bs4  # Web scraping, beautiful soup 4

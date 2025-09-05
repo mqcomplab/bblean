@@ -1,0 +1,20 @@
+{
+  "template": "git@github.com:IgnacioJPickering/cookiecutter-pycargo",
+  "commit": "5d9ffa2461db9a78fcbab0194efefb7000d85d4e",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "access": "private",
+      "repo_name": "bbtools",
+      "package_name": "bbtools",
+      "command": "bbtools",
+      "author_name": "Ignacio Pickering",
+      "author_git_profile": "IgnacioJPickering",
+      "author_email": "ign.pickering@gmail.com",
+      "python_version_minor": "10",
+      "_template": "git@github.com:IgnacioJPickering/cookiecutter-pycargo",
+      "_commit": "5d9ffa2461db9a78fcbab0194efefb7000d85d4e"
+    }
+  },
+  "directory": null
+}

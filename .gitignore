@@ -1,0 +1,55 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+
+# Setuptools-scm file
+_version.py
+
+# C extensions and binaries
+*.so
+*.o
+
+# Compressed files
+*.tar
+*.tar.gz
+*.zip
+
+# Distribution / packaging
+build/
+dist/
+sdist/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
+wheels/
+share/python-wheels/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.hypothesis
+.pytest_cache/
+
+# Sphinx documentation
+docs/_build
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Vim swap files
+*.swo
+*.swp
+
+# nohup
+nohup.out
+
+# vscode
+.vscode
+
+# language server
+.ccls-cache
