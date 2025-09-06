@@ -66,3 +66,7 @@ profile.svg
 monitor-rss.*.json
 config.*.json
 timings.*.json
+
+# Pickle
+*.pkl
+*.pickle
