@@ -1,116 +1,26 @@
+import functools
 import os
-from copy import deepcopy
 import json
 import sys
-from pathlib import Path
-import typing as tp
-from functools import partial
-import pickle as pkl
+import pickle
 import uuid
 import gc
 import re
 import time
+import typing as tp
 import multiprocessing as mp
+from copy import deepcopy
+from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
 
 from bbtools._console import get_console
-
-try:
-    import resource
-except Exception:
-    # non-unix systems
-    pass
-
-try:
-    import psutil
-except Exception:
-    # psutil not available
-    pass
+from bbtools.memory_utils import monitor_rss_daemon, system_mem_gib
+from bbtools.utils import cpu_name, numpy_streaming_save, batched
 
 
-# Only linux
-def cpu_name() -> str:
-    if sys.platform != "linux":
-        return "Unknown"
-    with open("/proc/cpuinfo") as f:
-        for line in f:
-            if line.startswith("model name"):
-                return line.split(":", 1)[1].strip()
-    return "Unknown"
-
-
-# Requires psutil
-def system_mem_gib() -> tuple[int, int] | tuple[None, None]:
-    if "psutil" not in sys.modules:
-        return None, None
-    mem = psutil.virtual_memory()
-    return mem.total / 1024**3, mem.available / 1024**3
-
-
-# Requires psutil
-def monitor_rss_daemon(file: Path | str, interval_s: float, start_time: float) -> None:
-    if "psutil" not in sys.modules:
-        raise ValueError("psutil is required to monitor RSS")
-
-    def total_rss() -> float:
-        total_rss = 0.0
-        for proc in psutil.process_iter(["pid", "name", "cmdline", "memory_info"]):
-            info = proc.info
-            cmdline = info["cmdline"]
-            if cmdline is None:
-                continue
-            if Path(__file__).name in cmdline:
-                total_rss += info["memory_info"].rss
-        return total_rss
-
-    t = start_time
-    with open(file, mode="w", encoding="utf-8") as f:
-        f.write("rss_gib,time_s\n")
-        f.flush()
-        os.fsync(f.fileno())
-
-    while True:
-        total_rss_gib = total_rss() / 1024**3
-        t = time.perf_counter() - start_time
-        with open(file, mode="a", encoding="utf-8") as f:
-            f.write(f"{total_rss_gib},{t}\n")
-            f.flush()
-            os.fsync(f.fileno())
-        time.sleep(interval_s)
-
-
-def print_peak_mem(num_processes: int, verbose: bool = True) -> None:
-    console = get_console(silent=not verbose)
-    if "resource" not in sys.modules:
-        console.print("[Peak memory usage only tracked in Unix systems]")
-    max_mem_bytes_self = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    max_mem_bytes_child = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-    if sys.platform == "linux":
-        # In linux these are kiB, not bytes
-        max_mem_bytes_self *= 1024
-        max_mem_bytes_child *= 1024
-    console.print(
-        "Peak memory usage until now:\n"
-        f"    Main proc.: {max_mem_bytes_self / 1024 ** 3:.4f} GiB"
-    )
-    if num_processes > 1:
-        if mp.get_start_method() == "forkserver":
-            console.print("    Max of child procs.: not tracked for 'forkserver'")
-        else:
-            console.print(
-                f"    Max of child procs.: {max_mem_bytes_child / 1024 ** 3:.4f} GiB\n"
-            )
-
-
-def iterate_in_steps(lst: list[str], bin_size: int) -> tp.Iterator[list[str]]:
-    for i in range(0, len(lst), bin_size):
-        slice_ = slice(i, i + bin_size)
-        yield lst[slice_]
-
-
-def glob_and_sort_by_uint_bits(path: Path | str, glob: str) -> list[str]:
+def _glob_and_sort_by_uint_bits(path: Path | str, glob: str) -> list[str]:
     path = Path(path)
     return sorted(
         map(str, path.glob(glob)),
@@ -119,7 +29,7 @@ def glob_and_sort_by_uint_bits(path: Path | str, glob: str) -> list[str]:
     )
 
 
-def load_fp_data_and_mol_idxs(
+def _load_fp_data_and_mol_idxs(
     out_dir: Path,
     fp_filename: str,
     round: int,
@@ -130,11 +40,11 @@ def load_fp_data_and_mol_idxs(
     count, dtype = fp_filename.split(".")[0].split("_")[-2:]
     idxs_file = out_dir / f"mol_idxs_round{round}_{count}_{dtype}.pkl"
     with open(idxs_file, "rb") as f:
-        mol_idxs = pkl.load(f)
+        mol_idxs = pickle.load(f)
     return fp_data, mol_idxs
 
 
-def validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None:
+def _validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None:
     if out_dir.exists():
         if not out_dir.is_dir():
             raise RuntimeError("Output dir should be a dir")
@@ -149,7 +59,7 @@ def validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None:
 
 
 # Validate also that the naming convention for the input files is correct
-def validate_input_dir(
+def _validate_input_dir(
     in_dir: Path | str, filename_idxs_are_slices: bool = False
 ) -> None:
     in_dir = Path(in_dir)
@@ -177,14 +87,13 @@ def validate_input_dir(
         raise RuntimeError(f"Input file indices {file_idxs} must be a seq 0, 1, 2, ...")
 
 
-def process_fp_files(
+def first_round(
     fp_file: str,
     double_cluster_init: bool,
     branching_factor: int,
     threshold: float,
     tolerance: float,
     out_dir: Path | str,
-    return_fp_lists: bool = False,
     filename_idxs_are_slices: bool = False,
     max_fps: int | None = None,
     mmap: bool = True,
@@ -218,12 +127,12 @@ def process_fp_files(
 
     # Extract the BitFeatures info of the leaves to refine the top cluster
     # Use an if-statement since bblean v1.0 doesn't have this argument
-    if return_fp_lists:
+    if use_old_bblean:
+        fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
+    else:
         fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(
             fps, initial_mol=start_mol_idx, return_fp_lists=True
         )
-    else:
-        fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
     del fps
     del brc_diameter
     gc.collect()
@@ -237,50 +146,33 @@ def process_fp_files(
             brc_tolerance.fit_np_reinsert(fp_type, mol_idxs)
 
         # Get the info from the fitted BFs in compact list format
-        if return_fp_lists:
-            fps_bfs, mols_bfs = brc_tolerance.bf_to_np(return_fp_lists=True)
-        else:
+        if use_old_bblean:
             fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
+        else:
+            fps_bfs, mols_bfs = brc_tolerance.bf_to_np(return_fp_lists=True)
         del brc_tolerance
         gc.collect()
 
-    if return_fp_lists:
-        numpy_streaming_save(fps_bfs, out_dir / f"round1_{idx0}")
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round1_{idx0}_{str(fp_type[0].dtype)}"
-            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pkl.dump(mol_idxs, f)
-    else:
+    if use_old_bblean:
         for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
             suffix = f"round1_{idx0}_{str(fp_type.dtype)}"
             np.save(out_dir / f"fp_{suffix}", fp_type)
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pkl.dump(mol_idxs, f)
-
-
-# Save a list of numpy arrays into a single array in a streaming fashion, avoiding
-# stacking them in memory
-def numpy_streaming_save(
-    fps_bfs: list[list[NDArray[tp.Any]]], path: Path | str
-) -> None:
-    path = Path(path)
-    for fp_list in fps_bfs:
-        first_arr = np.ascontiguousarray(fp_list[0])
-        header = np.lib.format.header_data_from_array_1_0(first_arr)
-        header["shape"] = (len(fp_list), len(first_arr))
-        with open(path.with_name(f"{path.name}_{first_arr.dtype.name}.npy"), "wb") as f:
-            np.lib.format.write_array_header_1_0(f, header)
-            for arr in fp_list:
-                np.ascontiguousarray(arr).tofile(f)
+                pickle.dump(mol_idxs, f)
+    else:
+        numpy_streaming_save(fps_bfs, out_dir / f"round1_{idx0}")
+        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
+            suffix = f"round1_{idx0}_{str(fp_type[0].dtype)}"
+            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
+                pickle.dump(mol_idxs, f)
 
 
 def second_round(
-    chunk_info: tuple[int, list[str]],
+    chunk_info: tuple[int, tp.Sequence[str]],
     branching_factor: int,
     threshold: float,
     tolerance: float,
     out_dir: Path | str,
-    return_fp_lists: bool = False,
     mmap: bool = True,
     use_old_bblean: bool = False,
 ) -> None:
@@ -294,34 +186,34 @@ def second_round(
     set_merge("tolerance", tolerance)
     brc_chunk = BitBirch(branching_factor=branching_factor, threshold=threshold)
     for fp_filename in chunk_filenames:
-        fp_data, mol_idxs = load_fp_data_and_mol_idxs(out_dir, fp_filename, 1, mmap)
+        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(out_dir, fp_filename, 1, mmap)
         brc_chunk.fit_np_reinsert(fp_data, mol_idxs)
         del mol_idxs
         del fp_data
         gc.collect()
 
-    if return_fp_lists:
-        fps_bfs, mols_bfs = brc_chunk.bf_to_np(return_fp_lists=True)
-    else:
+    if use_old_bblean:
         fps_bfs, mols_bfs = brc_chunk.bf_to_np()
+    else:
+        fps_bfs, mols_bfs = brc_chunk.bf_to_np(return_fp_lists=True)
     del brc_chunk
     gc.collect()
 
-    if return_fp_lists:
-        numpy_streaming_save(fps_bfs, out_dir / f"round2_{chunk_idx}")
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round2_{chunk_idx}_{str(fp_type[0].dtype)}"
-            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pkl.dump(mol_idxs, f)
-    else:
+    if use_old_bblean:
         for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
             suffix = f"round2_{chunk_idx}_{str(fp_type.dtype)}"
             np.save(out_dir / f"fp_{suffix}", fp_type)
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pkl.dump(mol_idxs, f)
+                pickle.dump(mol_idxs, f)
+    else:
+        numpy_streaming_save(fps_bfs, out_dir / f"round2_{chunk_idx}")
+        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
+            suffix = f"round2_{chunk_idx}_{str(fp_type[0].dtype)}"
+            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
+                pickle.dump(mol_idxs, f)
 
 
-def final_clustering(
+def third_round(
     branching_factor: int,
     threshold: float,
     tolerance: float,
@@ -338,9 +230,9 @@ def final_clustering(
     set_merge("tolerance", tolerance)
     brc_final = BitBirch(branching_factor=branching_factor, threshold=threshold)
 
-    sorted_files2 = glob_and_sort_by_uint_bits(out_dir, "*round2*.npy")
+    sorted_files2 = _glob_and_sort_by_uint_bits(out_dir, "*round2*.npy")
     for fp_filename in sorted_files2:
-        fp_data, mol_idxs = load_fp_data_and_mol_idxs(out_dir, fp_filename, 2, mmap)
+        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(out_dir, fp_filename, 2, mmap)
         brc_final.fit_np_reinsert(fp_data, mol_idxs)
         del fp_data
         del mol_idxs
@@ -351,7 +243,7 @@ def final_clustering(
     gc.collect()
 
     with open(out_dir / "clusters.pkl", mode="wb") as f:
-        pkl.dump(mol_ids, f)
+        pickle.dump(mol_ids, f)
 
 
 # NOTE:
@@ -405,12 +297,9 @@ def run_parallel_bitbirch(
 
     console = get_console(silent=not verbose)
 
-    if use_old_bblean:
-        return_fp_lists = False
-    else:
-        return_fp_lists = True
-
     # Set the multiprocessing start method
+    if fork and not sys.platform == "linux":
+        raise ValueError("'fork' is only available on Linux")
     if sys.platform == "linux":
         mp.set_start_method("fork" if fork else "forkserver")
 
@@ -422,7 +311,7 @@ def run_parallel_bitbirch(
     config_path = out_dir / f"config.{unique_id}.json"
     monitor_rss_file_name = rss_path.name
 
-    validate_input_dir(in_dir, filename_idxs_are_slices)
+    _validate_input_dir(in_dir, filename_idxs_are_slices)
     input_files = sorted(
         map(str, in_dir.glob("*.npy")),
         key=lambda x: int(x.split(".")[0].split("_")[-2]),
@@ -452,7 +341,7 @@ def run_parallel_bitbirch(
     )
     # Input and output dirs
     common_kwargs["out_dir"] = out_dir
-    validate_output_dir(common_kwargs["out_dir"], overwrite_outputs)
+    _validate_output_dir(common_kwargs["out_dir"], overwrite_outputs)
 
     # Dump config after checking if the output dir has files
     with open(config_path, mode="wt", encoding="utf-8") as f:
@@ -510,12 +399,11 @@ def run_parallel_bitbirch(
     console.print()
 
     console.print("Round 1: Processing initial batch of packed fingerprints...")
-    round_1_fn: tp.Callable[[str], None] = partial(
-        process_fp_files,
+    round_1_fn: tp.Callable[[str], None] = functools.partial(
+        first_round,
         double_cluster_init=double_cluster_init,
         max_fps=max_fps,
         filename_idxs_are_slices=filename_idxs_are_slices,
-        return_fp_lists=return_fp_lists,
         initial_merge_strategy=initial_merge_strategy,
         **common_kwargs,
     )
@@ -536,49 +424,55 @@ def run_parallel_bitbirch(
             maxtasksperchild=max_tasks_per_process,
         ) as pool:
             pool.map(round_1_fn, input_files)
-    sorted_files1 = glob_and_sort_by_uint_bits(common_kwargs["out_dir"], "*round1*.npy")
-    chunks = list(enumerate(iterate_in_steps(sorted_files1, bin_size=bin_size)))
+    sorted_files1 = _glob_and_sort_by_uint_bits(
+        common_kwargs["out_dir"], "*round1*.npy"
+    )
+    chunks = list(enumerate(batched(sorted_files1, n=bin_size)))
     console.print(
         f"Finished. Collected {len(sorted_files1)} files,"
         f" chunked into {len(chunks)} chunks"
     )
     timings_s["round-1"] = time.perf_counter() - start_round1
     console.print(f"Time for round 1: {timings_s['round-1']:.4f} s")
-    print_peak_mem(num_processes, verbose)
+    console.print_peak_mem(num_processes)
 
-    if not only_first_round:
-        start_round2 = time.perf_counter()
-        console.print("Round 2: Re-clustering in chunks...")
-        round_2_fn: tp.Callable[[tuple[int, list[str]]], None] = partial(
-            second_round, return_fp_lists=return_fp_lists, **common_kwargs
-        )
+    if only_first_round:
+        # Early exit for debugging
+        timings_s["total"] = time.perf_counter() - start_all
+        with open(timings_path, mode="wt", encoding="utf-8") as f:
+            json.dump(timings_s, f, indent=4)
+        return
 
-        num_processes = min(
-            num_processes,
-            round(num_processes * round2_process_fraction),
-            len(chunks),
-        )
-        console.print(f"Running on {len(chunks)} chunks with {num_processes} processes")
-        if num_processes == 1:
-            for chunk_info_part in chunks:
-                round_2_fn(chunk_info_part)
-        else:
-            with mp.Pool(
-                processes=num_processes,
-                maxtasksperchild=max_tasks_per_process,
-            ) as pool:
-                pool.map(round_2_fn, chunks)
-        timings_s["round-2"] = time.perf_counter() - start_round2
-        console.print(f"Time for round 2: {timings_s['round-2']:.4f} s")
-        print_peak_mem(num_processes, verbose)
+    start_round2 = time.perf_counter()
+    console.print("Round 2: Re-clustering in chunks...")
+    round_2_fn: tp.Callable[[tuple[int, tp.Sequence[str]]], None] = functools.partial(
+        second_round, **common_kwargs
+    )
 
-        start_final = time.perf_counter()
-        console.print("Final Clustering: Running final clustering step...")
-        final_clustering(**common_kwargs)
+    num_processes = min(
+        num_processes, round(num_processes * round2_process_fraction), len(chunks)
+    )
+    console.print(f"Running on {len(chunks)} chunks with {num_processes} processes")
+    if num_processes == 1:
+        for chunk_info_part in chunks:
+            round_2_fn(chunk_info_part)
+    else:
+        with mp.Pool(
+            processes=num_processes,
+            maxtasksperchild=max_tasks_per_process,
+        ) as pool:
+            pool.map(round_2_fn, chunks)
+    timings_s["round-2"] = time.perf_counter() - start_round2
+    console.print(f"Time for round 2: {timings_s['round-2']:.4f} s")
+    console.print_peak_mem(num_processes)
 
-        timings_s["round-3"] = time.perf_counter() - start_final
-        console.print(f"Time for final clustering: {timings_s['round-3']:.4f} s")
-        print_peak_mem(num_processes, verbose)
+    start_final = time.perf_counter()
+    console.print("Round 3: Final clustering...")
+    third_round(**common_kwargs)
+
+    timings_s["round-3"] = time.perf_counter() - start_final
+    console.print(f"Time for round 3 (final clustering): {timings_s['round-3']:.4f} s")
+    console.print_peak_mem(num_processes)
 
     timings_s["total"] = time.perf_counter() - start_all
     console.print(f"Total time: {timings_s['total']:.4f} s")

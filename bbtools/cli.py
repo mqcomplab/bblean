@@ -1,15 +1,11 @@
 r"""Command line interface entrypoints"""
 
-import resource
-import sys
 import time
-import typing_extensions as tpx
+from typing import Annotated
 from pathlib import Path
 
-from typing import Annotated
-from typer import Typer, Option, Abort
+from typer import Typer, Argument, Option, Abort
 
-from bbtools.parallel import run_parallel_bitbirch
 from bbtools._console import get_console
 
 app = Typer(
@@ -29,11 +25,11 @@ console = get_console()
 
 @app.command("make-fps")
 def _make_fps(
-    dtype: tpx.Annotated[
+    dtype: Annotated[
         str,
         Option("-d", "--dtype", help="NumPy dtype for the generated fingerprints"),
     ] = "uint8",
-    packed: tpx.Annotated[
+    packed: Annotated[
         bool,
         Option(
             "-p/-P",
@@ -41,19 +37,19 @@ def _make_fps(
             help="Pack bits in last dimension of fingerprints",
         ),
     ] = True,
-    smiles_paths: tpx.Annotated[
+    smiles_paths: Annotated[
         list[Path] | None,
         Option("-s", "--smiles-path", show_default=False),
     ] = None,
-    out_dir: tpx.Annotated[
+    out_dir: Annotated[
         Path | None,
         Option("-o", "--out-dir", show_default=False),
     ] = None,
-    kind: tpx.Annotated[
+    kind: Annotated[
         str,
         Option("-k", "--kind"),
     ] = "rdkit",
-    fp_size: tpx.Annotated[
+    fp_size: Annotated[
         int,
         Option("-f", "--fp-size"),
     ] = 2048,
@@ -63,8 +59,8 @@ def _make_fps(
     In order to use the memory efficient BitBirch u8 algorithm you *must* use the
     defaults: --dtype=uint8 and --packed
     """
-    from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
     import numpy as np
+    from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
 
     if kind not in ["rdkit", "ecfp4"]:
         console.print("Kind must be one of 'rdkit|ecfp4'", style="red")
@@ -108,6 +104,7 @@ def _make_fps(
     fps = np.empty((len(mols), fp_size), dtype=dtype)
     for i, fp in enumerate(fpg.GetFingerprints(mols)):
         DataStructs.ConvertToNumpyArray(fp, fps[i, :])
+
     # Save the fingerprints as a NumPy array
     np.save(out_dir / f"{'packed-' if packed else ''}fps-{dtype}", fps)
 
@@ -115,22 +112,20 @@ def _make_fps(
 @app.command("split-fps")
 def _split_fps() -> None:
     r"""Split a *.npy fingerprint file into multiple files"""
+    raise NotImplementedError("Not yet implemented")
 
 
 @app.command("run")
 def _run(
     fp_file: Annotated[
-        Path | None,
-        Option(
-            "--fps",
-            help="Dir with input *.npy files with packed fingerprints",
-        ),
-    ] = None,
-    max_fps: tpx.Annotated[
+        Path,
+        Argument(help="*.npy file with packed fingerprints"),
+    ],
+    max_fps: Annotated[
         int | None,
         Option("-m", "--max-fps"),
     ] = None,
-    branching_factor: tpx.Annotated[
+    branching_factor: Annotated[
         int,
         Option("-b", "--branching-factor"),
     ] = 254,
@@ -138,44 +133,36 @@ def _run(
         bool,
         Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
     ] = True,
-    threshold: tpx.Annotated[
+    threshold: Annotated[
         float,
         Option("-t", "--threshold"),
     ] = 0.65,
-    merge_strategy: tpx.Annotated[
+    merge_strategy: Annotated[
         str,
         Option("-s", "--set-merge"),
     ] = "diameter",
     # Debug options
-    use_old_bblean: tpx.Annotated[
+    use_old_bblean: Annotated[
         bool,
-        Option("-u/-U", "--use-bblean-v1/--no-use-bblean-v1"),
+        Option("--use-bblean-v1/--no-use-bblean-v1", rich_help_panel="Debug"),
     ] = False,
 ) -> None:
     r"""Run standard BitBirch clustering"""
+    import numpy as np
+
     if use_old_bblean:
         from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
     else:
         from bbtools.bblean import BitBirch, set_merge  # type: ignore
-    import numpy as np
-
-    assert fp_file is not None
 
     fps = np.load(fp_file, mmap_mode="r" if use_mmap else None)[:max_fps]
 
-    set_merge(merge_strategy)  # Initial batch uses diameter BitBIRCH
-    brc_diameter = BitBirch(branching_factor=branching_factor, threshold=threshold)
+    set_merge(merge_strategy)
+    brc = BitBirch(branching_factor=branching_factor, threshold=threshold)
     _start = time.perf_counter()
-    if use_old_bblean:
-        brc_diameter.fit_reinsert(fps, list(range(len(fps))))
-    else:
-        brc_diameter.fit_reinsert(fps, list(range(len(fps))), store_centroids=False)
-    print(f"Time elapsed: {time.perf_counter() - _start} s", flush=True)
-    max_mem_bytes_self = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "linux":
-        # In linux these are kiB, not bytes
-        max_mem_bytes_self *= 1024
-    print(f"Peak RAM usage: {max_mem_bytes_self / 1024 ** 3:.4f} GiB")
+    brc.fit_reinsert(fps, list(range(len(fps))))
+    console.print(f"Time elapsed: {time.perf_counter() - _start} s")
+    console.print_peak_mem(num_processes=1)
 
 
 @app.command("parallel")
@@ -256,9 +243,9 @@ def _parallel(
         Option(help="Bin size for chunking during Round 2", rich_help_panel="Advanced"),
     ] = 10,
     # Debug options
-    use_old_bblean: tpx.Annotated[
+    use_old_bblean: Annotated[
         bool,
-        Option("-u/-U", "--use-bblean-v1/--no-use-bblean-v1"),
+        Option("--use-bblean-v1/--no-use-bblean-v1", rich_help_panel="Debug"),
     ] = False,
     only_first_round: Annotated[
         bool,
@@ -276,11 +263,16 @@ def _parallel(
     ] = True,
     monitor_rss_interval_s: Annotated[
         float,
-        Option(help="Interval in seconds for RSS monitoring", rich_help_panel="Debug"),
+        Option(
+            "--monitor-rss-seconds",
+            help="Interval in seconds for RSS monitoring",
+            rich_help_panel="Debug",
+        ),
     ] = 0.01,
     monitor_rss_file_name: Annotated[
         str,
         Option(
+            "--monitor-rss-filename",
             help="File name for RSS monitoring",
             rich_help_panel="Debug",
         ),
@@ -295,12 +287,14 @@ def _parallel(
     max_files: Annotated[
         int | None, Option(help="Max num. files to read", rich_help_panel="Debug")
     ] = None,
-    verbose: tpx.Annotated[
+    verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
     r"""Run multi-round BitBirch clustering in parallel"""
+    from bbtools.parallel import run_parallel_bitbirch
+
     if out_dir is None:
         out_dir = Path.cwd() / "bb_outputs"
     if in_dir is None:
