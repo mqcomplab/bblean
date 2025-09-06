@@ -53,3 +53,13 @@ nohup.out
 
 # language server
 .ccls-cache
+
+# memray memory profile files
+*.bin
+*-flamegraph-memray.html
+
+# Outputs / inputs
+*.npy
+monitor-rss.*.json
+config.*.json
+timings.*.json
