@@ -192,9 +192,9 @@ def process_fp_files(
     initial_merge_strategy: str = "diameter",
 ) -> None:
     if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge
+        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
     else:
-        from bbtools.bblean import BitBirch, set_merge
+        from bbtools.bblean import BitBirch, set_merge  # type: ignore
     out_dir = Path(out_dir)
     fps = np.load(fp_file, mmap_mode="r" if mmap else None)[:max_fps]
 
@@ -285,9 +285,9 @@ def second_round(
     use_old_bblean: bool = False,
 ) -> None:
     if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge
+        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
     else:
-        from bbtools.bblean import BitBirch, set_merge
+        from bbtools.bblean import BitBirch, set_merge  # type: ignore
     out_dir = Path(out_dir)
     chunk_idx, chunk_filenames = chunk_info
 
@@ -330,9 +330,9 @@ def final_clustering(
     use_old_bblean: bool = False,
 ) -> None:
     if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge
+        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
     else:
-        from bbtools.bblean import BitBirch, set_merge
+        from bbtools.bblean import BitBirch, set_merge  # type: ignore
     out_dir = Path(out_dir)
 
     set_merge("tolerance", tolerance)
