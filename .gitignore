@@ -58,6 +58,9 @@ nohup.out
 *.bin
 *-flamegraph-memray.html
 
+# py-spy profile files
+profile.svg
+
 # Outputs / inputs
 *.npy
 monitor-rss.*.json
