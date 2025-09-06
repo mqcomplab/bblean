@@ -154,9 +154,9 @@ def _run(
 ) -> None:
     r"""Run standard BitBirch clustering"""
     if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge
+        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
     else:
-        from bbtools.bblean import BitBirch, set_merge
+        from bbtools.bblean import BitBirch, set_merge  # type: ignore
     import numpy as np
 
     assert fp_file is not None
@@ -302,9 +302,9 @@ def _parallel(
 ) -> None:
     r"""Run multi-round BitBirch clustering in parallel"""
     if out_dir is None:
-        out_dir = Path.cwd() / "bb_parallel_outputs"
+        out_dir = Path.cwd() / "bb_outputs"
     if in_dir is None:
-        in_dir = Path.cwd() / "bb_parallel_inputs"
+        in_dir = Path.cwd() / "bb_inputs"
     run_parallel_bitbirch(
         in_dir=in_dir,
         out_dir=out_dir,

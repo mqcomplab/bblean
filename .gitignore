@@ -63,7 +63,7 @@ profile.svg
 
 # Outputs / inputs
 *.npy
-monitor-rss.*.json
+monitor-rss.*.csv
 config.*.json
 timings.*.json
 
