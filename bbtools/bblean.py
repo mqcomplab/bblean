@@ -31,6 +31,7 @@
 #     Kate Huddleston <kdavis2@chem.ufl.edu>
 
 from collections import defaultdict
+from weakref import WeakSet
 
 import numpy as np
 from scipy import sparse
@@ -38,7 +39,7 @@ from scipy import sparse
 
 # Returns the minimum uint dtype that safely holds a (positive) python int
 # Input must be a positive python integer
-def min_safe_uint(nmax):
+def min_safe_uint(nmax: int) -> np.dtype:
     out = np.min_scalar_type(nmax)
     # Check if the dtype is a pointer to a python bigint
     if out.hasobject:
@@ -46,99 +47,137 @@ def min_safe_uint(nmax):
     return out
 
 
-def _merge_accept(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-    raise RuntimeError(
-        "Merge criterion hasn't been set"
-        " call bitbirch.set_merge(<criterion>)"
-        " (e.g. bitbirch.set_merge('diameter'))"
-    )
+# For backwards compatibility with the global "set_merge", keep weak references to all
+# the BitBirch instances and update them when set_merge is called
+_BITBIRCH_INSTANCES: set["BitBirch"] = WeakSet()
 
 
-# Global function used to accept merges
-merge_accept = _merge_accept
+# For backwards compatibility: global function used to accept merges
+_global_merge_accept = None
 
 
-def set_merge(merge_criterion, tolerance=0.05):
-    """
-    Sets the global merge_accept function for merge_subcluster, based on user specified
-    merge_criteria.
+# For backwards compatibility: set the global merge_accept function
+def set_merge(merge_criterion: str, tolerance=0.05):
+    r"""Sets the global criteria for merging subclusters in any BitBirch tree
 
-    Radius: merge subcluster based on comparison to centroid of the cluster
-    Diameter: merge subcluster based on instant Tanimoto similarity of cluster
-    Tolerance: applies tolerance threshold to diameter merge criteria, which will merge
-        subcluster with stricter threshold for newly added molecules
+    ..  warning::
+        The use of this function is discouraged, instead please use either `bbirch =
+        BitBirch(...); BitBirch.set_merge(...)`
+        or `bbirch = BitBirch(..., merge_criterion=..., tolerance=...)`.
 
     Parameters:
     -----------
     merge_criterion: str
-                        radius, diameter or tolerance
+        radius, diameter or tolerance
+        radius: merge subcluster based on comparison to centroid of the cluster
+        diameter: merge subcluster based on instant Tanimoto similarity of cluster
+        tolerance: applies tolerance threshold to diameter merge criteria, which will
+            merge subcluster with stricter threshold for newly added molecules
+
     tolerance: float
-        sets penalty value for similarity threshold when callng tolerance merge criteria
+        Penalty value for similarity threshold of the 'tolerance' merge criteria
     """
-    # Although outputs are f64, directly using f64 is *not* faster than starting with
-    # uint64
-    if merge_criterion == "radius":
-
-        def _merge_accept(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-            # NOTE: Use uint64 sum since jt_isim casts to uint64 internally
-            # This prevents multiple casts
-            new_unpacked_centroid = calc_centroid(new_ls, new_n, pack=False)
-            new_ls_1 = np.add(new_ls, new_unpacked_centroid, dtype=np.uint64)
-            new_n_1 = new_n + 1
-            new_jt = jt_isim(new_ls, new_n)
-            new_jt_1 = jt_isim(new_ls_1, new_n_1)
-            return new_jt_1 * new_n_1 - new_jt * (new_n - 1) >= threshold * 2
-
-    elif merge_criterion == "diameter":
-
-        def _merge_accept(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-            return jt_isim(new_ls, new_n) >= threshold
-
-    elif merge_criterion == "tolerance":
-
-        def _merge_accept(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-            # First two branches are equivalent to 'diameter'
-            new_jt = jt_isim(new_ls, new_n)
-            if new_jt < threshold:
-                return False
-            if old_n == 1 or nom_n != 1:
-                return True
-            # 'new_jt >= threshold' and 'new_n == old_n + 1' are guaranteed here
-            old_jt = jt_isim(old_ls, old_n)
-            return (new_jt * new_n - old_jt * (old_n - 1)) / 2 >= old_jt - tolerance
-
-    elif merge_criterion == "tolerance_tough":
-
-        def _merge_accept(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-            # First two branches are equivalent to 'diameter', third to 'tolerance'
-            new_jt = jt_isim(new_ls, new_n)
-            if new_jt < threshold:
-                return False
-            if old_n == 1 and nom_n == 1:
-                return True
-
-            old_jt = jt_isim(old_ls, old_n)
-            if nom_n == 1:
-                # 'new_jt >= threshold' and 'new_n == old_n + 1' are guaranteed here
-                return (new_jt * new_n - old_jt * (old_n - 1)) / 2 >= old_jt - tolerance
-
-            # "tough" branch
-            nom_jt = jt_isim(nom_ls, nom_n)
-            new_term = new_jt * new_n * (new_n - 1)
-            old_term = old_jt * old_n * (old_n - 1)
-            nom_term = nom_jt * nom_n * (nom_n - 1)
-            denom = 2 * old_n * nom_n
-            return (new_term - old_term - nom_term) / denom >= old_jt - tolerance
-
-    else:
-        raise ValueError(
-            f"Unknown merge criterion {merge_criterion}"
-            "Valid criteria are: radius|diameter|tolerance|tolerance_tough"
-        )
-
     # Set the global merge_accept function
-    global merge_accept
-    merge_accept = _merge_accept
+    global _global_merge_accept
+    _global_merge_accept = _get_merge_accept_fn(merge_criterion, tolerance)
+    for bbirch in _BITBIRCH_INSTANCES:
+        bbirch._merge_accept_fn = _global_merge_accept
+
+
+class MergeAcceptFunction:
+    # For the merge functions, although outputs of jt_isim f64, directly using f64 is
+    # *not* faster than starting with uint64
+    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n) -> bool:
+        pass
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
+
+class RadiusMerge(MergeAcceptFunction):
+    name = "radius"
+
+    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
+        # NOTE: Use uint64 sum since jt_isim casts to uint64 internally
+        # This prevents multiple casts
+        new_unpacked_centroid = calc_centroid(new_ls, new_n, pack=False)
+        new_ls_1 = np.add(new_ls, new_unpacked_centroid, dtype=np.uint64)
+        new_n_1 = new_n + 1
+        new_jt = jt_isim(new_ls, new_n)
+        new_jt_1 = jt_isim(new_ls_1, new_n_1)
+        return new_jt_1 * new_n_1 - new_jt * (new_n - 1) >= threshold * 2
+
+
+class DiameterMerge(MergeAcceptFunction):
+    name = "diameter"
+
+    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
+        return jt_isim(new_ls, new_n) >= threshold
+
+
+class ToleranceMerge(MergeAcceptFunction):
+    name = "tolerance"
+
+    def __init__(self, tolerance: float = 0.05) -> None:
+        self._tolerance = tolerance
+
+    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
+        # First two branches are equivalent to 'diameter'
+        new_jt = jt_isim(new_ls, new_n)
+        if new_jt < threshold:
+            return False
+        if old_n == 1 or nom_n != 1:
+            return True
+        # 'new_jt >= threshold' and 'new_n == old_n + 1' are guaranteed here
+        old_jt = jt_isim(old_ls, old_n)
+        return (new_jt * new_n - old_jt * (old_n - 1)) / 2 >= old_jt - self._tolerance
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._tolerance})"
+
+
+class ToleranceToughMerge(ToleranceMerge):
+    name = "tolerance_tough"
+
+    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
+        # First two branches are equivalent to 'diameter', third to 'tolerance'
+        new_jt = jt_isim(new_ls, new_n)
+        if new_jt < threshold:
+            return False
+        if old_n == 1 and nom_n == 1:
+            return True
+
+        old_jt = jt_isim(old_ls, old_n)
+        if nom_n == 1:
+            # 'new_jt >= threshold' and 'new_n == old_n + 1' are guaranteed here
+            return (
+                new_jt * new_n - old_jt * (old_n - 1)
+            ) / 2 >= old_jt - self._tolerance
+
+        # "tough" branch
+        nom_jt = jt_isim(nom_ls, nom_n)
+        new_term = new_jt * new_n * (new_n - 1)
+        old_term = old_jt * old_n * (old_n - 1)
+        nom_term = nom_jt * nom_n * (nom_n - 1)
+        denom = 2 * old_n * nom_n
+        return (new_term - old_term - nom_term) / denom >= old_jt - self._tolerance
+
+
+def _get_merge_accept_fn(
+    merge_criterion: str, tolerance: float = 0.05
+) -> MergeAcceptFunction:
+    if merge_criterion == "radius":
+        return RadiusMerge()
+    elif merge_criterion == "diameter":
+        return DiameterMerge()
+    elif merge_criterion == "tolerance":
+        return ToleranceMerge(tolerance)
+    elif merge_criterion == "tolerance_tough":
+        return ToleranceToughMerge(tolerance)
+    raise ValueError(
+        f"Unknown merge criterion {merge_criterion}"
+        "Valid criteria are: radius|diameter|tolerance|tolerance_tough"
+    )
 
 
 # Requires numpy >= 2.0
@@ -451,7 +490,7 @@ class _BFNode:
         # Append new_subcluster2
         self.append_subcluster(new_subcluster2)
 
-    def insert_bf_subcluster(self, subcluster):
+    def insert_bf_subcluster(self, subcluster, merge_accept_fn):
         """Insert a new subcluster into the node."""
         # Fix for shape mismatch when reusing tree with different n_features
         if subcluster.n_features != self.n_features:
@@ -490,7 +529,9 @@ class _BFNode:
         # If the subcluster has a child, we need a recursive strategy.
         if closest_subcluster.child_ is not None:
 
-            split_child = closest_subcluster.child_.insert_bf_subcluster(subcluster)
+            split_child = closest_subcluster.child_.insert_bf_subcluster(
+                subcluster, merge_accept_fn
+            )
 
             if not split_child:
                 # If it is determined that the child need not be split, we
@@ -518,7 +559,9 @@ class _BFNode:
 
         # good to go!
         else:
-            merged = closest_subcluster.merge_subcluster(subcluster, self.threshold)
+            merged = closest_subcluster.merge_subcluster(
+                subcluster, self.threshold, merge_accept_fn
+            )
             if merged:
                 self.init_centroids_[closest_index] = closest_subcluster.centroid_
                 return False
@@ -664,7 +707,7 @@ class _BFSubcluster:
         )
         self.mol_indices.extend(subcluster.mol_indices)
 
-    def merge_subcluster(self, nominee_cluster, threshold):
+    def merge_subcluster(self, nominee_cluster, threshold, merge_accept_fn):
         """Check if a cluster is worthy enough to be merged. If yes, merge."""
         old_n = self.n_samples_
         nom_n = nominee_cluster.n_samples_
@@ -674,7 +717,7 @@ class _BFSubcluster:
         # np.add with explicit dtype is safe from overflows, e.g. :
         # np.add(np.uint8(255), np.uint8(255), dtype=np.uint16) = np.uint16(510)
         new_ls = np.add(old_ls, nom_ls, dtype=min_safe_uint(new_n))
-        if merge_accept(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
+        if merge_accept_fn(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
             self.replace_n_samples_and_linear_sum(new_n, new_ls)
             self.mol_indices.extend(nominee_cluster.mol_indices)
             return True
@@ -735,13 +778,59 @@ class BitBirch:
         self,
         *,
         threshold=0.5,
-        branching_factor=50,
+        branching_factor: int = 50,
+        merge_criterion: str | None = None,
+        tolerance: float | None = None,
     ):
         self.threshold = threshold
         self.branching_factor = branching_factor
         self.index_tracker = 0
         self.first_call = True
-        self._inserted_idxs: set[int] = {}
+
+        if _global_merge_accept is not None:
+            # Backwards compat
+            if tolerance is not None:
+                raise ValueError(
+                    "tolerance can only be passed if "
+                    "the *global* set_merge function has *not* been used"
+                )
+            if merge_criterion is not None:
+                raise ValueError(
+                    "merge_criterion can only be passed if "
+                    "the *global* set_merge function has *not* been used"
+                )
+            self._merge_accept_fn = _global_merge_accept
+        else:
+            merge_criterion = "diameter" if merge_criterion is None else merge_criterion
+            tolerance = 0.05 if tolerance is None else tolerance
+            self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
+
+        # For backwards compatibility, weak-register in global state
+        _BITBIRCH_INSTANCES.add(self)
+
+    def set_merge(
+        self, merge_criterion: str = "diameter", tolerance: float = 0.05
+    ) -> None:
+        r"""Sets the criteria for merging subclusters in this BitBirch tree
+
+        Parameters:
+        -----------
+        merge_criterion: str
+            radius, diameter or tolerance
+            radius: merge subcluster based on comparison to centroid of the cluster
+            diameter: merge subcluster based on instant Tanimoto similarity of cluster
+            tolerance: applies tolerance threshold to diameter merge criteria, which
+                will merge subcluster with stricter threshold for newly added molecules
+
+        tolerance: float
+            Penalty value for similarity threshold of the 'tolerance' merge criteria
+        """
+        if _global_merge_accept is not None:
+            raise ValueError(
+                "merge_criterion can only be set if "
+                "the global set_merge function has *not* been used"
+            )
+        self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
 
     def fit(self, X):
         """
@@ -790,6 +879,8 @@ class BitBirch:
         else:
             iter_func = _iterate_sparse_X
 
+        merge_accept_fn = self._merge_accept_fn
+
         # NOTE: Copy of 'sample' is not required,
         # since unpack_fingerprints allocates a new array
         for sample in iter_func(X):
@@ -798,7 +889,7 @@ class BitBirch:
                 mol_indices=[self.index_tracker],
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster)
+            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -854,6 +945,8 @@ class BitBirch:
         else:
             iter_func = _iterate_sparse_X
 
+        merge_accept_fn = self._merge_accept_fn
+
         # A copy is only required when iterating over a numpy array
         copy_if_arr = (lambda x: x) if isinstance(X, list) else (lambda x: x.copy())
         for sample in iter_func(X):
@@ -862,7 +955,7 @@ class BitBirch:
                 mol_indices=[self.index_tracker],
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster)
+            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -918,6 +1011,8 @@ class BitBirch:
         else:
             iter_func = _iterate_sparse_X
 
+        merge_accept_fn = self._merge_accept_fn
+
         # A copy is only required when iterating over a numpy array
         copy_if_arr = (lambda x: x) if isinstance(X, list) else (lambda x: x.copy())
         for sample, mol_inds in zip(iter_func(X), reinsert_indices):
@@ -926,7 +1021,7 @@ class BitBirch:
                 mol_indices=mol_inds,
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster)
+            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -982,6 +1077,8 @@ class BitBirch:
         else:
             iter_func = _iterate_sparse_X
 
+        merge_accept_fn = self._merge_accept_fn
+
         # NOTE: Copy of 'sample' is not required,
         # since unpack_fingerprints allocates a new array
         for sample, mol_ind in zip(iter_func(X), reinsert_indices):
@@ -990,7 +1087,7 @@ class BitBirch:
                 mol_indices=[mol_ind],
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster)
+            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -1190,3 +1287,12 @@ class BitBirch:
         assert np.all(assignments != -1)
 
         return assignments
+
+    def __repr__(self) -> str:
+        fn = self._merge_accept_fn
+        _str = f"{self.__class__.__name__}(threshold={self.threshold}, branching_factor={self.branching_factor}, merge_criterion='{fn.name}'"  # noqa:E501
+        if isinstance(fn, ToleranceMerge):
+            _str += f", tolerance={fn._tolerance})"
+        else:
+            _str += ")"
+        return _str
