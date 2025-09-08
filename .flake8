@@ -7,4 +7,6 @@ exclude =
     build,
     .eggs,
     bbtools.egg-info,
+    bbtools/bblean.py
+    bbtools/bblean_v1.py
     docs
