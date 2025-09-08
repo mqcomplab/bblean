@@ -53,3 +53,20 @@ nohup.out
 
 # language server
 .ccls-cache
+
+# memray memory profile files
+*.bin
+*-flamegraph-memray.html
+
+# py-spy profile files
+profile.svg
+
+# Outputs / inputs
+*.npy
+monitor-rss.*.csv
+config.*.json
+timings.*.json
+
+# Pickle
+*.pkl
+*.pickle
