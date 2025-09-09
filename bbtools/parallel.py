@@ -16,7 +16,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from bbtools._console import get_console
-from bbtools.memory_utils import monitor_rss_daemon, system_mem_gib
+from bbtools.memory import monitor_rss_daemon, system_mem_gib
 from bbtools.utils import cpu_name, numpy_streaming_save, batched
 
 

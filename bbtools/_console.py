@@ -2,7 +2,7 @@ import typing as tp
 
 from rich.console import Console
 
-from bbtools.memory_utils import get_peak_memory
+from bbtools.memory import get_peak_memory
 
 
 class BBConsole(Console):
