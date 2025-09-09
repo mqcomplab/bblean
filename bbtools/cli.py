@@ -7,6 +7,7 @@ from pathlib import Path
 from typer import Typer, Argument, Option, Abort
 
 from bbtools._console import get_console
+from bbtools.config import DEFAULTS
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -52,7 +53,7 @@ def _make_fps(
     fp_size: Annotated[
         int,
         Option("-f", "--fp-size"),
-    ] = 2048,
+    ] = DEFAULTS.features_num,
 ) -> None:
     r"""Generate a *.npy fingerprints file from one or more smiles files
 
@@ -125,6 +126,14 @@ def _run(
         int | None,
         Option("-m", "--max-fps"),
     ] = None,
+    out_fpath: Annotated[
+        Path | None,
+        Option(
+            "-o",
+            "--output-path",
+            help="Path to dump the output cluster mol ids (*.csv)",
+        ),
+    ] = None,
     branching_factor: Annotated[
         int,
         Option("-b", "--branching-factor"),
@@ -136,7 +145,7 @@ def _run(
     threshold: Annotated[
         float,
         Option("-t", "--threshold"),
-    ] = 0.65,
+    ] = DEFAULTS.threshold,
     merge_strategy: Annotated[
         str,
         Option("-s", "--set-merge"),
@@ -149,6 +158,10 @@ def _run(
 ) -> None:
     r"""Run standard BitBirch clustering"""
     import numpy as np
+    import pandas as pd
+
+    if out_fpath is None:
+        out_fpath = fp_file.parent / "cluster-mol-ids.csv"
 
     if use_old_bblean:
         from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
@@ -158,11 +171,15 @@ def _run(
     fps = np.load(fp_file, mmap_mode="r" if use_mmap else None)[:max_fps]
 
     set_merge(merge_strategy)
-    brc = BitBirch(branching_factor=branching_factor, threshold=threshold)
+    tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
     _start = time.perf_counter()
-    brc.fit_reinsert(fps, list(range(len(fps))))
+    tree.fit_reinsert(fps, list(range(len(fps))))
+    cluster_mol_ids = tree.get_cluster_mol_ids()
     console.print(f"Time elapsed: {time.perf_counter() - _start} s")
     console.print_peak_mem(num_processes=1)
+    df = pd.DataFrame({"cluster-id": cluster_mol_ids})
+    df["fingerprint-id"] = df.index
+    df.to_csv(out_fpath, index=False)
 
 
 @app.command("parallel")
@@ -199,24 +216,26 @@ def _parallel(
     num_processes: Annotated[
         int, Option("-p", "--processes", help="Num. processes")
     ] = 10,
-    branching_factor: Annotated[int, Option(help="BitBirch branching factor")] = 254,
-    threshold: Annotated[float, Option(help="BitBirch threshold")] = 0.65,
+    branching_factor: Annotated[
+        int, Option(help="BitBirch branching factor")
+    ] = DEFAULTS.branching_factor,
+    threshold: Annotated[float, Option(help="BitBirch threshold")] = DEFAULTS.threshold,
     tolerance: Annotated[
         float,
         Option(
             help="BitBirch tolerance"
             " (Used in Round 1 'double-cluster-init', Round 2, and Final clustering)"
         ),
-    ] = 0.05,
+    ] = DEFAULTS.tolerance,
     # Advanced options
-    initial_merge_strategy: Annotated[
+    initial_merge_criterion: Annotated[
         str,
         Option(
             "--set-merge",
-            help="Initial merge strategy for Round 1 ('diameter' is recommended)",
+            help="Initial merge criterion for Round 1 ('diameter' is recommended)",
             rich_help_panel="Advanced",
         ),
-    ] = "diameter",
+    ] = DEFAULTS.merge_criterion,
     double_cluster_init: Annotated[
         bool,
         Option(
@@ -305,7 +324,7 @@ def _parallel(
         overwrite_outputs=overwrite_outputs,
         filename_idxs_are_slices=filename_idxs_are_slices,
         round2_process_fraction=round2_process_fraction,
-        initial_merge_strategy=initial_merge_strategy,
+        initial_merge_criterion=initial_merge_criterion,
         num_processes=num_processes,
         branching_factor=branching_factor,
         threshold=threshold,

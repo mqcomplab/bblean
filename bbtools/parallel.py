@@ -98,7 +98,7 @@ def first_round(
     max_fps: int | None = None,
     mmap: bool = True,
     use_old_bblean: bool = False,
-    initial_merge_strategy: str = "diameter",
+    initial_merge_criterion: str = "diameter",
 ) -> None:
     if use_old_bblean:
         from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
@@ -110,7 +110,7 @@ def first_round(
     # Fit the fps. fit_reinsert is necessary to keep track of proper molecule indices
     # Use indices of molecules in the current batch, according to the total set
     idx0, idx1 = map(int, fp_file.split(".")[0].split("_")[-2:])
-    set_merge(initial_merge_strategy)  # Initial batch uses diameter BitBIRCH
+    set_merge(initial_merge_criterion)  # Initial batch uses diameter BitBIRCH
     brc_diameter = BitBirch(branching_factor=branching_factor, threshold=threshold)
     if filename_idxs_are_slices:
         # idxs are <start_mol_idx>_<end_mol_idx>
@@ -271,7 +271,7 @@ def run_parallel_bitbirch(
     overwrite_outputs: bool = False,
     filename_idxs_are_slices: bool = False,
     round2_process_fraction: float = 1.0,
-    initial_merge_strategy: str = "diameter",
+    initial_merge_criterion: str = "diameter",
     num_processes: int = 10,
     branching_factor: int = 254,
     threshold: float = 0.65,
@@ -370,7 +370,7 @@ def run_parallel_bitbirch(
         f"Starting {_start_msg} clustering\n\n"
         f"- Configuration path: {str(config_path)}\n"
         f"- Branching factor: {branching_factor}\n"
-        f"- Initial merge strategy: [yellow]{initial_merge_strategy}[/yellow]\n"
+        f"- Initial merge strategy: [yellow]{initial_merge_criterion}[/yellow]\n"
         f"- Threshold: {threshold}\n"
         f"- Tolerance: {tolerance}\n"  # noqa:E501
         f"- Num. files loaded: {len(input_files)}\n"
@@ -404,7 +404,7 @@ def run_parallel_bitbirch(
         double_cluster_init=double_cluster_init,
         max_fps=max_fps,
         filename_idxs_are_slices=filename_idxs_are_slices,
-        initial_merge_strategy=initial_merge_strategy,
+        initial_merge_criterion=initial_merge_criterion,
         **common_kwargs,
     )
     timings_s: dict[str, float | None] = {
