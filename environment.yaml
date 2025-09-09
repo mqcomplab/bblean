@@ -32,5 +32,4 @@ dependencies:
   - scipy 
   - rdkit
   - numpy
-  - pandas
   - psutil

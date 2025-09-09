@@ -1,12 +1,14 @@
 r"""Command line interface entrypoints"""
 
+from copy import deepcopy
+import json
 import time
 from typing import Annotated
 from pathlib import Path
 
-from typer import Typer, Argument, Option, Abort
+from typer import Typer, Argument, Option, Abort, Context
 
-from bbtools._console import get_console
+from bbtools.memory import get_peak_memory
 from bbtools.config import DEFAULTS
 
 app = Typer(
@@ -20,8 +22,6 @@ app = Typer(
     https://doi.org/10.1039/D5DD00030K
     """,
 )
-
-console = get_console()
 
 
 @app.command("make-fps")
@@ -54,6 +54,10 @@ def _make_fps(
         int,
         Option("-f", "--fp-size"),
     ] = DEFAULTS.features_num,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
 ) -> None:
     r"""Generate a *.npy fingerprints file from one or more smiles files
 
@@ -62,6 +66,9 @@ def _make_fps(
     """
     import numpy as np
     from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
+    from bbtools._console import get_console
+
+    console = get_console(silent=not verbose)
 
     if kind not in ["rdkit", "ecfp4"]:
         console.print("Kind must be one of 'rdkit|ecfp4'", style="red")
@@ -118,6 +125,7 @@ def _split_fps() -> None:
 
 @app.command("run")
 def _run(
+    ctx: Context,
     fp_file: Annotated[
         Path,
         Argument(help="*.npy file with packed fingerprints"),
@@ -126,12 +134,12 @@ def _run(
         int | None,
         Option("-m", "--max-fps"),
     ] = None,
-    out_fpath: Annotated[
+    out_dir: Annotated[
         Path | None,
         Option(
             "-o",
-            "--output-path",
-            help="Path to dump the output cluster mol ids (*.csv)",
+            "--output-dir",
+            help="Dir to dump the output files",
         ),
     ] = None,
     branching_factor: Annotated[
@@ -155,13 +163,18 @@ def _run(
         bool,
         Option("--use-bblean-v1/--no-use-bblean-v1", rich_help_panel="Debug"),
     ] = False,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
 ) -> None:
     r"""Run standard BitBirch clustering"""
     import numpy as np
-    import pandas as pd
+    import uuid
+    from bbtools._console import get_console
 
-    if out_fpath is None:
-        out_fpath = fp_file.parent / "cluster-mol-ids.csv"
+    console = get_console(silent=not verbose)
+    unique_id = str(uuid.uuid4()).split("-")[0]
 
     if use_old_bblean:
         from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
@@ -175,11 +188,37 @@ def _run(
     _start = time.perf_counter()
     tree.fit_reinsert(fps, list(range(len(fps))))
     cluster_mol_ids = tree.get_cluster_mol_ids()
-    console.print(f"Time elapsed: {time.perf_counter() - _start} s")
-    console.print_peak_mem(num_processes=1)
-    df = pd.DataFrame({"cluster-id": cluster_mol_ids})
-    df["fingerprint-id"] = df.index
-    df.to_csv(out_fpath, index=False)
+    total_time_s = time.perf_counter() - _start
+    console.print(f"Time elapsed: {total_time_s} s")
+    stats = get_peak_memory(1)
+    if stats is None:
+        console.print("[Peak memory stats not tracked for non-Unix systems]")
+    else:
+        console.print_peak_mem_raw(stats)
+
+    # Dump outputs (peak memory, timings, config, cluster ids)
+    params = deepcopy(ctx.params)
+    if out_dir is None:
+        out_dir = Path.cwd() / "bb_run_outputs" / unique_id
+        out_dir.mkdir(exist_ok=True, parents=True)
+    params["out_dir"] = str(out_dir)
+    params["fp_file"] = str(params["fp_file"])
+
+    cluster_ids_fpath = out_dir / "cluster-mol-ids.json"
+    with open(cluster_ids_fpath, mode="wt", encoding="utf-8") as f:
+        json.dump({i: v for i, v in enumerate(cluster_mol_ids)}, f, indent=4)
+    config_fpath = out_dir / "config.json"
+    with open(config_fpath, mode="wt", encoding="utf-8") as f:
+        json.dump(params, f, indent=4)
+    timings_fpath = out_dir / "timings.json"
+    with open(timings_fpath, mode="wt", encoding="utf-8") as f:
+        json.dump({"total_s": total_time_s}, f, indent=4)
+    peak_rss_fpath = out_dir / "peak-rss.json"
+    with open(peak_rss_fpath, mode="wt", encoding="utf-8") as f:
+        json.dump(
+            {"self_max_rss_gib": None if stats is None else stats.self_gib}, f, indent=4
+        )
+    console.print(f"Outputs written to {out_dir}")
 
 
 @app.command("parallel")
@@ -315,9 +354,11 @@ def _parallel(
     from bbtools.parallel import run_parallel_bitbirch
 
     if out_dir is None:
-        out_dir = Path.cwd() / "bb_outputs"
+        out_dir = Path.cwd() / "bb_parallel_outputs"
+    out_dir.mkdir(exist_ok=True)
+
     if in_dir is None:
-        in_dir = Path.cwd() / "bb_inputs"
+        in_dir = Path.cwd() / "bb_parallel_inputs"
     run_parallel_bitbirch(
         in_dir=in_dir,
         out_dir=out_dir,

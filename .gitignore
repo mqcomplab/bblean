@@ -63,9 +63,11 @@ profile.svg
 
 # Outputs / inputs
 *.npy
-monitor-rss.*.csv
-config.*.json
-timings.*.json
+monitor-rss*.csv
+peak-rss*.json
+cluster-mol-ids*.json
+config*.json
+timings*.json
 
 # Pickle
 *.pkl

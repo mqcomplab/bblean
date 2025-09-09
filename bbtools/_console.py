@@ -2,7 +2,7 @@ import typing as tp
 
 from rich.console import Console
 
-from bbtools.memory import get_peak_memory
+from bbtools.memory import get_peak_memory, PeakMemoryStats
 
 
 class BBConsole(Console):
@@ -22,7 +22,9 @@ class BBConsole(Console):
         if stats is None:
             self.print("[Peak memory stats not tracked for non-Unix systems]")
             return
+        return self.print_peak_mem_raw(stats)
 
+    def print_peak_mem_raw(self, stats: PeakMemoryStats) -> None:
         self.print("Peak RAM until now:\n" f"    Main proc.: {stats.self_gib:.4f} GiB")
         if not stats.children_were_tracked:
             self.print("    Max of child procs.: [Not tracked for 'forkserver']")
@@ -35,6 +37,9 @@ class SilentConsole(BBConsole):
         pass
 
     def print_peak_mem(self, num_processes: int) -> None:
+        pass
+
+    def print_peak_mem_raw(self, stats: PeakMemoryStats) -> None:
         pass
 
     def print_banner(self) -> None:
