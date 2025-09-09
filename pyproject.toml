@@ -27,7 +27,7 @@ repository = "https://github.com/IgnacioJPickering/bbtools.git"
 documentation = "https://github.com/IgnacioJPickering/bbtools.git"
 
 [project.scripts]
-bitbirch="bbtools.cli:app"
+bb="bbtools.cli:app"
 
 [tool.setuptools_scm]
 version_file = "bbtools/_version.py"
