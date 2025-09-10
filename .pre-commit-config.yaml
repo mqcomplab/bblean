@@ -24,7 +24,7 @@ repos:
     hooks:
       - id: black
         files: \.py$
-        exclude: bbtools/bblean\.py$|bbtools/bblean_v1\.py$
+        exclude: bbtools/bblean\.py$|bbtools/bblean_v1\.py$|bbtools/bb_int64\.py$
         stages: [pre-push]
 
   - repo: https://github.com/PyCQA/flake8
@@ -38,7 +38,7 @@ repos:
     hooks:
       - id: autoflake
         files: \.py$
-        exclude: bbtools/bblean\.py$|bbtools/bblean_v1\.py$
+        exclude: bbtools/bblean\.py$|bbtools/bblean_v1\.py$|bbtools/bb_int64\.py$
         stages: [pre-push]
 
   - repo: local
