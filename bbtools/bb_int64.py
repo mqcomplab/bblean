@@ -1,3 +1,4 @@
+# type: ignore
 # BitBIRCH is an open-source clustering module based on iSIM
 #
 # Please, cite the BitBIRCH paper: https://www.biorxiv.org/content/10.1101/2024.08.10.607459v1
