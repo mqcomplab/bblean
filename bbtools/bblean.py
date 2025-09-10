@@ -30,6 +30,7 @@
 #     Kenneth Lopez Perez <klopezperez@chem.ufl.edu>
 #     Kate Huddleston <kdavis2@chem.ufl.edu>
 
+import warnings
 from collections import defaultdict
 from weakref import WeakSet
 
@@ -61,9 +62,9 @@ def set_merge(merge_criterion: str, tolerance=0.05):
     r"""Sets the global criteria for merging subclusters in any BitBirch tree
 
     ..  warning::
-        The use of this function is discouraged, instead please use either `bbirch =
-        BitBirch(...); BitBirch.set_merge(...)`
-        or `bbirch = BitBirch(..., merge_criterion=..., tolerance=...)`.
+        The use of this function is discouraged, instead please use either `bb_tree =
+        BitBirch(...); BitBirch.set_merge(merge_criterion=..., tolerance=...)`
+        or directly `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`.
 
     Parameters:
     -----------
