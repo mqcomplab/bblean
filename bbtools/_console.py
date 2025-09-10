@@ -60,9 +60,7 @@ class BBConsole(Console):
             )
         self.print()
 
-    def print_multiround_config(
-        self, config: dict[str, tp.Any]
-    ) -> None:
+    def print_multiround_config(self, config: dict[str, tp.Any]) -> None:
         num_processes = config.get("num_processes", 1)
         extra_desc = (
             f"parallel (max {num_processes} processes)"
