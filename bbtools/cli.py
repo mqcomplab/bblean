@@ -265,8 +265,6 @@ def _run(
     import numpy as np
     from bbtools._console import get_console
 
-    variant = variant.replace("-v1", "v1")
-
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
     # NOTE: Files are sorted according to name
@@ -294,7 +292,7 @@ def _run(
     ctx.params.pop("out_dir_is_root")
     if not os.environ.get("BITBIRCHNOBANNER", ""):
         console.print_banner()
-    console.print_config(ctx.params, desc="single-round", add_processes=False)
+    console.print_config(ctx.params)
 
     if monitor_rss:
         console.print("** Monitoring total RAM usage **\n")
@@ -489,8 +487,6 @@ def _multiround(
     from bbtools._console import get_console
     from bbtools.multiround import run_multiround_bitbirch
 
-    variant = variant.replace("-v1", "v1")
-
     # Set the multiprocessing start method
     if fork and not sys.platform == "linux":
         raise ValueError("'fork' is only available on Linux")
@@ -520,7 +516,7 @@ def _multiround(
 
     if not os.environ.get("BITBIRCHNOBANNER", ""):
         console.print_banner()
-    console.print_config(ctx.params, desc="multi-round")
+    console.print_multiround_config(ctx.params)
 
     if monitor_rss:
         console.print("** Monitoring total RAM usage **\n")
