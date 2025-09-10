@@ -381,13 +381,9 @@ def _split_node(node, threshold: float, branching_factor: int):
         if node1_closer[idx]:
             new_node1.append_subcluster(subcluster)
             new_subcluster1.update(subcluster)
-            # if not singly:
-            #    subcluster.parent_ = new_subcluster1
         else:
             new_node2.append_subcluster(subcluster)
             new_subcluster2.update(subcluster)
-            # if not singly:
-            #    subcluster.parent_ = new_subcluster2
     # Release references to leaves
     node.prev_leaf_ = None
     node.next_leaf_ = None
