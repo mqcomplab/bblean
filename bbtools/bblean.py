@@ -85,6 +85,13 @@ def set_merge(merge_criterion: str, tolerance=0.05):
         bbirch._merge_accept_fn = _global_merge_accept
 
 
+# Utility function, either copies or unpacks a fingerprint
+# NOTE: Copy of 'sample' is not required if input is packed,
+# since unpack_fingerprints allocates a new array
+def _copy_or_unpack(x, n_features, input_is_packed: bool = True):
+    return unpack_fingerprints(x, n_features) if input_is_packed else x.copy()
+
+
 class MergeAcceptFunction:
     # For the merge functions, although outputs of jt_isim f64, directly using f64 is
     # *not* faster than starting with uint64
@@ -271,7 +278,7 @@ def max_separation(Y, n_features: int):
     linear_sum = np.sum(X_unpacked, axis=0, dtype=min_safe_uint(n_samples))
     centroid_packed = calc_centroid(linear_sum, n_samples, pack=True)
 
-    cardinalities = popcounts(Y)
+    cardinalities = popcount(Y)
 
     # Get the similarity of each molecule to the centroid
     sims_med = tanimoto_sim_packed(Y, centroid_packed, cardinalities)
@@ -837,7 +844,7 @@ class BitBirch:
             )
         self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
 
-    def fit(self, X):
+    def fit(self, X, input_is_packed: bool = True):
         """
         Build a BF Tree for the input data.
 
@@ -855,7 +862,7 @@ class BitBirch:
         branching_factor = self.branching_factor
 
         # TODO: This is a bug if the n_features is not a multiple of 8!
-        n_features = np.unpackbits(X[0]).shape[0]
+        n_features = np.unpackbits(X[0]).shape[0] if input_is_packed else X[0].shape[0]
 
         # If partial_fit is called for the first time or fit is called, we
         # start a new tree.
@@ -886,11 +893,9 @@ class BitBirch:
 
         merge_accept_fn = self._merge_accept_fn
 
-        # NOTE: Copy of 'sample' is not required,
-        # since unpack_fingerprints allocates a new array
         for sample in iter_func(X):
             subcluster = _BFSubcluster(
-                linear_sum=unpack_fingerprints(sample, n_features),
+                linear_sum=_copy_or_unpack(sample, n_features, input_is_packed),
                 mol_indices=[self.index_tracker],
                 n_features=n_features,
             )
@@ -1044,7 +1049,13 @@ class BitBirch:
         self.first_call = False
         return self
 
-    def fit_reinsert(self, X, reinsert_indices, store_centroids: bool = True):
+    def fit_reinsert(
+        self,
+        X,
+        reinsert_indices,
+        store_centroids: bool = True,
+        input_is_packed: bool = True,
+    ):
         """X corresponds to only the molecules that will be reinserted into the tree
         reinsert indices are the indices of the molecules that will be reinserted into
         the tree
@@ -1053,7 +1064,7 @@ class BitBirch:
         branching_factor = self.branching_factor
 
         # TODO: This is a bug if the n_features is not a multiple of 8!
-        n_features = np.unpackbits(X[0]).shape[0]
+        n_features = np.unpackbits(X[0]).shape[0] if input_is_packed else X[0].shape[0]
 
         # If partial_fit is called for the first time or fit is called, we
         # start a new tree.
@@ -1084,11 +1095,9 @@ class BitBirch:
 
         merge_accept_fn = self._merge_accept_fn
 
-        # NOTE: Copy of 'sample' is not required,
-        # since unpack_fingerprints allocates a new array
         for sample, mol_ind in zip(iter_func(X), reinsert_indices):
             subcluster = _BFSubcluster(
-                linear_sum=unpack_fingerprints(sample, n_features),
+                linear_sum=_copy_or_unpack(sample, n_features, input_is_packed),
                 mol_indices=[mol_ind],
                 n_features=n_features,
             )
@@ -1189,7 +1198,13 @@ class BitBirch:
 
         return BFs
 
-    def bf_to_np_refine(self, fps, initial_mol=0, return_fp_lists: bool = False):
+    def bf_to_np_refine(
+        self,
+        fps,
+        initial_mol=0,
+        return_fp_lists: bool = False,
+        input_is_packed: bool = True,
+    ):
         """Prepare BitFeatures of the largest cluster and the rest of the clusters"""
         if self.first_call:
             raise ValueError("The model has not been fitted yet.")
@@ -1203,8 +1218,8 @@ class BitBirch:
             dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_np_lists(rest)
             # Add fps and mol indices of the "big" cluster
             for mol_idx in big.mol_indices:
-                unpacked_fp = unpack_fingerprints(
-                    fps[mol_idx - initial_mol], n_features
+                unpacked_fp = _copy_or_unpack(
+                    fps[mol_idx - initial_mol], n_features, input_is_packed
                 )
                 buffer = np.empty(unpacked_fp.shape[0] + 1, dtype=np.uint8)
                 buffer[:-1] = unpacked_fp
@@ -1218,8 +1233,8 @@ class BitBirch:
             )
             # Add fps and mol indices of the "big" cluster
             for mol_idx in big.mol_indices:
-                unpacked_fp = unpack_fingerprints(
-                    fps[mol_idx - initial_mol], n_features
+                unpacked_fp = _copy_or_unpack(
+                    fps[mol_idx - initial_mol], n_features, input_is_packed
                 )
                 dtypes_to_fp["uint8"][running_idxs["uint8"], -1] = 1
                 dtypes_to_fp["uint8"][running_idxs["uint8"], :-1] = unpacked_fp
