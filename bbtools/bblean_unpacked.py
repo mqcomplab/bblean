@@ -30,7 +30,6 @@
 #     Kenneth Lopez Perez <klopezperez@chem.ufl.edu>
 #     Kate Huddleston <kdavis2@chem.ufl.edu>
 
-import warnings
 from collections import defaultdict
 from weakref import WeakSet
 
@@ -181,41 +180,6 @@ def _get_merge_accept_fn(
     )
 
 
-# Requires numpy >= 2.0
-def popcount(a):
-    # a is packed uint8 array with last axis = bytes
-    # Sum bit-counts across bytes to get per-object totals
-    return np.bitwise_count(a).sum(axis=-1, dtype=np.uint32)
-
-
-def pack_fingerprints(a):
-    """Packs boolean or integer arrays into uint8 arrays"""
-    # packbits may pad with zeros if n_features is not a multiple of 8
-    return np.packbits(a, axis=-1)
-
-
-def unpack_fingerprints(a, n_features: int):
-    """Unpacks uint8 arrays into boolean arrays"""
-    # n_features is required to discard padded zeros if it is not a multiple of 8
-    return np.unpackbits(a, axis=-1, count=n_features)
-
-
-def tanimoto_sim_packed(arr, vec, cardinalities=None):
-    """Tanimoto similarity between a matrix of packed fingerprints and a single packed
-    fingerprint.
-
-    If "cardinalities" is passed, it must be the result of calling popcount(arr).
-    """
-    intersection = popcount(np.bitwise_and(arr, vec))
-    if cardinalities is not None:
-        cardinalities = cardinalities.copy()
-    else:
-        cardinalities = popcount(arr)
-    cardinalities += popcount(vec)  # In-place operation prevents extra mem allocation
-    # Return value requires an out-of-place operation since it casts uints to f64
-    return intersection / (cardinalities - intersection)
-
-
 def jt_isim(c_total, n_objects: int):
     r"""iSIM Tanimoto calculation
 
@@ -265,29 +229,29 @@ def max_separation(Y, n_features: int):
     These are needed for node1_dist and node2_dist in _split_node
     """
     # Get the centroid of the set
-    X_unpacked = unpack_fingerprints(Y, n_features)
-    n_samples = len(X_unpacked)
+    n_samples = len(Y)
     # np.sum() automatically promotes to uint64 unless forced to a smaller dtype
-    linear_sum = np.sum(X_unpacked, axis=0, dtype=min_safe_uint(n_samples))
-    centroid_packed = calc_centroid(linear_sum, n_samples, pack=True)
-
-    cardinalities = popcounts(Y)
+    linear_sum = np.sum(Y, axis=0, dtype=min_safe_uint(n_samples))
+    centroid = calc_centroid(linear_sum, n_samples, pack=False)
 
     # Get the similarity of each molecule to the centroid
-    sims_med = tanimoto_sim_packed(Y, centroid_packed, cardinalities)
+    pop_counts = np.sum(Y, axis=1)
+    a_centroid = np.dot(Y, centroid)
+    sims_med = a_centroid / (pop_counts + np.sum(centroid) - a_centroid)
 
     # Get the least similar molecule to the centroid
     mol1 = np.argmin(sims_med)
 
     # Get the similarity of each molecule to mol1
-    sims_mol1 = tanimoto_sim_packed(Y, Y[mol1], cardinalities)
+    a_mol1 = np.dot(Y, Y[mol1])
+    sims_mol1 = a_mol1 / (pop_counts + pop_counts[mol1] - a_mol1)
 
     # Get the least similar molecule to mol1
     mol2 = np.argmin(sims_mol1)
 
     # Get the similarity of each molecule to mol2
-    sims_mol2 = tanimoto_sim_packed(Y, Y[mol2], cardinalities)
-
+    a_mol2 = np.dot(Y, Y[mol2])
+    sims_mol2 = a_mol2 / (pop_counts + pop_counts[mol2] - a_mol2)
     return (mol1, mol2), sims_mol1, sims_mol2
 
 
@@ -315,7 +279,7 @@ def calc_centroid(linear_sum, n_samples, *, pack: bool):
         cent = linear_sum.astype(np.uint8, copy=False)
     cent = (linear_sum >= n_samples * 0.5).view(np.uint8)
     if pack:
-        return pack_fingerprints(cent)
+        raise NotImplementedError("Not implemented for unpacked bitbirch-lean")
     return cent
 
 
@@ -495,7 +459,7 @@ class _BFNode:
         # Append new_subcluster2
         self.append_subcluster(new_subcluster2)
 
-    def insert_bf_subcluster(self, subcluster, merge_accept_fn):
+    def insert_bf_subcluster(self, subcluster, merge_accept_fn, set_bits):
         """Insert a new subcluster into the node."""
         # Fix for shape mismatch when reusing tree with different n_features
         if subcluster.n_features != self.n_features:
@@ -513,7 +477,7 @@ class _BFNode:
 
             # Centroid must be recalculated and repacked from the resized linear_sum_
             subcluster.centroid_ = calc_centroid(
-                subcluster.linear_sum_, subcluster.n_samples_, pack=True
+                subcluster.linear_sum_, subcluster.n_samples_, pack=False
             )
 
             # Important: update n_features of subcluster to be consistent with the tree
@@ -527,7 +491,9 @@ class _BFNode:
         branching_factor = self.branching_factor
         # We need to find the closest subcluster among all the
         # subclusters so that we can insert our new subcluster.
-        sim_matrix = tanimoto_sim_packed(self.centroids_, subcluster.centroid_)
+
+        a = np.dot(self.centroids_, subcluster.centroid_)
+        sim_matrix = a / (np.sum(self.centroids_, axis=1) + set_bits - a)
         closest_index = np.argmax(sim_matrix)
         closest_subcluster = self.subclusters_[closest_index]
 
@@ -535,7 +501,7 @@ class _BFNode:
         if closest_subcluster.child_ is not None:
 
             split_child = closest_subcluster.child_.insert_bf_subcluster(
-                subcluster, merge_accept_fn
+                subcluster, merge_accept_fn, set_bits
             )
 
             if not split_child:
@@ -641,7 +607,7 @@ class _BFSubcluster:
             if len(mol_indices) != buffer[-1]:
                 raise ValueError("Expected len(mol_indices) == n_samples")
             self._buffer = buffer
-            self.centroid_ = calc_centroid(buffer[:-1], buffer[-1], pack=True)
+            self.centroid_ = calc_centroid(buffer[:-1], buffer[-1], pack=False)
         else:
             if linear_sum is not None:
                 if len(mol_indices) != 1:
@@ -650,15 +616,13 @@ class _BFSubcluster:
                 buffer[:-1] = linear_sum
                 buffer[-1] = 1
                 self._buffer = buffer
-                self.centroid_ = pack_fingerprints(
-                    linear_sum.astype(np.uint8, copy=False)
-                )
+                self.centroid_ = linear_sum.astype(np.uint8, copy=False)
             else:
                 # Empty subcluster
                 if mol_indices is not None:
                     raise ValueError("Expected mol_indices = None for empty subcluster")
                 self._buffer = np.zeros((n_features + 1,), dtype=np.uint8)
-                self.centroid_ = np.zeros(((n_features + 7) // 8,), dtype=np.uint8)
+                self.centroid_ = np.zeros((n_features,), dtype=np.uint8)
 
         self.mol_indices = mol_indices if mol_indices is not None else []
 
@@ -693,7 +657,7 @@ class _BFSubcluster:
         # NOTE: Assignments are safe and do not recast the buffer
         self._buffer[:-1] = linear_sum
         self._buffer[-1] = n_samples
-        self.centroid_ = calc_centroid(linear_sum, n_samples, pack=True)
+        self.centroid_ = calc_centroid(linear_sum, n_samples, pack=False)
 
     # NOTE: Part of the contract is that all elements of linear sum must always be
     # less or equal n_samples. This function does not check this
@@ -704,7 +668,7 @@ class _BFSubcluster:
         # NOTE: Assignment and inplace add are safe and do not recast the buffer
         self._buffer[:-1] += linear_sum
         self._buffer[-1] = new_n_samples
-        self.centroid_ = calc_centroid(self._buffer[:-1], new_n_samples, pack=True)
+        self.centroid_ = calc_centroid(self._buffer[:-1], new_n_samples, pack=False)
 
     def update(self, subcluster):
         self.add_to_n_samples_and_linear_sum(
@@ -854,8 +818,7 @@ class BitBirch:
         threshold = self.threshold
         branching_factor = self.branching_factor
 
-        # TODO: This is a bug if the n_features is not a multiple of 8!
-        n_features = np.unpackbits(X[0]).shape[0]
+        n_features = X[0].shape[0]
 
         # If partial_fit is called for the first time or fit is called, we
         # start a new tree.
@@ -886,15 +849,16 @@ class BitBirch:
 
         merge_accept_fn = self._merge_accept_fn
 
-        # NOTE: Copy of 'sample' is not required,
-        # since unpack_fingerprints allocates a new array
         for sample in iter_func(X):
+            set_bits = np.sum(sample, dtype=np.uint8)
             subcluster = _BFSubcluster(
-                linear_sum=unpack_fingerprints(sample, n_features),
+                linear_sum=sample.copy(),
                 mol_indices=[self.index_tracker],
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
+            split = self.root_.insert_bf_subcluster(
+                subcluster, merge_accept_fn, set_bits
+            )
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -955,12 +919,15 @@ class BitBirch:
         # A copy is only required when iterating over a numpy array
         copy_if_arr = (lambda x: x) if isinstance(X, list) else (lambda x: x.copy())
         for sample in iter_func(X):
+            set_bits = np.sum(sample, dtype=np.uint8)
             subcluster = _BFSubcluster(
                 buffer=copy_if_arr(sample),
                 mol_indices=[self.index_tracker],
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
+            split = self.root_.insert_bf_subcluster(
+                subcluster, merge_accept_fn, set_bits
+            )
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -1021,12 +988,15 @@ class BitBirch:
         # A copy is only required when iterating over a numpy array
         copy_if_arr = (lambda x: x) if isinstance(X, list) else (lambda x: x.copy())
         for sample, mol_inds in zip(iter_func(X), reinsert_indices):
+            set_bits = np.sum(sample)
             subcluster = _BFSubcluster(
                 buffer=copy_if_arr(sample),
                 mol_indices=mol_inds,
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
+            split = self.root_.insert_bf_subcluster(
+                subcluster, merge_accept_fn, set_bits
+            )
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -1053,7 +1023,7 @@ class BitBirch:
         branching_factor = self.branching_factor
 
         # TODO: This is a bug if the n_features is not a multiple of 8!
-        n_features = np.unpackbits(X[0]).shape[0]
+        n_features = X[0].shape[0]
 
         # If partial_fit is called for the first time or fit is called, we
         # start a new tree.
@@ -1084,15 +1054,16 @@ class BitBirch:
 
         merge_accept_fn = self._merge_accept_fn
 
-        # NOTE: Copy of 'sample' is not required,
-        # since unpack_fingerprints allocates a new array
         for sample, mol_ind in zip(iter_func(X), reinsert_indices):
+            set_bits = np.sum(sample, dtype=np.uint8)
             subcluster = _BFSubcluster(
-                linear_sum=unpack_fingerprints(sample, n_features),
+                linear_sum=sample.copy(),
                 mol_indices=[mol_ind],
                 n_features=n_features,
             )
-            split = self.root_.insert_bf_subcluster(subcluster, merge_accept_fn)
+            split = self.root_.insert_bf_subcluster(
+                subcluster, merge_accept_fn, set_bits
+            )
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(
@@ -1197,15 +1168,12 @@ class BitBirch:
         BFs = self._get_BFs()
         big, rest = BFs[0], BFs[1:]
 
-        n_features = self.root_.n_features
         # TODO: This is a bug if the n_features is not a multiple of 8!
         if return_fp_lists:
             dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_np_lists(rest)
             # Add fps and mol indices of the "big" cluster
             for mol_idx in big.mol_indices:
-                unpacked_fp = unpack_fingerprints(
-                    fps[mol_idx - initial_mol], n_features
-                )
+                unpacked_fp = fps[mol_idx - initial_mol]
                 buffer = np.empty(unpacked_fp.shape[0] + 1, dtype=np.uint8)
                 buffer[:-1] = unpacked_fp
                 buffer[-1] = 1
@@ -1218,9 +1186,7 @@ class BitBirch:
             )
             # Add fps and mol indices of the "big" cluster
             for mol_idx in big.mol_indices:
-                unpacked_fp = unpack_fingerprints(
-                    fps[mol_idx - initial_mol], n_features
-                )
+                unpacked_fp = fps[mol_idx - initial_mol]
                 dtypes_to_fp["uint8"][running_idxs["uint8"], -1] = 1
                 dtypes_to_fp["uint8"][running_idxs["uint8"], :-1] = unpacked_fp
                 dtypes_to_mols["uint8"].append([mol_idx])
