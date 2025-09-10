@@ -2,6 +2,6 @@ r"""
 bbtools
 """
 
-from bblean import BitBirch
+from bbtools.bblean import BitBirch
 
 __all__ = ["BitBirch"]
