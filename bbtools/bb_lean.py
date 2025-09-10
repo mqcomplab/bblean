@@ -30,7 +30,6 @@
 #     Kenneth Lopez Perez <klopezperez@chem.ufl.edu>
 #     Kate Huddleston <kdavis2@chem.ufl.edu>
 
-import warnings
 from collections import defaultdict
 from weakref import WeakSet
 
@@ -90,6 +89,23 @@ def set_merge(merge_criterion: str, tolerance=0.05):
 # since unpack_fingerprints allocates a new array
 def _copy_or_unpack(x, n_features, input_is_packed: bool = True):
     return unpack_fingerprints(x, n_features) if input_is_packed else x.copy()
+
+
+# Utility function to validate the n_features argument for packed inputs
+def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> int:
+    if input_is_packed:
+        if n_features is None:
+            raise ValueError("n_features is required for packed inputs")
+        return n_features
+
+    x_n_features = X.shape[1]
+    if n_features is not None:
+        if n_features != x_n_features:
+            raise ValueError(
+                "n_features is redundant for non-packed inputs"
+                " if passed, it must be equal to X.shape[1]"
+            )
+    return x_n_features
 
 
 class MergeAcceptFunction:
@@ -507,24 +523,8 @@ class _BFNode:
         # Fix for shape mismatch when reusing tree with different n_features
         if subcluster.n_features != self.n_features:
             raise NotImplementedError(
-                "Using different n_features in the same tree (!) not yet implemented"
+                "Different n_features in the same tree not implemented"
             )
-            new_linear_sum = np.zeros(
-                self.n_features, dtype=subcluster.linear_sum_.dtype
-            )
-            features_to_copy = min(self.n_features, subcluster.n_features)
-            new_linear_sum[:features_to_copy] = subcluster.linear_sum_[
-                :features_to_copy
-            ]
-            subcluster.linear_sum_ = new_linear_sum
-
-            # Centroid must be recalculated and repacked from the resized linear_sum_
-            subcluster.centroid_ = calc_centroid(
-                subcluster.linear_sum_, subcluster.n_samples_, pack=True
-            )
-
-            # Important: update n_features of subcluster to be consistent with the tree
-            subcluster.n_features = self.n_features
 
         if not self.subclusters_:
             self.append_subcluster(subcluster)
@@ -844,7 +844,13 @@ class BitBirch:
             )
         self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
 
-    def fit(self, X, input_is_packed: bool = True):
+    def fit(
+        self,
+        X,
+        store_centroids: bool = True,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+    ):
         """
         Build a BF Tree for the input data.
 
@@ -860,9 +866,7 @@ class BitBirch:
         """
         threshold = self.threshold
         branching_factor = self.branching_factor
-
-        # TODO: This is a bug if the n_features is not a multiple of 8!
-        n_features = np.unpackbits(X[0]).shape[0] if input_is_packed else X[0].shape[0]
+        n_features = _validate_n_features(X, input_is_packed, n_features)
 
         # If partial_fit is called for the first time or fit is called, we
         # start a new tree.
@@ -915,6 +919,11 @@ class BitBirch:
                 self.root_.append_subcluster(new_subcluster2)
 
             self.index_tracker += 1
+
+        if store_centroids:
+            centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
+            self.subcluster_centers_ = centroids
+            self._n_features_out = self.subcluster_centers_.shape[0]
 
         self.first_call = False
         return self
@@ -985,10 +994,10 @@ class BitBirch:
         self.first_call = False
         return self
 
-    def fit_np_reinsert(self, X, reinsert_indices):
+    def fit_np_reinsert(self, X, reinsert_indices, store_centroids: bool = True):
         threshold = self.threshold
         branching_factor = self.branching_factor
-        # NOTE: X can be a numpy array or a list
+        # NOTE: X can be a numpy array or a list, in both cases it *must be unpacked*
         if isinstance(X, list):
             n_features = len(X[0]) - 1
         else:
@@ -1046,6 +1055,11 @@ class BitBirch:
                 self.root_.append_subcluster(new_subcluster1)
                 self.root_.append_subcluster(new_subcluster2)
 
+        if store_centroids:
+            centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
+            self.subcluster_centers_ = centroids
+            self._n_features_out = self.subcluster_centers_.shape[0]
+
         self.first_call = False
         return self
 
@@ -1055,6 +1069,7 @@ class BitBirch:
         reinsert_indices,
         store_centroids: bool = True,
         input_is_packed: bool = True,
+        n_features: int | None = None,
     ):
         """X corresponds to only the molecules that will be reinserted into the tree
         reinsert indices are the indices of the molecules that will be reinserted into
@@ -1062,9 +1077,7 @@ class BitBirch:
         """
         threshold = self.threshold
         branching_factor = self.branching_factor
-
-        # TODO: This is a bug if the n_features is not a multiple of 8!
-        n_features = np.unpackbits(X[0]).shape[0] if input_is_packed else X[0].shape[0]
+        n_features = _validate_n_features(X, input_is_packed, n_features)
 
         # If partial_fit is called for the first time or fit is called, we
         # start a new tree.
@@ -1205,7 +1218,10 @@ class BitBirch:
         return_fp_lists: bool = False,
         input_is_packed: bool = True,
     ):
-        """Prepare BitFeatures of the largest cluster and the rest of the clusters"""
+        """Prepare BitFeatures of the largest cluster and the rest of the clusters
+
+        Input fps must have the same n_features as the ones currently in the tree.
+        """
         if self.first_call:
             raise ValueError("The model has not been fitted yet.")
 
@@ -1213,7 +1229,6 @@ class BitBirch:
         big, rest = BFs[0], BFs[1:]
 
         n_features = self.root_.n_features
-        # TODO: This is a bug if the n_features is not a multiple of 8!
         if return_fp_lists:
             dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_np_lists(rest)
             # Add fps and mol indices of the "big" cluster
@@ -1229,7 +1244,7 @@ class BitBirch:
         else:
             # Extra uint8 slack needed to add the "big" cluster
             dtypes_to_fp, dtypes_to_mols, running_idxs = self._prepare_bf_to_np(
-                rest, reserve_extra_uint8_slack=len(big.mol_indices)
+                rest, n_features, reserve_extra_uint8_slack=len(big.mol_indices)
             )
             # Add fps and mol indices of the "big" cluster
             for mol_idx in big.mol_indices:
@@ -1251,10 +1266,12 @@ class BitBirch:
         if return_fp_lists:
             dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_np_lists(BFs)
         else:
-            dtypes_to_fp, dtypes_to_mols, _ = self._prepare_bf_to_np(BFs)
+            n_features = self.root_.n_features
+            dtypes_to_fp, dtypes_to_mols, _ = self._prepare_bf_to_np(BFs, n_features)
         return list(dtypes_to_fp.values()), list(dtypes_to_mols.values())
 
-    def _prepare_bf_to_np_lists(self, BFs):
+    @staticmethod
+    def _prepare_bf_to_np_lists(BFs):
         # Helper function used when returning lists of subclusters
         dtypes_to_fp = defaultdict(list)
         dtypes_to_mols = defaultdict(list)
@@ -1263,7 +1280,8 @@ class BitBirch:
             dtypes_to_mols[BF.dtype_name].append(BF.mol_indices)
         return dtypes_to_fp, dtypes_to_mols
 
-    def _prepare_bf_to_np(self, BFs, reserve_extra_uint8_slack=None):
+    @staticmethod
+    def _prepare_bf_to_np(BFs, n_features, reserve_extra_uint8_slack=None):
         # 1st pass: find buffer sizes and assign idxs to dtypes_to_mols
         buffer_sizes = defaultdict(int)
         dtypes_to_mols = defaultdict(list)
@@ -1283,7 +1301,7 @@ class BitBirch:
         #
         # This already gets rid of almost all the memory bottleneck
         dtypes_to_fp = {}
-        n_features = self.root_.n_features
+        n_features = next(iter(BFs)).n_features
         for dtype, size in buffer_sizes.items():
             dtypes_to_fp[dtype] = np.empty((size, n_features + 1), dtype=dtype)
 
@@ -1293,7 +1311,6 @@ class BitBirch:
         for BF in BFs:
             dtypes_to_fp[BF.dtype_name][running_idxs[BF.dtype_name]] = BF._buffer
             running_idxs[BF.dtype_name] += 1
-
         return dtypes_to_fp, dtypes_to_mols, running_idxs
 
     def get_assignments(self, n_mols):

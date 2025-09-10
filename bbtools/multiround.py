@@ -41,6 +41,7 @@ def _load_fp_data_and_mol_idxs(
 
 def first_round(
     fp_file: Path,
+    n_features: int,
     double_cluster_init: bool,
     branching_factor: int,
     threshold: float,
@@ -70,13 +71,13 @@ def first_round(
         # idxs are <file_idx>_<start_mol_idx>
         range_ = range(idx1, idx1 + len(fps))
         start_mol_idx = idx1
-    if bitbirch_variant != "lean":
-        brc_diameter.fit_reinsert(fps, list(range_))
-    else:
-        brc_diameter.fit_reinsert(fps, list(range_), store_centroids=False)
+
+    brc_diameter.fit_reinsert(
+        fps, list(range_), store_centroids=False, n_features=n_features
+    )
 
     # Extract the BitFeatures info of the leaves to refine the top cluster
-    # Use an if-statement since bblean v1.0 doesn't have this argument
+    # Use an if-statement since only bb_lean has this argument
     if bitbirch_variant != "lean":
         fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
     else:
@@ -93,7 +94,7 @@ def first_round(
         set_merge("tolerance", tolerance)  # 'tolerance' used to refine the tree
         brc_tolerance = BitBirch(branching_factor=branching_factor, threshold=threshold)
         for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            brc_tolerance.fit_np_reinsert(fp_type, mol_idxs)
+            brc_tolerance.fit_np_reinsert(fp_type, mol_idxs, store_centroids=False)
 
         # Get the info from the fitted BFs in compact list format
         if bitbirch_variant != "lean":
@@ -134,7 +135,7 @@ def second_round(
     brc_chunk = BitBirch(branching_factor=branching_factor, threshold=threshold)
     for fp_filename in chunk_filenames:
         fp_data, mol_idxs = _load_fp_data_and_mol_idxs(out_dir, fp_filename, 1, mmap)
-        brc_chunk.fit_np_reinsert(fp_data, mol_idxs)
+        brc_chunk.fit_np_reinsert(fp_data, mol_idxs, store_centroids=False)
         del mol_idxs
         del fp_data
         gc.collect()
@@ -178,7 +179,7 @@ def third_round(
     sorted_files2 = _glob_and_sort_by_uint_bits(out_dir, "*round2*.npy")
     for fp_filename in sorted_files2:
         fp_data, mol_idxs = _load_fp_data_and_mol_idxs(out_dir, fp_filename, 2, mmap)
-        brc_final.fit_np_reinsert(fp_data, mol_idxs)
+        brc_final.fit_np_reinsert(fp_data, mol_idxs, store_centroids=False)
         del fp_data
         del mol_idxs
         gc.collect()
@@ -206,6 +207,7 @@ def third_round(
 #     batch it might need to be skipped, but this is a more solid/robust choice
 def run_multiround_bitbirch(
     input_files: tp.Sequence[Path],
+    n_features: int,
     out_dir: Path,
     filename_idxs_are_slices: bool = False,
     round2_process_fraction: float = 1.0,
@@ -251,6 +253,7 @@ def run_multiround_bitbirch(
     console.print("Round 1: Processing initial batch of packed fingerprints...")
     round_1_fn: tp.Callable[[Path], None] = functools.partial(
         first_round,
+        n_features=n_features,
         double_cluster_init=double_cluster_init,
         max_fps=max_fps,
         filename_idxs_are_slices=filename_idxs_are_slices,

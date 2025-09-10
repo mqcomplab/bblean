@@ -1,3 +1,4 @@
+import functools
 import itertools
 import numpy as np
 import typing as tp
@@ -13,17 +14,28 @@ _T = tp.TypeVar("_T")
 
 
 def _import_bitbirch_variant(
-    variant: str = "bblean",
+    variant: str = "lean",
 ) -> tuple[tp.Any, tp.Callable[..., None]]:
-    if variant not in ("lean", "leanv1", "int64"):
+    if variant not in ("lean", "lean_dense", "int64_dense", "uint8", "uint8_dense"):
         raise ValueError(f"Unknown variant {variant}")
-    if variant == "lean":
-        module = importlib.import_module("bbtools.bblean")
-    elif variant == "leanv1":
-        module = importlib.import_module("bbtools.bblean_v1")
-    elif variant == "int64":
+    if variant in ["lean", "lean_dense"]:
+        module = importlib.import_module("bbtools.bb_lean")
+    elif variant == "int64_dense":
         module = importlib.import_module("bbtools.bb_int64")
-    return getattr(module, "BitBirch"), getattr(module, "set_merge")
+    elif variant in ["uint8", "uint8_dense"]:
+        module = importlib.import_module("bbtools.bb_uint8")
+
+    Cls = getattr(module, "BitBirch")
+    fn = getattr(module, "set_merge")
+    if variant in ["lean_dense", "uint8_dense"]:
+        Cls.fit_reinsert = functools.partialmethod(
+            Cls.fit_reinsert, input_is_packed=False
+        )
+        Cls.fit = functools.partialmethod(Cls.fit, input_is_packed=False)
+        Cls.bf_to_np_refine = functools.partialmethod(
+            Cls.bf_to_np_refine, input_is_packed=False
+        )
+    return Cls, fn
 
 
 # Itertools recipe

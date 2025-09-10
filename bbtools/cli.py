@@ -206,6 +206,14 @@ def _run(
         bool,
         Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
     ] = DEFAULTS.use_mmap,
+    n_features: tpx.Annotated[
+        int,
+        Option(
+            "-n",
+            "--n-features",
+            help="Number of features in the fingerprints. Required for packed inputs",
+        ),
+    ] = 2048,
     threshold: Annotated[
         float,
         Option("--threshold"),
@@ -307,7 +315,12 @@ def _run(
     for file in input_files:
         fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
         fps_num = len(fps)
-        tree.fit_reinsert(fps, list(range(idx, idx + fps_num)))
+        tree.fit_reinsert(
+            fps,
+            list(range(idx, idx + fps_num)),
+            store_centroids=False,
+            n_features=n_features,
+        )
         idx += fps_num
     cluster_mol_ids = tree.get_cluster_mol_ids()
     total_time_s = time.perf_counter() - start_time
@@ -392,6 +405,14 @@ def _multiround(
             help="Initial merge criterion for Round 1 ('diameter' is recommended)",
         ),
     ] = DEFAULTS.merge_criterion,
+    n_features: tpx.Annotated[
+        int,
+        Option(
+            "-n",
+            "--n-features",
+            help="Number of features in the fingerprints. Required for packed inputs",
+        ),
+    ] = 2048,
     # Advanced options
     double_cluster_init: Annotated[
         bool,
@@ -515,6 +536,7 @@ def _multiround(
 
     timings_stats = run_multiround_bitbirch(
         input_files=input_files,
+        n_features=n_features,
         out_dir=out_dir,
         filename_idxs_are_slices=filename_idxs_are_slices,
         round2_process_fraction=round2_process_fraction,
@@ -532,7 +554,6 @@ def _multiround(
         only_first_round=only_first_round,
         max_fps=max_fps,
         max_files=max_files,
-        bitbirch_variant=variant,
         verbose=verbose,
     )
     with open(out_dir / "timings.json", mode="wt", encoding="utf-8") as f:

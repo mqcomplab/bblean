@@ -1,5 +1,5 @@
-from bbtools.bblean import BitBirch  # type: ignore
+from bbtools.bb_lean import BitBirch  # type: ignore
 
 
-def test_bblean() -> None:
+def test_bb_lean() -> None:
     _ = BitBirch()

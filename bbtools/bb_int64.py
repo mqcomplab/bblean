@@ -29,6 +29,21 @@ import numpy as np
 from scipy import sparse
 
 
+# Utility function to validate the n_features argument for packed inputs
+def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> int:
+    if input_is_packed:
+        raise ValueError("Packed inputs not supported for BitBirch-int64")
+
+    x_n_features = X.shape[1]
+    if n_features is not None:
+        if n_features != x_n_features:
+            raise ValueError(
+                "n_features is redundant for non-packed inputs"
+                " if passed, it must be equal to X.shape[1]"
+            )
+    return x_n_features
+
+
 def set_merge(merge_criterion, tolerance=0.05):
     """
     Sets merge_accept function for merge_subcluster, based on user specified merge_criteria.
@@ -586,7 +601,14 @@ class BitBirch:
         self.index_tracker = 0
         self.first_call = True
 
-    def fit(self, X, singly=True):
+    def fit(
+        self,
+        X,
+        singly=True,
+        store_centroids=True,
+        input_is_packed: bool = False,
+        n_features: int | None = None,
+    ):
         """
         Build a BF Tree for the input data.
 
@@ -600,16 +622,9 @@ class BitBirch:
         self
             Fitted estimator.
         """
-
-        # TODO: Add input verification
-
-        return self._fit(X, singly)
-
-    def _fit(self, X, singly=True):
         threshold = self.threshold
         branching_factor = self.branching_factor
-
-        n_features = X.shape[1]
+        n_features = _validate_n_features(X, input_is_packed, n_features)
         d_type = X.dtype
 
         # If partial_fit is called for the first time or fit is called, we
@@ -672,22 +687,29 @@ class BitBirch:
                         i.parent_ = new_subcluster2
 
             self.index_tracker += 1
-
-        centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
-        self.subcluster_centers_ = centroids
-        self._n_features_out = self.subcluster_centers_.shape[0]
+        if store_centroids:
+            centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
+            self.subcluster_centers_ = centroids
+            self._n_features_out = self.subcluster_centers_.shape[0]
 
         self.first_call = False
         return self
 
-    def fit_reinsert(self, X, reinsert_indices, singly=False):
+    def fit_reinsert(
+        self,
+        X,
+        reinsert_indices,
+        singly=False,
+        store_centroids=True,
+        input_is_packed: bool = False,
+        n_features: int | None = None,
+    ):
         """X corresponds to only the molecules that will be reinserted into the tree
         reinsert indices are the indices of the molecules that will be reinserted into the tree
         """
         threshold = self.threshold
         branching_factor = self.branching_factor
-
-        n_features = X.shape[1]
+        n_features = _validate_n_features(X, input_is_packed, n_features)
         d_type = X.dtype
 
         # If partial_fit is called for the first time or fit is called, we
@@ -745,15 +767,15 @@ class BitBirch:
                         i.parent_ = new_subcluster1
                     for i in new_subcluster2.child_.subclusters_:
                         i.parent_ = new_subcluster2
-
-        centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
-        self.subcluster_centers_ = centroids
-        self._n_features_out = self.subcluster_centers_.shape[0]
+        if store_centroids:
+            centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
+            self.subcluster_centers_ = centroids
+            self._n_features_out = self.subcluster_centers_.shape[0]
 
         self.first_call = False
         return self
 
-    def fit_BFs(self, X):
+    def fit_BFs(self, X, store_centroids=True):
         """
         Method to fit a BitBirch model with the given BitFeatyres.
 
@@ -829,10 +851,10 @@ class BitBirch:
                 self.root_.append_subcluster(new_subcluster1)
                 self.root_.append_subcluster(new_subcluster2)
             self.index_tracker += 1
-
-        centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
-        self.subcluster_centers_ = centroids
-        self._n_features_out = self.subcluster_centers_.shape[0]
+        if store_centroids:
+            centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
+            self.subcluster_centers_ = centroids
+            self._n_features_out = self.subcluster_centers_.shape[0]
 
         self.first_call = False
         return self
