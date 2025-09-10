@@ -1,8 +1,15 @@
 [project]
 name = "bbtools"
-authors = [{name = "Ignacio Pickering", email = "ign.pickering@gmail.com"}]
+authors = [
+    {name = "Ramon Alain Miranda Quintana", email = "quintana@chem.ufl.edu"},
+    {name = "Krizstina Zsigmond", email = "kzsigmond@ufl.edu"},
+    {name = "Ignacio Pickering", email = "ipickering@ufl.edu"},
+    {name = "Vicky (Vic) Jung", email = "jungvicky@ufl.edu"},
+    {name = "Kenneth Lopez Perez", email = "klopezperez@chem.ufl.edu"},
+    {name = "Kate Huddleston", email = "kdavis2@chem.ufl.edu"},
+]
 license = {file = "LICENSE"}
-description = "BB-Tools python package"
+description = "BitBirch Tools python package"
 requires-python = ">=3.11"
 dynamic = ["version", "readme"]
 dependencies = [
@@ -22,9 +29,9 @@ requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
-homepage = "https://github.com/IgnacioJPickering/bbtools.git"
-repository = "https://github.com/IgnacioJPickering/bbtools.git"
-documentation = "https://github.com/IgnacioJPickering/bbtools.git"
+homepage = "https://github.com/mqcomplab/bbtools.git"
+repository = "https://github.com/mqcomplab/bbtools.git"
+documentation = "https://github.com/mqcomplab/bbtools.git"
 
 [project.scripts]
 bb="bbtools.cli:app"
