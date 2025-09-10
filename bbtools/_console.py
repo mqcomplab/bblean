@@ -55,7 +55,7 @@ class BBConsole(Console):
             end="",
         )
         double_cluster_init = config.get("double_cluster_init", False)
-        use_old_bblean = config.get("use_old_bblean", False)
+        bb_variant = config.get("bitbirch_variant", "lean")
         max_files = config.get("max_files", None)
         max_fps = config.get("max_fps", None)
         bin_size = config.get("bin_size", None)
@@ -71,8 +71,8 @@ class BBConsole(Console):
                 f"- Use double-cluster-init: {double_cluster_init}\n",
                 end="",
             )
-        if use_old_bblean:
-            self.print("- DEBUG: Using old bb-lean version\n", end="")
+        if bb_variant != "lean":
+            self.print("- DEBUG: Using bitbirch version: {variant}\n", end="")
         if max_files is not None:
             self.print(
                 f"- DEBUG: Max files to load: {max_files}\n", end=""

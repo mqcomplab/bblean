@@ -11,7 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from bbtools._console import get_console
-from bbtools.utils import numpy_streaming_save, batched
+from bbtools.utils import numpy_streaming_save, batched, _import_bitbirch_variant
 from bbtools.config import DEFAULTS
 
 
@@ -49,13 +49,11 @@ def first_round(
     filename_idxs_are_slices: bool = False,
     max_fps: int | None = None,
     mmap: bool = True,
-    use_old_bblean: bool = False,
+    bitbirch_variant: str = "lean",
     merge_criterion: str = "diameter",
 ) -> None:
-    if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
-    else:
-        from bbtools.bblean import BitBirch, set_merge  # type: ignore
+
+    BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
     out_dir = Path(out_dir)
     fps = np.load(fp_file, mmap_mode="r" if mmap else None)[:max_fps]
 
@@ -72,14 +70,14 @@ def first_round(
         # idxs are <file_idx>_<start_mol_idx>
         range_ = range(idx1, idx1 + len(fps))
         start_mol_idx = idx1
-    if use_old_bblean:
+    if bitbirch_variant != "lean":
         brc_diameter.fit_reinsert(fps, list(range_))
     else:
         brc_diameter.fit_reinsert(fps, list(range_), store_centroids=False)
 
     # Extract the BitFeatures info of the leaves to refine the top cluster
     # Use an if-statement since bblean v1.0 doesn't have this argument
-    if use_old_bblean:
+    if bitbirch_variant != "lean":
         fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
     else:
         fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(
@@ -98,14 +96,14 @@ def first_round(
             brc_tolerance.fit_np_reinsert(fp_type, mol_idxs)
 
         # Get the info from the fitted BFs in compact list format
-        if use_old_bblean:
+        if bitbirch_variant != "lean":
             fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
         else:
             fps_bfs, mols_bfs = brc_tolerance.bf_to_np(return_fp_lists=True)
         del brc_tolerance
         gc.collect()
 
-    if use_old_bblean:
+    if bitbirch_variant != "lean":
         for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
             suffix = f"round1_{idx0}_{str(fp_type.dtype)}"
             np.save(out_dir / f"fp_{suffix}", fp_type)
@@ -126,12 +124,9 @@ def second_round(
     tolerance: float,
     out_dir: Path | str,
     mmap: bool = True,
-    use_old_bblean: bool = False,
+    bitbirch_variant: str = "lean",
 ) -> None:
-    if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
-    else:
-        from bbtools.bblean import BitBirch, set_merge  # type: ignore
+    BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
     out_dir = Path(out_dir)
     chunk_idx, chunk_filenames = chunk_info
 
@@ -144,14 +139,14 @@ def second_round(
         del fp_data
         gc.collect()
 
-    if use_old_bblean:
+    if bitbirch_variant != "lean":
         fps_bfs, mols_bfs = brc_chunk.bf_to_np()
     else:
         fps_bfs, mols_bfs = brc_chunk.bf_to_np(return_fp_lists=True)
     del brc_chunk
     gc.collect()
 
-    if use_old_bblean:
+    if bitbirch_variant != "lean":
         for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
             suffix = f"round2_{chunk_idx}_{str(fp_type.dtype)}"
             np.save(out_dir / f"fp_{suffix}", fp_type)
@@ -171,12 +166,10 @@ def third_round(
     tolerance: float,
     out_dir: Path | str,
     mmap: bool = True,
-    use_old_bblean: bool = False,
+    bitbirch_variant: str = "lean",
 ) -> None:
-    if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
-    else:
-        from bbtools.bblean import BitBirch, set_merge  # type: ignore
+
+    BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
     out_dir = Path(out_dir)
 
     set_merge("tolerance", tolerance)
@@ -231,7 +224,7 @@ def run_multiround_bitbirch(
     max_fps: int | None = None,
     max_files: int | None = None,
     verbose: bool = False,
-    use_old_bblean: bool = False,
+    bitbirch_variant: str = "lean",
 ) -> dict[str, float | None]:
     # Returns timing and for the different rounds
     # TODO: Also return peak-rss
@@ -243,7 +236,7 @@ def run_multiround_bitbirch(
         threshold=threshold,
         tolerance=tolerance,
         mmap=use_mmap,
-        use_old_bblean=use_old_bblean,
+        bitbirch_variant=bitbirch_variant,
         out_dir=out_dir,
     )
     start_time = time.perf_counter()

@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import typing_extensions as tpx
 import shutil
 import json
 import time
@@ -15,6 +16,7 @@ from typer import Typer, Argument, Option, Abort, Context
 
 from bbtools.memory import monitor_rss_daemon, get_peak_memory
 from bbtools.config import DEFAULTS, collect_system_specs_and_dump_config
+from bbtools.utils import _import_bitbirch_variant
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -233,10 +235,14 @@ def _run(
         int | None,
         Option("--max-fps", rich_help_panel="Debug"),
     ] = None,
-    use_old_bblean: Annotated[
-        bool,
-        Option("--use-bblean-v1/--no-use-bblean-v1", rich_help_panel="Debug"),
-    ] = False,
+    variant: tpx.Annotated[
+        str,
+        Option(
+            "--bb-variant",
+            help="Use different bitbirch variants, *only for debugging*.",
+            rich_help_panel="Debug",
+        ),
+    ] = "lean",
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
@@ -246,10 +252,7 @@ def _run(
     import numpy as np
     from bbtools._console import get_console
 
-    if use_old_bblean:
-        from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
-    else:
-        from bbtools.bblean import BitBirch, set_merge  # type: ignore
+    BitBirch, set_merge = _import_bitbirch_variant(variant)
 
     # NOTE: Files are sorted according to name
     console = get_console(silent=not verbose)
@@ -402,10 +405,14 @@ def _multiround(
         Option(help="Bin size for chunking during Round 2", rich_help_panel="Advanced"),
     ] = 10,
     # Debug options
-    use_old_bblean: Annotated[
-        bool,
-        Option("--use-bblean-v1/--no-use-bblean-v1", rich_help_panel="Debug"),
-    ] = False,
+    variant: tpx.Annotated[
+        str,
+        Option(
+            "--bb-variant",
+            help="Use different bitbirch variants, *only for debugging*.",
+            rich_help_panel="Debug",
+        ),
+    ] = "lean",
     only_first_round: Annotated[
         bool,
         Option(
@@ -505,7 +512,7 @@ def _multiround(
         only_first_round=only_first_round,
         max_fps=max_fps,
         max_files=max_files,
-        use_old_bblean=use_old_bblean,
+        bitbirch_variant=variant,
         verbose=verbose,
     )
     with open(out_dir / "timings.json", mode="wt", encoding="utf-8") as f:
