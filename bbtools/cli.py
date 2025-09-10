@@ -252,7 +252,7 @@ def _run(
 
     console = get_console(silent=not verbose)
     if input_ is None:
-        input_ = Path.cwd() / "bb_run_inputs"
+        input_ = Path.cwd() / "bb_inputs"
         input_files = list(input_.glob("*.npy"))
     elif input_.is_dir():
         input_files = list(input_.glob("*.npy"))
@@ -451,7 +451,7 @@ def _multiround(
     console = get_console(silent=not verbose)
 
     if in_dir is None:
-        in_dir = Path.cwd() / "bb_multiround_inputs"
+        in_dir = Path.cwd() / "bb_inputs"
     _validate_input_dir(in_dir, filename_idxs_are_slices)
 
     input_files = sorted(
