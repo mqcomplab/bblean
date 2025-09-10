@@ -72,3 +72,6 @@ timings*.json
 # Pickle
 *.pkl
 *.pickle
+
+# Shell scripts
+*.script.sh
