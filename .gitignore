@@ -73,5 +73,6 @@ timings*.json
 *.pkl
 *.pickle
 
-# Shell scripts
+# Shell and python scripts
 *.script.sh
+*.script.py
