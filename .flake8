@@ -8,6 +8,6 @@ exclude =
     .eggs,
     bbtools.egg-info,
     bbtools/bblean.py
-    bbtools/bb_int64.py
-    bbtools/bblean_v1.py
+    bbtools/bb_int64_dense.py
+    bbtools/bb_uint8.py
     docs
