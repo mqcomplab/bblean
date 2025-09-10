@@ -65,7 +65,10 @@ def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> in
         if n_features != x_n_features:
             raise ValueError(
                 "n_features is redundant for non-packed inputs"
-                " if passed, it must be equal to X.shape[1]"
+                " if passed, it must be equal to X.shape[1]."
+                f" For passed X, X.shape[1] = {X.shape[1]}."
+                " If this value is not what you expected,"
+                " make sure the passed X is actually unpacked."
             )
     return x_n_features
 
