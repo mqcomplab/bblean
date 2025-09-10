@@ -10,8 +10,8 @@ import multiprocessing as mp
 from typing import Annotated
 from pathlib import Path
 
-from typer import Typer, Argument, Option, Abort, Context
 import numpy as np
+from typer import Typer, Argument, Option, Abort, Context
 
 from bbtools.memory import monitor_rss_daemon, get_peak_memory
 from bbtools.config import DEFAULTS, collect_system_specs_and_dump_config
@@ -42,7 +42,7 @@ def _validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None
 
 # Validate that the naming convention for the input files is correct
 def _validate_input_dir(
-    in_dir: Path | str, filename_idxs_are_slices: bool = False
+    in_dir: Path | str, filename_idxs_are_slices: bool = True
 ) -> None:
     in_dir = Path(in_dir)
     if not in_dir.is_dir():
@@ -130,8 +130,9 @@ def _fps_from_smiles(
         console.print("No *.smi files found", style="red")
         raise Abort()
     if out_dir is None:
-        out_dir = Path.cwd() / ("packed-fps" if packed else "fps")
-        out_dir.mkdir()
+        unique_id = str(uuid.uuid4()).split("-")[0]
+        out_dir = Path.cwd() / ("packed_fps" if packed else "fps") / unique_id
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     # Pass 1: check the total number of smiles
     smiles_num = 0
@@ -250,12 +251,16 @@ def _run(
     else:
         from bbtools.bblean import BitBirch, set_merge  # type: ignore
 
+    # NOTE: Files are sorted according to name
     console = get_console(silent=not verbose)
     if input_ is None:
         input_ = Path.cwd() / "bb_inputs"
-        input_files = list(input_.glob("*.npy"))
+        input_.mkdir(exist_ok=True)
+        input_files = sorted(input_.glob("*.npy"))
+        _validate_input_dir(input_)
     elif input_.is_dir():
-        input_files = list(input_.glob("*.npy"))
+        input_files = sorted(input_.glob("*.npy"))
+        _validate_input_dir(input_)
     else:
         input_files = [input_]
     ctx.params.pop("input_")
