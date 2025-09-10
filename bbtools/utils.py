@@ -15,11 +15,11 @@ _T = tp.TypeVar("_T")
 def _import_bitbirch_variant(
     variant: str = "bblean",
 ) -> tuple[tp.Any, tp.Callable[..., None]]:
-    if variant not in ("lean", "lean-v1", "int64"):
+    if variant not in ("lean", "leanv1", "int64"):
         raise ValueError(f"Unknown variant {variant}")
     if variant == "lean":
         module = importlib.import_module("bbtools.bblean")
-    elif variant == "lean-v1":
+    elif variant == "leanv1":
         module = importlib.import_module("bbtools.bblean_v1")
     elif variant == "int64":
         module = importlib.import_module("bbtools.bb_int64")

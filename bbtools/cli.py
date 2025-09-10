@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import os
 import typing_extensions as tpx
 import shutil
 import json
@@ -186,6 +187,7 @@ def _run(
             help="Dir to dump the output files",
         ),
     ] = None,
+    out_dir_is_root: tpx.Annotated[bool, Option("--out-dir-is-root/ "),] = False,
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
     ] = False,
@@ -251,6 +253,7 @@ def _run(
     r"""Run standard BitBirch clustering"""
     import numpy as np
     from bbtools._console import get_console
+    variant = variant.replace("-v1", "v1")
 
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
@@ -268,14 +271,17 @@ def _run(
         input_files = [input_]
     ctx.params.pop("input_")
     ctx.params["input_files"] = [str(p) for p in input_files]
+    unique_id = str(uuid.uuid4()).split("-")[0]
     if out_dir is None:
-        unique_id = str(uuid.uuid4()).split("-")[0]
         out_dir = Path.cwd() / "bb_run_outputs" / unique_id
+    elif out_dir is not None and out_dir_is_root:
+        out_dir = out_dir / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
     _validate_output_dir(out_dir, overwrite_outputs)
     ctx.params["out_dir"] = str(out_dir)
-
-    console.print_banner()
+    ctx.params.pop("out_dir_is_root")
+    if not os.environ.get("BITBIRCHNOBANNER", ""):
+        console.print_banner()
     console.print_config(ctx.params, desc="single-round", add_processes=False)
 
     if monitor_rss:
@@ -335,6 +341,7 @@ def _multiround(
         Path | None,
         Option("-o", "--output-dir", help="Dir for output files"),
     ] = None,
+    out_dir_is_root: tpx.Annotated[bool, Option("--out-dir-is-root/ "),] = False,
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
     ] = False,
@@ -453,6 +460,7 @@ def _multiround(
     r"""Run multi-round BitBirch clustering, with the option to parallelize"""
     from bbtools._console import get_console
     from bbtools.multiround import run_multiround_bitbirch
+    variant = variant.replace("-v1", "v1")
 
     # Set the multiprocessing start method
     if fork and not sys.platform == "linux":
@@ -471,14 +479,18 @@ def _multiround(
     )[:max_files]
     ctx.params["input_files"] = [str(p) for p in input_files]
 
+    unique_id = str(uuid.uuid4()).split("-")[0]
     if out_dir is None:
-        unique_id = str(uuid.uuid4()).split("-")[0]
         out_dir = Path.cwd() / "bb_multiround_outputs" / unique_id
+    if out_dir is not None and out_dir_is_root:
+        out_dir = Path.cwd() / out_dir / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
     _validate_output_dir(out_dir, overwrite_outputs)
+    ctx.params.pop("out_dir_is_root")
     ctx.params["out_dir"] = str(out_dir)
 
-    console.print_banner()
+    if not os.environ.get("BITBIRCHNOBANNER", ""):
+        console.print_banner()
     console.print_config(ctx.params, desc="multi-round")
 
     if monitor_rss:
