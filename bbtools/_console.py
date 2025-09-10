@@ -21,12 +21,12 @@ class BBConsole(Console):
     def print_peak_mem(self, num_processes: int) -> None:
         stats = get_peak_memory(num_processes)
         if stats is None:
-            self.print("[Peak memory stats not tracked for non-Unix systems]")
+            self.print("[Peak RAM not tracked for non-Unix systems]")
             return
         return self.print_peak_mem_raw(stats)
 
     def print_peak_mem_raw(self, stats: PeakMemoryStats) -> None:
-        self.print("Peak RAM until now:\n" f"    Main proc.: {stats.self_gib:.4f} GiB")
+        self.print("Peak RAM use:\n" f"    Main proc.: {stats.self_gib:.4f} GiB")
         if not stats.children_were_tracked:
             self.print("    Max of child procs.: [Not tracked for 'forkserver']")
         elif stats.child_gib is not None:
