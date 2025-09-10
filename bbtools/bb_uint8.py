@@ -810,7 +810,7 @@ class BitBirch:
         else:
             iter_func = _iterate_sparse_X
 
-        for sample, mol_inds in zip(X, reinsert_indices):
+        for sample, mol_inds in zip(iter_func(X), reinsert_indices):
             sample_copy = sample.copy()
             subcluster = _BFSubcluster(
                 linear_sum=sample_copy[:-1], mol_indices=mol_inds
@@ -1029,7 +1029,6 @@ class BitBirch:
                 fp_8[-1].append(BF.n_samples_)
                 mols_8.append(BF.mol_indices)
 
-        bigs = []
         for mol in big.mol_indices:
             if input_is_packed:
                 fp_8.append(
