@@ -32,21 +32,48 @@ class BBConsole(Console):
         elif stats.child_gib is not None:
             self.print(f"    Max of child procs.: {stats.child_gib:.4f} GiB")
 
-    def print_config(
-        self, config: dict[str, tp.Any], desc: str = "", add_processes: bool = False
+    def print_config(self, config: dict[str, tp.Any]) -> None:
+        self.print(
+            f"Running [bold]single-round, serial (1 process)[/bold] clustering\n\n"
+            f"- Branching factor: {config['branching_factor']}\n"
+            f"- Merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
+            f"- Threshold: {config['threshold']}\n"
+            f"- Num. files loaded: {len(config['input_files'])}\n"
+            f"- Use mmap: {config['use_mmap']}\n"
+            f"- Output directory: {config['out_dir']}\n",
+            end="",
+        )
+        bb_variant = config.get("bitbirch_variant", "lean")
+        max_files = config.get("max_files", None)
+        max_fps = config.get("max_fps", None)
+        if "tolerance" in config["merge_criterion"]:
+            self.print(f"- Tolerance: {config['tolerance']}\n")
+        if bb_variant != "lean":
+            self.print("- DEBUG: Using bitbirch version: {variant}\n", end="")
+        if max_files is not None:
+            self.print(
+                f"- DEBUG: Max files to load: {max_files}\n", end=""
+            )  # noqa:E501
+        if max_fps is not None:
+            self.print(
+                f"- DEBUG: Max fingerprints to load per file: {max_fps}\n", end=""
+            )
+        self.print()
+
+    def print_multiround_config(
+        self, config: dict[str, tp.Any]
     ) -> None:
         num_processes = config.get("num_processes", 1)
-        if add_processes:
-            extra_desc = (
-                f"parallel (max {num_processes} processes)"
-                if num_processes > 1
-                else "serial (1 process)"
-            )
-            desc = f"{desc} {extra_desc}"
+        extra_desc = (
+            f"parallel (max {num_processes} processes)"
+            if num_processes > 1
+            else "serial (1 process)"
+        )
+        desc = f"multi-round, {extra_desc}"
         self.print(
             f"Running [bold]{desc}[/bold] clustering\n\n"
             f"- Branching factor: {config['branching_factor']}\n"
-            f"- Initial merge strategy: [yellow]{config['merge_criterion']}[/yellow]\n"
+            f"- Round-1 merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
             f"- Threshold: {config['threshold']}\n"
             f"- Tolerance: {config['tolerance']}\n"
             f"- Num. files loaded: {len(config['input_files'])}\n"
