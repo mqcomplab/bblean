@@ -187,7 +187,10 @@ def _run(
             help="Dir to dump the output files",
         ),
     ] = None,
-    out_dir_is_root: tpx.Annotated[bool, Option("--out-dir-is-root/ "),] = False,
+    out_dir_is_root: tpx.Annotated[
+        bool,
+        Option("--out-dir-is-root/ "),
+    ] = False,
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
     ] = False,
@@ -253,6 +256,7 @@ def _run(
     r"""Run standard BitBirch clustering"""
     import numpy as np
     from bbtools._console import get_console
+
     variant = variant.replace("-v1", "v1")
 
     BitBirch, set_merge = _import_bitbirch_variant(variant)
@@ -341,7 +345,10 @@ def _multiround(
         Path | None,
         Option("-o", "--output-dir", help="Dir for output files"),
     ] = None,
-    out_dir_is_root: tpx.Annotated[bool, Option("--out-dir-is-root/ "),] = False,
+    out_dir_is_root: tpx.Annotated[
+        bool,
+        Option("--out-dir-is-root/ "),
+    ] = False,
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
     ] = False,
@@ -460,6 +467,7 @@ def _multiround(
     r"""Run multi-round BitBirch clustering, with the option to parallelize"""
     from bbtools._console import get_console
     from bbtools.multiround import run_multiround_bitbirch
+
     variant = variant.replace("-v1", "v1")
 
     # Set the multiprocessing start method
