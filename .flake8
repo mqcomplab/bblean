@@ -7,7 +7,6 @@ exclude =
     build,
     .eggs,
     bbtools.egg-info,
-    bbtools/bblean.py
-    bbtools/bb_int64_dense.py
-    bbtools/bb_uint8.py
-    docs
+    bbtools/bb_uint8.py,
+    bbtools/bb_int64_dense.py,
+    docs,
