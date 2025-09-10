@@ -1,15 +1,20 @@
 r"""Command line interface entrypoints"""
 
-from copy import deepcopy
+import shutil
 import json
 import time
+import sys
+import uuid
+import re
+import multiprocessing as mp
 from typing import Annotated
 from pathlib import Path
 
 from typer import Typer, Argument, Option, Abort, Context
+import numpy as np
 
-from bbtools.memory import get_peak_memory
-from bbtools.config import DEFAULTS
+from bbtools.memory import monitor_rss_daemon, get_peak_memory
+from bbtools.config import DEFAULTS, collect_system_specs_and_dump_config
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -24,8 +29,56 @@ app = Typer(
 )
 
 
-@app.command("make-fps")
-def _make_fps(
+def _validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None:
+    if out_dir.exists():
+        if not out_dir.is_dir():
+            raise RuntimeError("Output dir should be a dir")
+        if any(out_dir.iterdir()):
+            if overwrite_outputs:
+                shutil.rmtree(out_dir)
+            else:
+                raise RuntimeError(f"Output dir {out_dir} has files")
+
+
+# Validate that the naming convention for the input files is correct
+def _validate_input_dir(
+    in_dir: Path | str, filename_idxs_are_slices: bool = False
+) -> None:
+    in_dir = Path(in_dir)
+    if not in_dir.is_dir():
+        raise RuntimeError(f"Input dir {in_dir} should be a dir")
+    if not any(in_dir.glob("*.npy")):
+        raise RuntimeError(f"Input dir {in_dir} should have *.npy fingerprint files")
+
+    # TODO: There is currently no validation regarding fp sizes and stride sizes
+    if filename_idxs_are_slices:
+        return
+
+    _file_idxs = []
+    for f in in_dir.glob("*.npy"):
+        matches = re.match(r".*_(\d+)_(\d+).npy", f.name)
+        if matches is None:
+            raise RuntimeError(f"Input file {str(f)} doesn't match name convention")
+        _file_idxs.append(int(matches[1]))
+
+    # Sort arrays
+    sort_idxs = np.argsort(_file_idxs)
+    file_idxs = np.array(_file_idxs)[sort_idxs]
+
+    if not (file_idxs == np.arange(len(file_idxs))).all():
+        raise RuntimeError(f"Input file indices {file_idxs} must be a seq 0, 1, 2, ...")
+
+
+@app.command("fps-from-smiles")
+def _fps_from_smiles(
+    smiles_paths: Annotated[
+        list[Path] | None,
+        Option("-s", "--smiles-path", show_default=False),
+    ] = None,
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--output-dir", show_default=False),
+    ] = None,
     dtype: Annotated[
         str,
         Option("-d", "--dtype", help="NumPy dtype for the generated fingerprints"),
@@ -38,21 +91,13 @@ def _make_fps(
             help="Pack bits in last dimension of fingerprints",
         ),
     ] = True,
-    smiles_paths: Annotated[
-        list[Path] | None,
-        Option("-s", "--smiles-path", show_default=False),
-    ] = None,
-    out_dir: Annotated[
-        Path | None,
-        Option("-o", "--out-dir", show_default=False),
-    ] = None,
     kind: Annotated[
         str,
         Option("-k", "--kind"),
     ] = "rdkit",
     fp_size: Annotated[
         int,
-        Option("-f", "--fp-size"),
+        Option("--fp-size"),
     ] = DEFAULTS.features_num,
     verbose: Annotated[
         bool,
@@ -119,20 +164,16 @@ def _make_fps(
 
 @app.command("split-fps")
 def _split_fps() -> None:
-    r"""Split a *.npy fingerprint file into multiple files"""
+    r"""Split a *.npy fingerprint file into multiple *.npy files"""
     raise NotImplementedError("Not yet implemented")
 
 
 @app.command("run")
 def _run(
     ctx: Context,
-    fp_file: Annotated[
-        Path,
-        Argument(help="*.npy file with packed fingerprints"),
-    ],
-    max_fps: Annotated[
-        int | None,
-        Option("-m", "--max-fps"),
+    input_: Annotated[
+        Path | None,
+        Argument(help="*.npy file with packed fingerprints, or dir *.npy files"),
     ] = None,
     out_dir: Annotated[
         Path | None,
@@ -142,23 +183,55 @@ def _run(
             help="Dir to dump the output files",
         ),
     ] = None,
+    overwrite_outputs: Annotated[
+        bool, Option(help="Allow overwriting output files")
+    ] = False,
     branching_factor: Annotated[
         int,
-        Option("-b", "--branching-factor"),
-    ] = 254,
+        Option(
+            help="BitBirch branching factor. Under most circumstances 254 is"
+            " optimal for performance and memory efficiency. Set this above 254 for"
+            " slightly less RAM usage at the cost of some performance."
+        ),
+    ] = DEFAULTS.branching_factor,
     use_mmap: Annotated[
         bool,
         Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
-    ] = True,
+    ] = DEFAULTS.use_mmap,
     threshold: Annotated[
         float,
-        Option("-t", "--threshold"),
+        Option("--threshold"),
     ] = DEFAULTS.threshold,
-    merge_strategy: Annotated[
+    merge_criterion: Annotated[
         str,
-        Option("-s", "--set-merge"),
+        Option("--set-merge"),
     ] = "diameter",
+    tolerance: Annotated[
+        float,
+        Option(
+            help="BitBirch tolerance, only for --set-merge tolerance|tolerance_tough"
+        ),
+    ] = DEFAULTS.tolerance,
     # Debug options
+    monitor_rss: Annotated[
+        bool,
+        Option(
+            help="Monitor RAM used by all processes (requires psutil)",
+            rich_help_panel="Debug",
+        ),
+    ] = False,
+    monitor_rss_interval_s: Annotated[
+        float,
+        Option(
+            "--monitor-rss-seconds",
+            help="Interval in seconds for RSS monitoring",
+            rich_help_panel="Debug",
+        ),
+    ] = 0.01,
+    max_fps: Annotated[
+        int | None,
+        Option("--max-fps", rich_help_panel="Debug"),
+    ] = None,
     use_old_bblean: Annotated[
         bool,
         Option("--use-bblean-v1/--no-use-bblean-v1", rich_help_panel="Debug"),
@@ -170,26 +243,57 @@ def _run(
 ) -> None:
     r"""Run standard BitBirch clustering"""
     import numpy as np
-    import uuid
     from bbtools._console import get_console
-
-    console = get_console(silent=not verbose)
-    unique_id = str(uuid.uuid4()).split("-")[0]
 
     if use_old_bblean:
         from bbtools.bblean_v1 import BitBirch, set_merge  # type: ignore
     else:
         from bbtools.bblean import BitBirch, set_merge  # type: ignore
 
-    fps = np.load(fp_file, mmap_mode="r" if use_mmap else None)[:max_fps]
+    console = get_console(silent=not verbose)
+    if input_ is None:
+        input_ = Path.cwd() / "bb_run_inputs"
+        input_files = list(input_.glob("*.npy"))
+    elif input_.is_dir():
+        input_files = list(input_.glob("*.npy"))
+    else:
+        input_files = [input_]
+    ctx.params.pop("input_")
+    ctx.params["input_files"] = [str(p) for p in input_files]
+    if out_dir is None:
+        unique_id = str(uuid.uuid4()).split("-")[0]
+        out_dir = Path.cwd() / "bb_run_outputs" / unique_id
+    out_dir.mkdir(exist_ok=True, parents=True)
+    _validate_output_dir(out_dir, overwrite_outputs)
+    ctx.params["out_dir"] = str(out_dir)
 
-    set_merge(merge_strategy)
+    console.print_banner()
+    console.print_config(ctx.params, desc="single-round", add_processes=False)
+
+    if monitor_rss:
+        console.print("** Monitoring total RAM usage **\n")
+        mp.Process(
+            target=monitor_rss_daemon,
+            kwargs=dict(
+                file=out_dir / "monitor-rss.csv",
+                interval_s=monitor_rss_interval_s,
+                start_time=time.perf_counter(),
+            ),
+            daemon=True,
+        ).start()
+
+    start_time = time.perf_counter()
+    set_merge(merge_criterion, tolerance)
     tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
-    _start = time.perf_counter()
-    tree.fit_reinsert(fps, list(range(len(fps))))
+    idx = 0
+    for file in input_files:
+        fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
+        fps_num = len(fps)
+        tree.fit_reinsert(fps, list(range(idx, idx + fps_num)))
+        idx += fps_num
     cluster_mol_ids = tree.get_cluster_mol_ids()
-    total_time_s = time.perf_counter() - _start
-    console.print(f"Time elapsed: {total_time_s} s")
+    total_time_s = time.perf_counter() - start_time
+    console.print(f"Time elapsed: {total_time_s:.5f} s")
     stats = get_peak_memory(1)
     if stats is None:
         console.print("[Peak memory stats not tracked for non-Unix systems]")
@@ -197,47 +301,35 @@ def _run(
         console.print_peak_mem_raw(stats)
 
     # Dump outputs (peak memory, timings, config, cluster ids)
-    params = deepcopy(ctx.params)
-    if out_dir is None:
-        out_dir = Path.cwd() / "bb_run_outputs" / unique_id
-        out_dir.mkdir(exist_ok=True, parents=True)
-    params["out_dir"] = str(out_dir)
-    params["fp_file"] = str(params["fp_file"])
-
     cluster_ids_fpath = out_dir / "cluster-mol-ids.json"
     with open(cluster_ids_fpath, mode="wt", encoding="utf-8") as f:
         json.dump({i: v for i, v in enumerate(cluster_mol_ids)}, f, indent=4)
-    config_fpath = out_dir / "config.json"
-    with open(config_fpath, mode="wt", encoding="utf-8") as f:
-        json.dump(params, f, indent=4)
+
+    collect_system_specs_and_dump_config(ctx.params)
     timings_fpath = out_dir / "timings.json"
     with open(timings_fpath, mode="wt", encoding="utf-8") as f:
-        json.dump({"total_s": total_time_s}, f, indent=4)
+        json.dump({"total": total_time_s}, f, indent=4)
     peak_rss_fpath = out_dir / "peak-rss.json"
     with open(peak_rss_fpath, mode="wt", encoding="utf-8") as f:
         json.dump(
             {"self_max_rss_gib": None if stats is None else stats.self_gib}, f, indent=4
         )
-    console.print(f"Outputs written to {out_dir}")
 
 
-@app.command("parallel")
-def _parallel(
-    out_dir: Annotated[
-        Path | None,
-        Option("-o", "--out-dir", help="Dir for output files"),
-    ] = None,
+@app.command("multiround")
+def _multiround(
+    ctx: Context,
     in_dir: Annotated[
         Path | None,
-        Option(
-            "-i",
-            "--in-dir",
-            help="Dir with input *.npy files with packed fingerprints",
-        ),
+        Argument(help="Directory with input *.npy files with packed fingerprints"),
+    ] = None,
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--output-dir", help="Dir for output files"),
     ] = None,
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
-    ] = True,
+    ] = False,
     filename_idxs_are_slices: Annotated[
         bool,
         Option(
@@ -256,7 +348,12 @@ def _parallel(
         int, Option("-p", "--processes", help="Num. processes")
     ] = 10,
     branching_factor: Annotated[
-        int, Option(help="BitBirch branching factor")
+        int,
+        Option(
+            help="BitBirch branching factor. Under most circumstances 254 is"
+            " optimal for performance and memory efficiency. Set this above 254 for"
+            " slightly less RAM usage at the cost of some performance."
+        ),
     ] = DEFAULTS.branching_factor,
     threshold: Annotated[float, Option(help="BitBirch threshold")] = DEFAULTS.threshold,
     tolerance: Annotated[
@@ -266,15 +363,14 @@ def _parallel(
             " (Used in Round 1 'double-cluster-init', Round 2, and Final clustering)"
         ),
     ] = DEFAULTS.tolerance,
-    # Advanced options
-    initial_merge_criterion: Annotated[
+    merge_criterion: Annotated[
         str,
         Option(
             "--set-merge",
             help="Initial merge criterion for Round 1 ('diameter' is recommended)",
-            rich_help_panel="Advanced",
         ),
     ] = DEFAULTS.merge_criterion,
+    # Advanced options
     double_cluster_init: Annotated[
         bool,
         Option(
@@ -288,7 +384,7 @@ def _parallel(
     use_mmap: Annotated[
         bool,
         Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
-    ] = True,
+    ] = DEFAULTS.use_mmap,
     fork: Annotated[
         bool,
         Option(
@@ -318,7 +414,7 @@ def _parallel(
             help="Monitor RAM used by all processes (requires psutil)",
             rich_help_panel="Debug",
         ),
-    ] = True,
+    ] = False,
     monitor_rss_interval_s: Annotated[
         float,
         Option(
@@ -327,14 +423,6 @@ def _parallel(
             rich_help_panel="Debug",
         ),
     ] = 0.01,
-    monitor_rss_file_name: Annotated[
-        str,
-        Option(
-            "--monitor-rss-filename",
-            help="File name for RSS monitoring",
-            rich_help_panel="Debug",
-        ),
-    ] = "monitor-rss.csv",
     max_fps: Annotated[
         int | None,
         Option(
@@ -350,39 +438,72 @@ def _parallel(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Run multi-round BitBirch clustering in parallel"""
-    from bbtools.parallel import run_parallel_bitbirch
+    r"""Run multi-round BitBirch clustering, with the option to parallelize"""
+    from bbtools._console import get_console
+    from bbtools.multiround import run_multiround_bitbirch
 
-    if out_dir is None:
-        out_dir = Path.cwd() / "bb_parallel_outputs"
-    out_dir.mkdir(exist_ok=True)
+    # Set the multiprocessing start method
+    if fork and not sys.platform == "linux":
+        raise ValueError("'fork' is only available on Linux")
+    if sys.platform == "linux":
+        mp.set_start_method("fork" if fork else "forkserver")
+
+    console = get_console(silent=not verbose)
 
     if in_dir is None:
-        in_dir = Path.cwd() / "bb_parallel_inputs"
-    run_parallel_bitbirch(
-        in_dir=in_dir,
+        in_dir = Path.cwd() / "bb_multiround_inputs"
+    _validate_input_dir(in_dir, filename_idxs_are_slices)
+
+    input_files = sorted(
+        in_dir.glob("*.npy"), key=lambda x: int(x.name.split(".")[0].split("_")[-2])
+    )[:max_files]
+    ctx.params["input_files"] = [str(p) for p in input_files]
+
+    if out_dir is None:
+        unique_id = str(uuid.uuid4()).split("-")[0]
+        out_dir = Path.cwd() / "bb_multiround_outputs" / unique_id
+    out_dir.mkdir(exist_ok=True, parents=True)
+    _validate_output_dir(out_dir, overwrite_outputs)
+    ctx.params["out_dir"] = str(out_dir)
+
+    console.print_banner()
+    console.print_config(ctx.params, desc="multi-round")
+
+    if monitor_rss:
+        console.print("** Monitoring total RAM usage **\n")
+        mp.Process(
+            target=monitor_rss_daemon,
+            kwargs=dict(
+                file=out_dir / "monitor-rss.csv",
+                interval_s=monitor_rss_interval_s,
+                start_time=time.perf_counter(),
+            ),
+            daemon=True,
+        ).start()
+
+    timings_stats = run_multiround_bitbirch(
+        input_files=input_files,
         out_dir=out_dir,
-        overwrite_outputs=overwrite_outputs,
         filename_idxs_are_slices=filename_idxs_are_slices,
         round2_process_fraction=round2_process_fraction,
-        initial_merge_criterion=initial_merge_criterion,
+        merge_criterion=merge_criterion,
         num_processes=num_processes,
         branching_factor=branching_factor,
         threshold=threshold,
         tolerance=tolerance,
         # Advanced
-        fork=fork,
         bin_size=bin_size,
         use_mmap=use_mmap,
         max_tasks_per_process=max_tasks_per_process,
         double_cluster_init=double_cluster_init,
         # Debug
         only_first_round=only_first_round,
-        monitor_rss=monitor_rss,
-        monitor_rss_file_name=monitor_rss_file_name,
-        monitor_rss_interval_s=monitor_rss_interval_s,
         max_fps=max_fps,
         max_files=max_files,
         use_old_bblean=use_old_bblean,
         verbose=verbose,
     )
+    with open(out_dir / "timings.json", mode="wt", encoding="utf-8") as f:
+        json.dump(timings_stats, f, indent=4)
+    # TODO: Also dump peak-rss.json
+    collect_system_specs_and_dump_config(ctx.params)
