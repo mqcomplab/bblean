@@ -47,6 +47,12 @@ def _copy_or_unpack(x, n_features, input_is_packed: bool = True):
     return unpack_fingerprints(x, n_features) if input_is_packed else x.copy()
 
 
+def unpack_fingerprints(a, n_features: int):
+    """Unpacks uint8 arrays into boolean arrays"""
+    # n_features is required to discard padded zeros if it is not a multiple of 8
+    return np.unpackbits(a, axis=-1, count=n_features)
+
+
 # Utility function to validate the n_features argument for packed inputs
 def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> int:
     if input_is_packed:
