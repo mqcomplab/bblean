@@ -271,7 +271,7 @@ def max_separation(Y, n_features: int):
     linear_sum = np.sum(X_unpacked, axis=0, dtype=min_safe_uint(n_samples))
     centroid_packed = calc_centroid(linear_sum, n_samples, pack=True)
 
-    cardinalities = popcounts(Y)
+    cardinalities = popcount(Y)
 
     # Get the similarity of each molecule to the centroid
     sims_med = tanimoto_sim_packed(Y, centroid_packed, cardinalities)
