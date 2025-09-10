@@ -18,12 +18,15 @@ def _import_bitbirch_variant(
 ) -> tuple[tp.Any, tp.Callable[..., None]]:
     if variant not in ("lean", "lean_dense", "int64_dense", "uint8", "uint8_dense"):
         raise ValueError(f"Unknown variant {variant}")
+        # Most up-to-date bb varaint
     if variant in ["lean", "lean_dense"]:
         module = importlib.import_module("bbtools.bb_lean")
-    elif variant == "int64_dense":
-        module = importlib.import_module("bbtools.bb_int64")
+        # Legacy variant of bb that uses uint8 and supports packing, but no extra optim
     elif variant in ["uint8", "uint8_dense"]:
         module = importlib.import_module("bbtools.bb_uint8")
+        # Legacy variant of bb that uses dense int64 fps
+    elif variant == "int64_dense":
+        module = importlib.import_module("bbtools.bb_int64_dense")
 
     Cls = getattr(module, "BitBirch")
     fn = getattr(module, "set_merge")
