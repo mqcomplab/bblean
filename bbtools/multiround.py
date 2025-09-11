@@ -72,9 +72,7 @@ def first_round(
         range_ = range(idx1, idx1 + len(fps))
         start_mol_idx = idx1
 
-    brc_diameter.fit_reinsert(
-        fps, range_, store_centroids=False, n_features=n_features
-    )
+    brc_diameter.fit_reinsert(fps, range_, store_centroids=False, n_features=n_features)
 
     # Extract the BitFeatures info of the leaves to refine the top cluster
     # Use an if-statement since only bb_lean has this argument
