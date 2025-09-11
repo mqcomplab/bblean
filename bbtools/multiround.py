@@ -58,11 +58,12 @@ def first_round(
     out_dir = Path(out_dir)
     fps = np.load(fp_file, mmap_mode="r" if use_mmap else None)[:max_fps]
 
-    # Fit the fps. fit_reinsert is necessary to keep track of proper molecule indices
-    # Use indices of molecules in the current batch, according to the total set
+    # Fit the fps. `reinsert_indices` is necessary to keep track of proper molecule
+    # indices. Use indices of molecules in the current batch, according to the total set
     idx0, idx1 = map(int, fp_file.name.split(".")[0].split("_")[-2:])
     set_merge(merge_criterion)  # Initial batch uses diameter BitBIRCH
     brc_diameter = BitBirch(branching_factor=branching_factor, threshold=threshold)
+    # TODO: Check this
     if filename_idxs_are_slices:
         # idxs are <start_mol_idx>_<end_mol_idx>
         range_ = range(idx0, idx1)
@@ -72,10 +73,11 @@ def first_round(
         range_ = range(idx1, idx1 + len(fps))
         start_mol_idx = idx1
 
-    brc_diameter.fit_reinsert(fps, range_, store_centroids=False, n_features=n_features)
+    brc_diameter.fit(
+        fps, reinsert_indices=range_, store_centroids=False, n_features=n_features
+    )
 
     # Extract the BitFeatures info of the leaves to refine the top cluster
-    # Use an if-statement since only bb_lean has this argument
     fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
     del fps
     del brc_diameter
@@ -91,24 +93,24 @@ def first_round(
             iterable = zip(fps_bfs.values(), mols_bfs.values())
         else:
             iterable = zip(fps_bfs, mols_bfs)
-        for fp_type, mol_idxs in iterable:
-            brc_tolerance.fit_np_reinsert(fp_type, mol_idxs, store_centroids=False)
+        for buf, mol_idxs in iterable:
+            brc_tolerance.fit_np_reinsert(buf, mol_idxs, store_centroids=False)
         fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
         del brc_tolerance
         gc.collect()
 
     if bitbirch_variant in ["lean", "lean_dense"]:
         # In this case the fps_bfs and mols_idxs are *dicts*
-        for dtype, fp_list in fps_bfs.items():
+        for dtype, buf_list in fps_bfs.items():
             suffix = f"round1_{idx0}_{dtype}"
-            numpy_streaming_save(fp_list, out_dir / suffix)
+            numpy_streaming_save(buf_list, out_dir / f"bufs_{suffix}")
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mols_bfs[dtype], f)
     else:
-        # In this case the fps_bfs are *arrays* and mols_idxs are *lists*
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round1_{idx0}_{str(fp_type.dtype)}"
-            np.save(out_dir / f"fp_{suffix}", fp_type)
+        # In this case fps_bfs is *list of arrays*, and mols_bfs is *list of lists*
+        for buf, mol_idxs in zip(fps_bfs, mols_bfs):
+            suffix = f"round1_{idx0}_{str(buf.dtype)}"
+            np.save(out_dir / f"bufs_{suffix}", buf)
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mol_idxs, f)
 
@@ -143,16 +145,16 @@ def second_round(
 
     if bitbirch_variant in ["lean", "lean_dense"]:
         # In this case the fps_bfs and mols_idxs are *dicts*
-        for dtype, fp_list in fps_bfs.items():
+        for dtype, buf_list in fps_bfs.items():
             suffix = f"round2_{chunk_idx}_{dtype}"
-            numpy_streaming_save(fp_list, out_dir / suffix)
+            numpy_streaming_save(buf_list, out_dir / f"bufs_{suffix}")
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mols_bfs[dtype], f)
     else:
-        # In this case the fps_bfs are *arrays*
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round2_{chunk_idx}_{str(fp_type.dtype)}"
-            np.save(out_dir / f"fp_{suffix}", fp_type)
+        # In this case fps_bfs is *list of arrays*, and mols_bfs is *list of lists*
+        for buf, mol_idxs in zip(fps_bfs, mols_bfs):
+            suffix = f"round2_{chunk_idx}_{str(buf.dtype)}"
+            np.save(out_dir / f"bufs_{suffix}", buf)
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mol_idxs, f)
 
