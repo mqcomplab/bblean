@@ -28,9 +28,9 @@ def _load_fp_data_and_mol_idxs(
     out_dir: Path,
     fp_filepath: Path,
     round: int,
-    mmap: bool = True,
+    use_mmap: bool = True,
 ) -> tuple[NDArray[tp.Any], tp.Any]:
-    fp_data = np.load(fp_filepath, mmap_mode="r" if mmap else None)
+    fp_data = np.load(fp_filepath, mmap_mode="r" if use_mmap else None)
     # Infer the mol_idxs filename from the fp_np filename, and fetch the mol_idxs
     count, dtype = fp_filepath.name.split(".")[0].split("_")[-2:]
     idxs_file = out_dir / f"mol_idxs_round{round}_{count}_{dtype}.pkl"
@@ -49,20 +49,21 @@ def first_round(
     out_dir: Path | str,
     filename_idxs_are_slices: bool = False,
     max_fps: int | None = None,
-    mmap: bool = True,
+    use_mmap: bool = True,
     bitbirch_variant: str = "lean",
     merge_criterion: str = "diameter",
 ) -> None:
 
     BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
     out_dir = Path(out_dir)
-    fps = np.load(fp_file, mmap_mode="r" if mmap else None)[:max_fps]
+    fps = np.load(fp_file, mmap_mode="r" if use_mmap else None)[:max_fps]
 
-    # Fit the fps. fit_reinsert is necessary to keep track of proper molecule indices
-    # Use indices of molecules in the current batch, according to the total set
+    # Fit the fps. `reinsert_indices` is necessary to keep track of proper molecule
+    # indices. Use indices of molecules in the current batch, according to the total set
     idx0, idx1 = map(int, fp_file.name.split(".")[0].split("_")[-2:])
     set_merge(merge_criterion)  # Initial batch uses diameter BitBIRCH
     brc_diameter = BitBirch(branching_factor=branching_factor, threshold=threshold)
+    # TODO: Check this
     if filename_idxs_are_slices:
         # idxs are <start_mol_idx>_<end_mol_idx>
         range_ = range(idx0, idx1)
@@ -72,18 +73,12 @@ def first_round(
         range_ = range(idx1, idx1 + len(fps))
         start_mol_idx = idx1
 
-    brc_diameter.fit_reinsert(
-        fps, list(range_), store_centroids=False, n_features=n_features
+    brc_diameter.fit(
+        fps, reinsert_indices=range_, store_centroids=False, n_features=n_features
     )
 
     # Extract the BitFeatures info of the leaves to refine the top cluster
-    # Use an if-statement since only bb_lean has this argument
-    if bitbirch_variant != "lean":
-        fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
-    else:
-        fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(
-            fps, initial_mol=start_mol_idx, return_fp_lists=True
-        )
+    fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
     del fps
     del brc_diameter
     gc.collect()
@@ -93,27 +88,29 @@ def first_round(
         # passed at the end
         set_merge("tolerance", tolerance)  # 'tolerance' used to refine the tree
         brc_tolerance = BitBirch(branching_factor=branching_factor, threshold=threshold)
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            brc_tolerance.fit_np_reinsert(fp_type, mol_idxs, store_centroids=False)
-
-        # Get the info from the fitted BFs in compact list format
-        if bitbirch_variant != "lean":
-            fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
+        if bitbirch_variant == "lean":
+            # For the "lean" variant, these are dicts
+            iterable = zip(fps_bfs.values(), mols_bfs.values())
         else:
-            fps_bfs, mols_bfs = brc_tolerance.bf_to_np(return_fp_lists=True)
+            iterable = zip(fps_bfs, mols_bfs)
+        for buf, mol_idxs in iterable:
+            brc_tolerance.fit_np_reinsert(buf, mol_idxs, store_centroids=False)
+        fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
         del brc_tolerance
         gc.collect()
 
-    if bitbirch_variant != "lean":
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round1_{idx0}_{str(fp_type.dtype)}"
-            np.save(out_dir / f"fp_{suffix}", fp_type)
+    if bitbirch_variant in ["lean", "lean_dense"]:
+        # In this case the fps_bfs and mols_idxs are *dicts*
+        for dtype, buf_list in fps_bfs.items():
+            suffix = f"round1_{idx0}_{dtype}"
+            numpy_streaming_save(buf_list, out_dir / f"bufs_{suffix}")
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pickle.dump(mol_idxs, f)
+                pickle.dump(mols_bfs[dtype], f)
     else:
-        numpy_streaming_save(fps_bfs, out_dir / f"round1_{idx0}")
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round1_{idx0}_{str(fp_type[0].dtype)}"
+        # In this case fps_bfs is *list of arrays*, and mols_bfs is *list of lists*
+        for buf, mol_idxs in zip(fps_bfs, mols_bfs):
+            suffix = f"round1_{idx0}_{str(buf.dtype)}"
+            np.save(out_dir / f"bufs_{suffix}", buf)
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mol_idxs, f)
 
@@ -124,7 +121,7 @@ def second_round(
     threshold: float,
     tolerance: float,
     out_dir: Path | str,
-    mmap: bool = True,
+    use_mmap: bool = True,
     bitbirch_variant: str = "lean",
 ) -> None:
     BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
@@ -134,29 +131,30 @@ def second_round(
     set_merge("tolerance", tolerance)
     brc_chunk = BitBirch(branching_factor=branching_factor, threshold=threshold)
     for fp_filename in chunk_filenames:
-        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(out_dir, fp_filename, 1, mmap)
+        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(
+            out_dir, fp_filename, 1, use_mmap
+        )
         brc_chunk.fit_np_reinsert(fp_data, mol_idxs, store_centroids=False)
         del mol_idxs
         del fp_data
         gc.collect()
 
-    if bitbirch_variant != "lean":
-        fps_bfs, mols_bfs = brc_chunk.bf_to_np()
-    else:
-        fps_bfs, mols_bfs = brc_chunk.bf_to_np(return_fp_lists=True)
+    fps_bfs, mols_bfs = brc_chunk.bf_to_np()
     del brc_chunk
     gc.collect()
 
-    if bitbirch_variant != "lean":
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round2_{chunk_idx}_{str(fp_type.dtype)}"
-            np.save(out_dir / f"fp_{suffix}", fp_type)
+    if bitbirch_variant in ["lean", "lean_dense"]:
+        # In this case the fps_bfs and mols_idxs are *dicts*
+        for dtype, buf_list in fps_bfs.items():
+            suffix = f"round2_{chunk_idx}_{dtype}"
+            numpy_streaming_save(buf_list, out_dir / f"bufs_{suffix}")
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pickle.dump(mol_idxs, f)
+                pickle.dump(mols_bfs[dtype], f)
     else:
-        numpy_streaming_save(fps_bfs, out_dir / f"round2_{chunk_idx}")
-        for fp_type, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round2_{chunk_idx}_{str(fp_type[0].dtype)}"
+        # In this case fps_bfs is *list of arrays*, and mols_bfs is *list of lists*
+        for buf, mol_idxs in zip(fps_bfs, mols_bfs):
+            suffix = f"round2_{chunk_idx}_{str(buf.dtype)}"
+            np.save(out_dir / f"bufs_{suffix}", buf)
             with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mol_idxs, f)
 
@@ -166,7 +164,7 @@ def third_round(
     threshold: float,
     tolerance: float,
     out_dir: Path | str,
-    mmap: bool = True,
+    use_mmap: bool = True,
     bitbirch_variant: str = "lean",
 ) -> None:
 
@@ -178,18 +176,20 @@ def third_round(
 
     sorted_files2 = _glob_and_sort_by_uint_bits(out_dir, "*round2*.npy")
     for fp_filename in sorted_files2:
-        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(out_dir, fp_filename, 2, mmap)
+        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(
+            out_dir, fp_filename, 2, use_mmap
+        )
         brc_final.fit_np_reinsert(fp_data, mol_idxs, store_centroids=False)
         del fp_data
         del mol_idxs
         gc.collect()
 
-    mol_ids = brc_final.get_cluster_mol_ids().copy()
+    cluster_mol_ids = brc_final.get_cluster_mol_ids()
     del brc_final
     gc.collect()
 
     with open(out_dir / "clusters.pkl", mode="wb") as f:
-        pickle.dump(mol_ids, f)
+        pickle.dump(cluster_mol_ids, f)
 
 
 # NOTE:
@@ -237,7 +237,7 @@ def run_multiround_bitbirch(
         branching_factor=branching_factor,
         threshold=threshold,
         tolerance=tolerance,
-        mmap=use_mmap,
+        use_mmap=use_mmap,
         bitbirch_variant=bitbirch_variant,
         out_dir=out_dir,
     )

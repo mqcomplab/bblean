@@ -6,6 +6,7 @@ import shutil
 import json
 import time
 import sys
+import pickle
 import uuid
 import re
 import multiprocessing as mp
@@ -309,17 +310,9 @@ def _run(
     start_time = time.perf_counter()
     set_merge(merge_criterion, tolerance)
     tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
-    idx = 0
     for file in input_files:
         fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
-        fps_num = len(fps)
-        tree.fit_reinsert(
-            fps,
-            list(range(idx, idx + fps_num)),
-            store_centroids=False,
-            n_features=n_features,
-        )
-        idx += fps_num
+        tree.fit(fps, store_centroids=False, n_features=n_features)
     cluster_mol_ids = tree.get_cluster_mol_ids()
     total_time_s = time.perf_counter() - start_time
     console.print(f"Time elapsed: {total_time_s:.5f} s")
@@ -330,9 +323,8 @@ def _run(
         console.print_peak_mem_raw(stats)
 
     # Dump outputs (peak memory, timings, config, cluster ids)
-    cluster_ids_fpath = out_dir / "cluster-mol-ids.json"
-    with open(cluster_ids_fpath, mode="wt", encoding="utf-8") as f:
-        json.dump({i: v for i, v in enumerate(cluster_mol_ids)}, f, indent=4)
+    with open(out_dir / "clusters.pkl", mode="wb") as f:
+        pickle.dump(cluster_mol_ids, f)
 
     collect_system_specs_and_dump_config(ctx.params)
     timings_fpath = out_dir / "timings.json"

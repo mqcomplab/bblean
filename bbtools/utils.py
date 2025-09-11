@@ -76,15 +76,11 @@ def cpu_name() -> str:
 
 # Save a list of numpy arrays into a single array in a streaming fashion, avoiding
 # stacking them in memory
-def numpy_streaming_save(
-    fps_bfs: list[list[NDArray[tp.Any]]], path: Path | str
-) -> None:
-    path = Path(path)
-    for fp_list in fps_bfs:
-        first_arr = np.ascontiguousarray(fp_list[0])
-        header = np.lib.format.header_data_from_array_1_0(first_arr)
-        header["shape"] = (len(fp_list), len(first_arr))
-        with open(path.with_name(f"{path.name}_{first_arr.dtype.name}.npy"), "wb") as f:
-            np.lib.format.write_array_header_1_0(f, header)
-            for arr in fp_list:
-                np.ascontiguousarray(arr).tofile(f)
+def numpy_streaming_save(fp_list: list[NDArray[np.integer]], path: Path | str) -> None:
+    first_arr = np.ascontiguousarray(fp_list[0])
+    header = np.lib.format.header_data_from_array_1_0(first_arr)
+    header["shape"] = (len(fp_list), len(first_arr))
+    with open(Path(path).with_suffix(".npy"), "wb") as f:
+        np.lib.format.write_array_header_1_0(f, header)
+        for arr in fp_list:
+            np.ascontiguousarray(arr).tofile(f)
