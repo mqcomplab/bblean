@@ -30,8 +30,8 @@
 #     Kenneth Lopez Perez <klopezperez@chem.ufl.edu>
 #     Kate Huddleston <kdavis2@chem.ufl.edu>
 
+from numpy.typing import NDArray
 import typing as tp
-import itertools
 from collections import defaultdict
 from weakref import WeakSet
 
@@ -86,13 +86,6 @@ def set_merge(merge_criterion: str, tolerance=0.05):
         bbirch._merge_accept_fn = _global_merge_accept
 
 
-# Utility function, either copies or unpacks a fingerprint
-# NOTE: Copy of 'sample' is not required if input is packed,
-# since unpack_fingerprints allocates a new array
-def _copy_or_unpack(x, n_features, input_is_packed: bool = True):
-    return unpack_fingerprints(x, n_features) if input_is_packed else x.copy()
-
-
 # Utility function to validate the n_features argument for packed inputs
 def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> int:
     if input_is_packed:
@@ -100,7 +93,7 @@ def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> in
             raise ValueError("n_features is required for packed inputs")
         return n_features
 
-    x_n_features = X.shape[1]
+    x_n_features = len(X[0]) if isinstance(X, list) else X.shape[1]
     if n_features is not None:
         if n_features != x_n_features:
             raise ValueError(
@@ -209,6 +202,18 @@ def _get_merge_accept_fn(
     )
 
 
+def pack_fingerprints(a):
+    """Packs boolean or integer arrays into uint8 arrays"""
+    # packbits may pad with zeros if n_features is not a multiple of 8
+    return np.packbits(a, axis=-1)
+
+
+def unpack_fingerprints(a, n_features: int):
+    """Unpacks uint8 arrays into boolean arrays"""
+    # n_features is required to discard padded zeros if it is not a multiple of 8
+    return np.unpackbits(a, axis=-1, count=n_features)
+
+
 # Requires numpy >= 2.0
 def popcount(a):
     # a is packed uint8 array with last axis = bytes
@@ -225,18 +230,6 @@ def popcount(a):
     return np.bitwise_count(b).sum(axis=-1, dtype=np.uint32)
 
 
-def pack_fingerprints(a):
-    """Packs boolean or integer arrays into uint8 arrays"""
-    # packbits may pad with zeros if n_features is not a multiple of 8
-    return np.packbits(a, axis=-1)
-
-
-def unpack_fingerprints(a, n_features: int):
-    """Unpacks uint8 arrays into boolean arrays"""
-    # n_features is required to discard padded zeros if it is not a multiple of 8
-    return np.unpackbits(a, axis=-1, count=n_features)
-
-
 def tanimoto_sim_packed(arr, vec, cardinalities=None):
     """Tanimoto similarity between a matrix of packed fingerprints and a single packed
     fingerprint.
@@ -247,7 +240,12 @@ def tanimoto_sim_packed(arr, vec, cardinalities=None):
     if cardinalities is None:
         cardinalities = popcount(arr)
     # Return value requires an out-of-place operation since it casts uints to f64
-    return intersection / (cardinalities + popcount(vec) - intersection)
+    output = intersection / (cardinalities + popcount(vec) - intersection)
+    # There may be NaN in the similarity array if the both the cardinality
+    # and the vector are 0, in which case the intersection is 0 -> 0 / 0
+    # In these cases the fps are equal so the similarity is 1
+    return output
+    # return np.nan_to_num(output, nan=1)
 
 
 def jt_isim(c_total, n_objects: int):
