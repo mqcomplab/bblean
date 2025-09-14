@@ -1,6 +1,5 @@
 r"""Command line interface entrypoints"""
 
-import os
 import typing_extensions as tpx
 import shutil
 import json
