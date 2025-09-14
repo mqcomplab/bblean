@@ -39,7 +39,7 @@ jobs:
       - name: install-repo
         run: |
           pip install --upgrade pip
-          pip install - v .
+          pip install --verbose .
 
       - name: run-pytest
         run: pytest ./tests
