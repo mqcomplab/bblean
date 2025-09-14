@@ -15,5 +15,4 @@ pip install -e .
 
 ## Basic usage
 
-![Demo]("bb-demo.gif")
-<!--<img src="bb-demo.gif" width="400" />-->
+<img src="bb-demo.gif" width="400" />
