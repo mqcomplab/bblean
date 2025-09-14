@@ -84,3 +84,46 @@ def numpy_streaming_save(fp_list: list[NDArray[np.integer]], path: Path | str) -
         np.lib.format.write_array_header_1_0(f, header)
         for arr in fp_list:
             np.ascontiguousarray(arr).tofile(f)
+
+
+def calc_centroid(
+    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool
+) -> NDArray[np.uint8]:
+    """Calculates centroid
+
+    Parameters
+    ----------
+
+    linear_sum : np.ndarray
+                 Sum of the elements column-wise
+    n_samples : int
+                Number of samples
+    pack : bool
+        Whether to pack the resulting fingerprints
+
+    Returns
+    -------
+    centroid : np.ndarray[np.uint8]
+               Centroid fingerprints of the given set
+    """
+    # NOTE: I believe np guarantees bools are stored as 0xFF -> True and 0x00 -> False,
+    # so this view is fully safe
+    if n_samples <= 1:
+        centroid = linear_sum.astype(np.uint8, copy=False)
+    else:
+        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
+    if pack:
+        return pack_fingerprints(centroid)
+    return centroid
+
+
+def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Packs boolean or integer arrays into uint8 arrays"""
+    # packbits may pad with zeros if n_features is not a multiple of 8
+    return np.packbits(a, axis=-1)
+
+
+def unpack_fingerprints(a: NDArray[np.uint8], n_features: int) -> NDArray[np.uint8]:
+    """Unpacks uint8 arrays into boolean arrays"""
+    # n_features is required to discard padded zeros if it is not a multiple of 8
+    return np.unpackbits(a, axis=-1, count=n_features)

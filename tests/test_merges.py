@@ -7,8 +7,8 @@ from legacy_merges import (  # type: ignore
     merge_tolerance,
     merge_tolerance_tough,
 )
-from bbtools.bb_lean import calc_centroid  # type: ignore
-from bbtools.bb_lean import (  # type: ignore
+from bbtools.utils import calc_centroid
+from bbtools.merges import (
     RadiusMerge,
     DiameterMerge,
     ToleranceMerge,
@@ -87,9 +87,9 @@ def test_tolerance() -> None:
     )
     legacy_fns = (
         merge_tolerance,
-        merge_tolerance_tough,
+        merge_tolerance_tough,  # This raises a warning due to incorrect legacy impl
         merge_tolerance,
-        merge_tolerance_tough,
+        merge_tolerance_tough,  # This raises a warning due to incorrect legacy impl
     )
     oop_fns = (
         ToleranceMerge,
@@ -102,6 +102,7 @@ def test_tolerance() -> None:
 
     for fn_expect, Fn, thresh, tol in zip(legacy_fns, oop_fns, thresholds, tolerances):
         fn = Fn(tol)
+        fn._backwards_compat = True  # type: ignore
         for case in ("1, 1", "1, >1", ">1, 1", ">1, >1"):
             for j in range(200):
                 old, nom = get_old_and_nom(fps, j, case)

@@ -1,9 +1,5 @@
 import numpy as np
 
-from bbtools.bb_lean import (  # type: ignore
-    BitBirch,
-    unpack_fingerprints,
-)
 
 from bbtools.legacy.bb_int64_dense import (  # type: ignore
     BitBirch as BitBirchInt64,
@@ -13,6 +9,8 @@ from bbtools.legacy.bb_uint8 import (  # type: ignore
     BitBirch as BitBirchUint8,
     set_merge as set_merge_uint8,
 )
+from bbtools.bb_lean import BitBirch  # type: ignore
+from bbtools.utils import unpack_fingerprints
 from bbtools.fake_fingerprints import make_fake_fingerprints
 
 

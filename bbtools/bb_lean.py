@@ -38,6 +38,9 @@ from weakref import WeakSet
 import numpy as np
 from scipy import sparse
 
+from bbtools.utils import pack_fingerprints, unpack_fingerprints, calc_centroid
+from bbtools.merges import get_merge_accept_fn
+
 
 # Returns the minimum uint dtype that safely holds a (positive) python int
 # Input must be a positive python integer
@@ -81,7 +84,7 @@ def set_merge(merge_criterion: str, tolerance=0.05):
     """
     # Set the global merge_accept function
     global _global_merge_accept
-    _global_merge_accept = _get_merge_accept_fn(merge_criterion, tolerance)
+    _global_merge_accept = get_merge_accept_fn(merge_criterion, tolerance)
     for bbirch in _BITBIRCH_INSTANCES:
         bbirch._merge_accept_fn = _global_merge_accept
 
@@ -104,114 +107,6 @@ def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> in
                 " make sure the passed X is actually unpacked."
             )
     return x_n_features
-
-
-class MergeAcceptFunction:
-    # For the merge functions, although outputs of jt_isim f64, directly using f64 is
-    # *not* faster than starting with uint64
-    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n) -> bool:
-        pass
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}()"
-
-
-class RadiusMerge(MergeAcceptFunction):
-    name = "radius"
-
-    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-        # NOTE: Use uint64 sum since jt_isim casts to uint64 internally
-        # This prevents multiple casts
-        new_unpacked_centroid = calc_centroid(new_ls, new_n, pack=False)
-        new_ls_1 = np.add(new_ls, new_unpacked_centroid, dtype=np.uint64)
-        new_n_1 = new_n + 1
-        new_jt = jt_isim(new_ls, new_n)
-        new_jt_1 = jt_isim(new_ls_1, new_n_1)
-        return new_jt_1 * new_n_1 - new_jt * (new_n - 1) >= threshold * 2
-
-
-class DiameterMerge(MergeAcceptFunction):
-    name = "diameter"
-
-    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-        return jt_isim(new_ls, new_n) >= threshold
-
-
-class ToleranceMerge(MergeAcceptFunction):
-    name = "tolerance"
-
-    def __init__(self, tolerance: float = 0.05) -> None:
-        self._tolerance = tolerance
-
-    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-        # First two branches are equivalent to 'diameter'
-        new_jt = jt_isim(new_ls, new_n)
-        if new_jt < threshold:
-            return False
-        if old_n == 1 or nom_n != 1:
-            return True
-        # 'new_jt >= threshold' and 'new_n == old_n + 1' are guaranteed here
-        old_jt = jt_isim(old_ls, old_n)
-        return (new_jt * new_n - old_jt * (old_n - 1)) / 2 >= old_jt - self._tolerance
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._tolerance})"
-
-
-class ToleranceToughMerge(ToleranceMerge):
-    name = "tolerance_tough"
-
-    def __call__(self, threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
-        # First two branches are equivalent to 'diameter', third to 'tolerance'
-        new_jt = jt_isim(new_ls, new_n)
-        if new_jt < threshold:
-            return False
-        if old_n == 1 and nom_n == 1:
-            return True
-
-        old_jt = jt_isim(old_ls, old_n)
-        if nom_n == 1:
-            # 'new_jt >= threshold' and 'new_n == old_n + 1' are guaranteed here
-            return (
-                new_jt * new_n - old_jt * (old_n - 1)
-            ) / 2 >= old_jt - self._tolerance
-
-        # "tough" branch
-        nom_jt = jt_isim(nom_ls, nom_n)
-        new_term = new_jt * new_n * (new_n - 1)
-        old_term = old_jt * old_n * (old_n - 1)
-        nom_term = nom_jt * nom_n * (nom_n - 1)
-        denom = 2 * old_n * nom_n
-        return (new_term - old_term - nom_term) / denom >= old_jt - self._tolerance
-
-
-def _get_merge_accept_fn(
-    merge_criterion: str, tolerance: float = 0.05
-) -> MergeAcceptFunction:
-    if merge_criterion == "radius":
-        return RadiusMerge()
-    elif merge_criterion == "diameter":
-        return DiameterMerge()
-    elif merge_criterion == "tolerance":
-        return ToleranceMerge(tolerance)
-    elif merge_criterion == "tolerance_tough":
-        return ToleranceToughMerge(tolerance)
-    raise ValueError(
-        f"Unknown merge criterion {merge_criterion}"
-        "Valid criteria are: radius|diameter|tolerance|tolerance_tough"
-    )
-
-
-def pack_fingerprints(a):
-    """Packs boolean or integer arrays into uint8 arrays"""
-    # packbits may pad with zeros if n_features is not a multiple of 8
-    return np.packbits(a, axis=-1)
-
-
-def unpack_fingerprints(a, n_features: int):
-    """Unpacks uint8 arrays into boolean arrays"""
-    # n_features is required to discard padded zeros if it is not a multiple of 8
-    return np.unpackbits(a, axis=-1, count=n_features)
 
 
 # Requires numpy >= 2.0
@@ -249,37 +144,6 @@ def jt_sim_packed(arr, vec, cardinalities=None):
     # In these cases the fps are equal so the similarity *should be 1*, so we
     # clamp the denominator, which is A | B (zero only if A & B is zero too).
     return intersection / np.maximum(cardinalities + popcount(vec) - intersection, 1)
-
-
-def jt_isim(c_total, n_objects: int):
-    r"""iSIM Tanimoto calculation
-
-    iSIM Tanimoto was first propsed in:
-    https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
-
-    Parameters
-    ----------
-    c_total : np.ndarray
-              Sum of the elements from an array of fingerprints X, column-wise
-              c_total = np.sum(X, axis=0)
-
-    n_objects : int
-                Number of elements
-                n_objects = X.shape[0]
-
-    Returns
-    ----------
-    isim : float
-           iSIM Jaccard-Tanimoto value
-    """
-    x = c_total.astype(np.uint64, copy=False)
-    sum_kq = np.sum(x)
-    # isim of fingerprints that are all zeros should be 1
-    if sum_kq == 0:
-        return 1
-    sum_kqsq = np.dot(x, x)
-    a = (sum_kqsq - sum_kq) / 2
-    return a / (a + n_objects * sum_kq - sum_kqsq)
 
 
 def _max_separation(Y, n_features: int):
@@ -325,35 +189,6 @@ def _max_separation(Y, n_features: int):
     # Get the similarity of each molecule to mol2
     sims_mol2 = jt_sim_packed(Y, Y[mol2], cardinalities)
     return (mol1, mol2), sims_mol1, sims_mol2
-
-
-def calc_centroid(linear_sum, n_samples, *, pack: bool):
-    """Calculates centroid
-
-    Parameters
-    ----------
-
-    linear_sum : np.ndarray
-                 Sum of the elements column-wise
-    n_samples : int
-                Number of samples
-    pack : bool
-        Whether to pack the resulting fingerprints
-
-    Returns
-    -------
-    centroid : np.ndarray[np.uint8]
-               Centroid fingerprints of the given set
-    """
-    # NOTE: I believe np guarantees bools are stored as 0xFF -> True and 0x00 -> False,
-    # so this view is fully safe
-    if n_samples <= 1:
-        centroid = linear_sum.astype(np.uint8, copy=False)
-    else:
-        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
-    if pack:
-        return pack_fingerprints(centroid)
-    return centroid
 
 
 def _split_node(node):
@@ -786,7 +621,7 @@ class BitBirch:
         else:
             merge_criterion = "diameter" if merge_criterion is None else merge_criterion
             tolerance = 0.05 if tolerance is None else tolerance
-            self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
+            self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
 
         # For backwards compatibility, weak-register in global state This is used to
         # update the merge_accept function if the global set_merge() is called
@@ -818,7 +653,7 @@ class BitBirch:
                 "merge_criterion can only be set if "
                 "the global set_merge function has *not* been used"
             )
-        self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
+        self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
 
     def fit(
         self,
@@ -1087,8 +922,8 @@ class BitBirch:
     def __repr__(self) -> str:
         fn = self._merge_accept_fn
         _str = f"{self.__class__.__name__}(threshold={self.threshold}, branching_factor={self.branching_factor}, merge_criterion='{fn.name}'"  # noqa:E501
-        if isinstance(fn, ToleranceMerge):
-            _str += f", tolerance={fn._tolerance})"
+        if hasattr(fn, "tolerance"):
+            _str += f", tolerance={fn.tolerance})"
         else:
             _str += ")"
         return _str
