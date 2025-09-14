@@ -30,7 +30,7 @@
 #     Kenneth Lopez Perez <klopezperez@chem.ufl.edu>
 #     Kate Huddleston <kdavis2@chem.ufl.edu>
 
-from numpy.typing import NDArray
+from numpy.typing import NDArray, DTypeLike
 import typing as tp
 from collections import defaultdict
 from weakref import WeakSet
@@ -90,7 +90,9 @@ def set_merge(merge_criterion: str, tolerance=0.05):
 
 
 # Utility function to validate the n_features argument for packed inputs
-def _validate_n_features(X, input_is_packed: bool, n_features: int | None = None) -> int:
+def _validate_n_features(
+    X, input_is_packed: bool, n_features: int | None = None
+) -> int:
     if input_is_packed:
         if n_features is None:
             raise ValueError("n_features is required for packed inputs")
@@ -477,7 +479,6 @@ class _BFSubcluster:
                 self._buffer = np.zeros((n_features + 1,), dtype=np.uint8)
                 self.centroid_ = np.empty(0, dtype=np.uint8)  # Will be overwritten
         self.mol_indices = list(mol_indices)
-        # self.mol_indices = [] if mol_indices is None else mol_indices
         self.child_ = None
 
     @property
@@ -750,7 +751,7 @@ class BitBirch:
 
         # The array iterator either copies, un-sparsifies, or does nothing with the
         # array rows, depending on the kind of X passed
-        arr_iterator = _get_array_iterator(X, input_is_packed=False)
+        arr_iterator = _get_array_iterator(X, input_is_packed=False, dtype=X[0].dtype)
         merge_accept_fn = self._merge_accept_fn
         threshold = self.threshold
         branching_factor = self.branching_factor
@@ -944,20 +945,21 @@ def _get_array_iterator(
     X: tp.Any,
     input_is_packed: bool = True,
     n_features: int | None = None,
-) -> tp.Iterator[NDArray[np.uint8]]:
+    dtype: DTypeLike = np.uint8,
+) -> tp.Iterator[NDArray[np.integer]]:
 
     if input_is_packed:
         if n_features is None:
             raise ValueError("n_features is required for packed inputs")
         return (np.unpackbits(a, axis=-1, count=n_features) for a in X)  # type: ignore
     if isinstance(X, list):
-        return (a.astype(np.uint8, copy=False) for a in X)
+        return (a.astype(dtype, copy=False) for a in X)
     if sparse.issparse(X):
         if input_is_packed:
             raise ValueError("Packed input not supported for scipy sparse arrays")
         return _iter_sparse(X)
     # A copy is required here to avoid keeping a ref to the full array alive
-    return (a.astype(np.uint8, copy=True) for a in X)
+    return (a.astype(dtype, copy=True) for a in X)
 
 
 def _iter_sparse(X: tp.Any) -> tp.Iterator[NDArray[np.uint8]]:

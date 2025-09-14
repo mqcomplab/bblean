@@ -30,9 +30,7 @@ class BBConsole(Console):
 
     def print_peak_mem_raw(self, stats: PeakMemoryStats) -> None:
         self.print("Peak RAM use:\n" f"    Main proc.: {stats.self_gib:.4f} GiB")
-        if not stats.children_were_tracked:
-            self.print("    Max of child procs.: [Not tracked for 'forkserver']")
-        elif stats.child_gib is not None:
+        if stats.child_gib is not None:
             self.print(f"    Max of child procs.: {stats.child_gib:.4f} GiB")
 
     def print_config(self, config: dict[str, tp.Any]) -> None:

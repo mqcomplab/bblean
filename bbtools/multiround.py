@@ -91,8 +91,10 @@ def first_round(
             iterable = zip(fps_bfs.values(), mols_bfs.values())
         else:
             iterable = zip(fps_bfs, mols_bfs)
+
         for buffers, mol_idxs in iterable:
             brc_tolerance.fit_np(buffers, reinsert_index_sequences=mol_idxs)
+
         fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
         del brc_tolerance
         gc.collect()

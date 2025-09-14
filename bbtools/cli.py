@@ -18,7 +18,7 @@ from typer import Typer, Argument, Option, Abort, Context
 
 from bbtools.memory import monitor_rss_daemon, get_peak_memory
 from bbtools.config import DEFAULTS, collect_system_specs_and_dump_config
-from bbtools.utils import _import_bitbirch_variant
+from bbtools.utils import _import_bitbirch_variant, pack_fingerprints
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -191,6 +191,9 @@ def _fps_from_smiles(
     fps = np.empty((len(mols), fp_size), dtype=dtype)
     for i, fp in enumerate(fpg.GetFingerprints(mols)):
         DataStructs.ConvertToNumpyArray(fp, fps[i, :])
+
+    if packed:
+        fps = pack_fingerprints(fps)
 
     # Save the fingerprints as a NumPy array
     np.save(out_dir / f"{'packed-' if packed else ''}fps-{dtype}", fps)
