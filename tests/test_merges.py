@@ -1,4 +1,5 @@
 from numpy.typing import NDArray
+import warnings
 import numpy as np
 
 from legacy_merges import (  # type: ignore
@@ -99,22 +100,32 @@ def test_tolerance() -> None:
     )
     thresholds = (0.2, 0.2, 0.2, 0.2)
     tolerances = (0.05, 0.05, 0.90, 0.90)
-
-    for fn_expect, Fn, thresh, tol in zip(legacy_fns, oop_fns, thresholds, tolerances):
-        fn = Fn(tol)
-        fn._backwards_compat = True  # type: ignore
-        for case in ("1, 1", "1, >1", ">1, 1", ">1, >1"):
-            for j in range(200):
-                old, nom = get_old_and_nom(fps, j, case)
-                old_ls = old.sum(0)
-                nom_ls = nom.sum(0)
-                new_ls = old_ls + nom_ls
-                old_n = len(old)
-                nom_n = len(nom)
-                new_n = old_n + nom_n
-                cent = calc_centroid(new_ls, new_n, pack=False)
-                val_expect = fn_expect(
-                    thresh, new_ls, cent, new_n, old_ls, nom_ls, old_n, nom_n, tol
-                )
-                val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
-                assert val == val_expect
+    with warnings.catch_warnings():
+        warnings.filterwarnings(  # from ToleranceToughMerge
+            action="ignore", category=RuntimeWarning, message="Invalid n_objects .*"
+        )
+        warnings.filterwarnings(  # from merge_tolerance_tought
+            action="ignore",
+            category=RuntimeWarning,
+            message="invalid value encountered in scalar divide",
+        )
+        for fn_expect, Fn, thresh, tol in zip(
+            legacy_fns, oop_fns, thresholds, tolerances
+        ):
+            fn = Fn(tol)
+            fn._backwards_compat = True  # type: ignore
+            for case in ("1, 1", "1, >1", ">1, 1", ">1, >1"):
+                for j in range(200):
+                    old, nom = get_old_and_nom(fps, j, case)
+                    old_ls = old.sum(0)
+                    nom_ls = nom.sum(0)
+                    new_ls = old_ls + nom_ls
+                    old_n = len(old)
+                    nom_n = len(nom)
+                    new_n = old_n + nom_n
+                    cent = calc_centroid(new_ls, new_n, pack=False)
+                    val_expect = fn_expect(
+                        thresh, new_ls, cent, new_n, old_ls, nom_ls, old_n, nom_n, tol
+                    )
+                    val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+                    assert val == val_expect
