@@ -9,7 +9,7 @@ authors = [
     {name = "Kate Huddleston", email = "kdavis2@chem.ufl.edu"},
 ]
 license = "GPL-3-only"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "GPL3.txt"]
 description = "BitBirch Tools python package"
 requires-python = ">=3.11"
 dynamic = ["version", "readme"]
