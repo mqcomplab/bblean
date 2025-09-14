@@ -90,7 +90,7 @@ def set_merge(merge_criterion: str, tolerance=0.05):
 
 
 # Utility function to validate the n_features argument for packed inputs
-def _validate_n_features(X, input_is_packed: bool, n_features: int | None) -> int:
+def _validate_n_features(X, input_is_packed: bool, n_features: int | None = None) -> int:
     if input_is_packed:
         if n_features is None:
             raise ValueError("n_features is required for packed inputs")
