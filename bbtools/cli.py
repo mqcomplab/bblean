@@ -24,8 +24,14 @@ app = Typer(
     rich_markup_mode="markdown",
     add_completion=False,
     help=r"""CLI interface for serial and parallel fast clustering of molecular
-    fingerprints using the O(N) BitBirch algorithm. If you find this work useful please
-    cite the BitBirch article: https://doi.org/10.1039/D5DD00030K
+    fingerprints using the *O(N)* BitBirch algorithm. If you find this work useful
+    please cite the following articles:
+    - Original BitBirch article:
+        [https://doi.org/10.1039/D5DD00030K](https://doi.org/10.1039/D5DD00030K)
+    - BitBirch refinement strategies:
+        (TODO)
+    - BitBirch-Lean and BB-Tools:
+        (TODO)
     """,  # noqa
 )
 
