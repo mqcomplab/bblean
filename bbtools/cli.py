@@ -13,6 +13,7 @@ from typing import Annotated
 from pathlib import Path
 
 import numpy as np
+import typer
 from typer import Typer, Argument, Option, Abort, Context
 
 from bbtools.memory import monitor_rss_daemon, get_peak_memory
@@ -21,15 +22,28 @@ from bbtools.utils import _import_bitbirch_variant
 
 app = Typer(
     rich_markup_mode="markdown",
-    help=r"""## BitBirch
-
-    CLI interface for serial and parallel fast clustering of molecular fingerprints
-    using the O(N) BitBirch algorithm.
-
-    If you find this work useful please cite the BitBirch article:
-    https://doi.org/10.1039/D5DD00030K
-    """,
+    add_completion=False,
+    help=r"""CLI interface for serial and parallel fast clustering of molecular
+    fingerprints using the *O(N)* BitBirch algorithm. If you find this work useful
+    please cite the following articles:
+    - Original BitBirch article:
+        [https://doi.org/10.1039/D5DD00030K](https://doi.org/10.1039/D5DD00030K)
+    - BitBirch refinement strategies:
+        (TODO)
+    - BitBirch-Lean and BB-Tools:
+        (TODO)
+    """,  # noqa
 )
+
+
+def _print_help_banner(ctx: Context, value: bool) -> None:
+    if value:
+        from bbtools._console import get_console
+
+        console = get_console()
+        console.print_banner()
+        console.print(ctx.get_help())
+        raise typer.Exit()
 
 
 def _validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None:
@@ -70,6 +84,22 @@ def _validate_input_dir(
 
     if not (file_idxs == np.arange(len(file_idxs))).all():
         raise RuntimeError(f"Input file indices {file_idxs} must be a seq 0, 1, 2, ...")
+
+
+@app.callback()
+def main(
+    ctx: typer.Context,
+    help_: bool = typer.Option(
+        None,
+        "--help",
+        "-h",
+        is_flag=True,
+        is_eager=True,
+        help="Show this message and exit.",
+        callback=_print_help_banner,
+    ),
+) -> None:
+    pass
 
 
 @app.command("fps-from-smiles")
@@ -202,14 +232,6 @@ def _run(
         bool,
         Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
     ] = DEFAULTS.use_mmap,
-    n_features: tpx.Annotated[
-        int,
-        Option(
-            "-n",
-            "--n-features",
-            help="Number of features in the fingerprints. Required for packed inputs",
-        ),
-    ] = 2048,
     threshold: Annotated[
         float,
         Option("--threshold"),
@@ -224,6 +246,14 @@ def _run(
             help="BitBirch tolerance, only for --set-merge tolerance|tolerance_tough"
         ),
     ] = DEFAULTS.tolerance,
+    n_features: tpx.Annotated[
+        int,
+        Option(
+            "-n",
+            "--n-features",
+            help="Number of features in the fingerprints. Required for packed inputs",
+        ),
+    ] = 2048,
     # Debug options
     monitor_rss: Annotated[
         bool,
@@ -242,14 +272,18 @@ def _run(
     ] = 0.01,
     max_fps: Annotated[
         int | None,
-        Option("--max-fps", rich_help_panel="Debug"),
+        Option(
+            "--max-fps",
+            rich_help_panel="Debug",
+            help="Max. num of fingerprints to read from each file",
+        ),
     ] = None,
     variant: tpx.Annotated[
         str,
         Option(
             "--bb-variant",
             help="Use different bitbirch variants, *only for debugging*.",
-            rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = "lean",
     verbose: Annotated[
@@ -425,7 +459,7 @@ def _multiround(
         Option(
             "--bb-variant",
             help="Use different bitbirch variants, *only for debugging*.",
-            rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = "lean",
     only_first_round: Annotated[
