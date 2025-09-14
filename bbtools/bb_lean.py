@@ -201,8 +201,8 @@ def _split_node(node):
        pair of distant subclusters.
     4. The two nodes are set as children to the two subclusters.
     """
-    n_features = node.n_features_
-    branching_factor = node.branching_factor_
+    n_features = node.n_features
+    branching_factor = node.branching_factor
     new_subcluster1 = _BFSubcluster(n_features=n_features)
     new_subcluster2 = _BFSubcluster(n_features=n_features)
 
@@ -210,7 +210,7 @@ def _split_node(node):
     new_subcluster1.child_ = new_node
     new_subcluster2.child_ = node
 
-    if node.is_leaf_:
+    if node.is_leaf:
         new_node.prev_leaf_ = node.prev_leaf_
         node.prev_leaf_.next_leaf_ = new_node
         new_node.next_leaf_ = node
@@ -275,7 +275,7 @@ class _BFNode:
 
     # NOTE: Slots deactivates __dict__, and thus reduces memory usage of python objects
     __slots__ = (
-        "n_features_",
+        "n_features",
         "subclusters_",
         "init_centroids_",
         "prev_leaf_",
@@ -283,7 +283,7 @@ class _BFNode:
     )
 
     def __init__(self, branching_factor: int, n_features: int):
-        self.n_features_ = n_features
+        self.n_features = n_features
         # The list of subclusters, centroids and squared norms
         # to manipulate throughout.
         self.subclusters_ = []
@@ -297,11 +297,11 @@ class _BFNode:
         self.next_leaf_ = None
 
     @property
-    def is_leaf_(self) -> bool:
+    def is_leaf(self) -> bool:
         return self.prev_leaf_ is not None
 
     @property
-    def branching_factor_(self) -> int:
+    def branching_factor(self) -> int:
         return self.init_centroids_.shape[0] - 1
 
     @property
@@ -366,7 +366,7 @@ class _BFNode:
                     closest_subcluster, new_subcluster1, new_subcluster2
                 )
 
-                if len(self.subclusters_) > self.branching_factor_:
+                if len(self.subclusters_) > self.branching_factor:
                     return True
                 return False
 
@@ -381,7 +381,7 @@ class _BFNode:
 
             # not close to any other subclusters, and we still
             # have space, so add.
-            elif len(self.subclusters_) < self.branching_factor_:
+            elif len(self.subclusters_) < self.branching_factor:
                 self.append_subcluster(subcluster)
                 return False
 
@@ -881,7 +881,7 @@ class BitBirch:
 
         BFs = self._get_BFs()
         big, rest = BFs[0], BFs[1:]
-        n_features = big.n_features_
+        n_features = big.n_features
         dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_buffer_dicts(rest)
         # Add X and mol indices of the "big" cluster
         for mol_idx in big.mol_indices:
