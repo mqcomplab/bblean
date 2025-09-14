@@ -1,5 +1,5 @@
 [flake8]
-ignore = W503
+ignore = W503,E203
 max-line-length = 88
 exclude =
     .git,
@@ -7,6 +7,5 @@ exclude =
     build,
     .eggs,
     bbtools.egg-info,
-    bbtools/bb_uint8.py,
-    bbtools/bb_int64_dense.py,
+    bbtools/legacy/*.py,
     docs,

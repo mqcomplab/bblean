@@ -24,7 +24,7 @@ def _glob_and_sort_by_uint_bits(path: Path | str, glob_expr: str) -> list[Path]:
     )
 
 
-def _load_fp_data_and_mol_idxs(
+def _load_buffers_and_mol_idxs(
     out_dir: Path,
     fp_filepath: Path,
     round: int,
@@ -73,9 +73,7 @@ def first_round(
         range_ = range(idx1, idx1 + len(fps))
         start_mol_idx = idx1
 
-    brc_diameter.fit(
-        fps, reinsert_indices=range_, store_centroids=False, n_features=n_features
-    )
+    brc_diameter.fit(fps, reinsert_indices=range_, n_features=n_features)
 
     # Extract the BitFeatures info of the leaves to refine the top cluster
     fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
@@ -93,8 +91,8 @@ def first_round(
             iterable = zip(fps_bfs.values(), mols_bfs.values())
         else:
             iterable = zip(fps_bfs, mols_bfs)
-        for buf, mol_idxs in iterable:
-            brc_tolerance.fit_np_reinsert(buf, mol_idxs, store_centroids=False)
+        for buffers, mol_idxs in iterable:
+            brc_tolerance.fit_np(buffers, reinsert_index_sequences=mol_idxs)
         fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
         del brc_tolerance
         gc.collect()
@@ -131,12 +129,12 @@ def second_round(
     set_merge("tolerance", tolerance)
     brc_chunk = BitBirch(branching_factor=branching_factor, threshold=threshold)
     for fp_filename in chunk_filenames:
-        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(
+        buffers, mol_idxs = _load_buffers_and_mol_idxs(
             out_dir, fp_filename, 1, use_mmap
         )
-        brc_chunk.fit_np_reinsert(fp_data, mol_idxs, store_centroids=False)
+        brc_chunk.fit_np(buffers, reinsert_index_sequences=mol_idxs)
         del mol_idxs
-        del fp_data
+        del buffers
         gc.collect()
 
     fps_bfs, mols_bfs = brc_chunk.bf_to_np()
@@ -176,11 +174,11 @@ def third_round(
 
     sorted_files2 = _glob_and_sort_by_uint_bits(out_dir, "*round2*.npy")
     for fp_filename in sorted_files2:
-        fp_data, mol_idxs = _load_fp_data_and_mol_idxs(
+        buffers, mol_idxs = _load_buffers_and_mol_idxs(
             out_dir, fp_filename, 2, use_mmap
         )
-        brc_final.fit_np_reinsert(fp_data, mol_idxs, store_centroids=False)
-        del fp_data
+        brc_final.fit_np(buffers, reinsert_index_sequences=mol_idxs)
+        del buffers
         del mol_idxs
         gc.collect()
 
@@ -190,11 +188,6 @@ def third_round(
 
     with open(out_dir / "clusters.pkl", mode="wb") as f:
         pickle.dump(cluster_mol_ids, f)
-
-
-# NOTE:
-# The fps should be stored as .npy files
-# In this new version, they should be packed np.uint8 files
 
 
 # NOTE: 'double_cluster_init' indicates if the refinement of the batches is done
