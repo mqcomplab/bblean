@@ -226,14 +226,6 @@ def _run(
         bool,
         Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
     ] = DEFAULTS.use_mmap,
-    n_features: tpx.Annotated[
-        int,
-        Option(
-            "-n",
-            "--n-features",
-            help="Number of features in the fingerprints. Required for packed inputs",
-        ),
-    ] = 2048,
     threshold: Annotated[
         float,
         Option("--threshold"),
@@ -248,6 +240,14 @@ def _run(
             help="BitBirch tolerance, only for --set-merge tolerance|tolerance_tough"
         ),
     ] = DEFAULTS.tolerance,
+    n_features: tpx.Annotated[
+        int,
+        Option(
+            "-n",
+            "--n-features",
+            help="Number of features in the fingerprints. Required for packed inputs",
+        ),
+    ] = 2048,
     # Debug options
     monitor_rss: Annotated[
         bool,
@@ -266,14 +266,14 @@ def _run(
     ] = 0.01,
     max_fps: Annotated[
         int | None,
-        Option("--max-fps", rich_help_panel="Debug"),
+        Option("--max-fps", rich_help_panel="Debug", help="Max. num of fingerprints to read from each file"),
     ] = None,
     variant: tpx.Annotated[
         str,
         Option(
             "--bb-variant",
             help="Use different bitbirch variants, *only for debugging*.",
-            rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = "lean",
     verbose: Annotated[
@@ -449,7 +449,7 @@ def _multiround(
         Option(
             "--bb-variant",
             help="Use different bitbirch variants, *only for debugging*.",
-            rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = "lean",
     only_first_round: Annotated[
