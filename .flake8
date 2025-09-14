@@ -7,5 +7,5 @@ exclude =
     build,
     .eggs,
     bbtools.egg-info,
-    bbtools/legacy/,
+    bbtools/legacy/*.py,
     docs,
