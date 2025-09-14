@@ -8,7 +8,8 @@ authors = [
     {name = "Kenneth Lopez Perez", email = "klopezperez@chem.ufl.edu"},
     {name = "Kate Huddleston", email = "kdavis2@chem.ufl.edu"},
 ]
-license = {file = "LICENSE"}
+license = "GPL-3-only"
+license-files = ["LICENSE"]
 description = "BitBirch Tools python package"
 requires-python = ">=3.11"
 dynamic = ["version", "readme"]
