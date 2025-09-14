@@ -2,7 +2,7 @@
 name = "bbtools"
 authors = [
     {name = "Ramon Alain Miranda Quintana", email = "quintana@chem.ufl.edu"},
-    {name = "Krizstina Zsigmond", email = "kzsigmond@ufl.edu"},
+    {name = "Krisztina Zsigmond", email = "kzsigmond@ufl.edu"},
     {name = "Ignacio Pickering", email = "ipickering@ufl.edu"},
     {name = "Vicky (Vic) Jung", email = "jungvicky@ufl.edu"},
     {name = "Kenneth Lopez Perez", email = "klopezperez@chem.ufl.edu"},
