@@ -632,7 +632,7 @@ class BitBirch:
     def fit(
         self,
         X,
-        store_centroids: bool = True,
+        store_centroids: bool = False,
         input_is_packed: bool = True,
         n_features: int | None = None,
     ):
@@ -853,7 +853,7 @@ class BitBirch:
         self,
         X,
         reinsert_indices,
-        store_centroids: bool = True,
+        store_centroids: bool = False,
         input_is_packed: bool = True,
         n_features: int | None = None,
     ):

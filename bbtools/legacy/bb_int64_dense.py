@@ -608,7 +608,7 @@ class BitBirch:
         self,
         X,
         singly=True,
-        store_centroids=True,
+        store_centroids=False,
         input_is_packed: bool = False,
         n_features: int | None = None,
     ):
@@ -703,7 +703,7 @@ class BitBirch:
         X,
         reinsert_indices,
         singly=False,
-        store_centroids=True,
+        store_centroids=False,
         input_is_packed: bool = False,
         n_features: int | None = None,
     ):
@@ -778,7 +778,7 @@ class BitBirch:
         self.first_call = False
         return self
 
-    def fit_BFs(self, X, store_centroids=True):
+    def fit_BFs(self, X, store_centroids=False):
         """
         Method to fit a BitBirch model with the given BitFeatyres.
 

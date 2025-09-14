@@ -188,10 +188,6 @@ def _run(
             help="Dir to dump the output files",
         ),
     ] = None,
-    out_dir_is_root: tpx.Annotated[
-        bool,
-        Option("--out-dir-is-root/ "),
-    ] = False,
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
     ] = False,
@@ -266,10 +262,11 @@ def _run(
     import numpy as np
     from bbtools._console import get_console
 
+    console = get_console(silent=not verbose)
+
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
     # NOTE: Files are sorted according to name
-    console = get_console(silent=not verbose)
     if input_ is None:
         input_ = Path.cwd() / "bb_inputs"
         input_.mkdir(exist_ok=True)
@@ -285,16 +282,14 @@ def _run(
     unique_id = str(uuid.uuid4()).split("-")[0]
     if out_dir is None:
         out_dir = Path.cwd() / "bb_run_outputs" / unique_id
-    elif out_dir is not None and out_dir_is_root:
-        out_dir = out_dir / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
     _validate_output_dir(out_dir, overwrite_outputs)
     ctx.params["out_dir"] = str(out_dir)
-    ctx.params.pop("out_dir_is_root")
-    if not os.environ.get("BITBIRCHNOBANNER", ""):
-        console.print_banner()
+
+    console.print_banner()
     console.print_config(ctx.params)
 
+    # Optinally start a separate process that tracks RAM usage
     if monitor_rss:
         console.print("** Monitoring total RAM usage **\n")
         mp.Process(
@@ -312,7 +307,7 @@ def _run(
     tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
     for file in input_files:
         fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
-        tree.fit(fps, store_centroids=False, n_features=n_features)
+        tree.fit(fps, n_features=n_features)
     cluster_mol_ids = tree.get_cluster_mol_ids()
     total_time_s = time.perf_counter() - start_time
     console.print(f"Time elapsed: {total_time_s:.5f} s")
@@ -348,10 +343,6 @@ def _multiround(
         Path | None,
         Option("-o", "--output-dir", help="Dir for output files"),
     ] = None,
-    out_dir_is_root: tpx.Annotated[
-        bool,
-        Option("--out-dir-is-root/ "),
-    ] = False,
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
     ] = False,
@@ -479,37 +470,37 @@ def _multiround(
     from bbtools._console import get_console
     from bbtools.multiround import run_multiround_bitbirch
 
+    console = get_console(silent=not verbose)
+
     # Set the multiprocessing start method
     if fork and not sys.platform == "linux":
         raise ValueError("'fork' is only available on Linux")
     if sys.platform == "linux":
         mp.set_start_method("fork" if fork else "forkserver")
 
-    console = get_console(silent=not verbose)
-
+    # If not passed, input dir is bb_inputs/
     if in_dir is None:
         in_dir = Path.cwd() / "bb_inputs"
     _validate_input_dir(in_dir, filename_idxs_are_slices)
 
+    # All files in the input dir with *.npy suffix are considered input files
     input_files = sorted(
         in_dir.glob("*.npy"), key=lambda x: int(x.name.split(".")[0].split("_")[-2])
     )[:max_files]
     ctx.params["input_files"] = [str(p) for p in input_files]
 
+    # If not passed, output dir is constructed as bb_multiround_outputs/<unique-id>/
     unique_id = str(uuid.uuid4()).split("-")[0]
     if out_dir is None:
         out_dir = Path.cwd() / "bb_multiround_outputs" / unique_id
-    if out_dir is not None and out_dir_is_root:
-        out_dir = Path.cwd() / out_dir / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
     _validate_output_dir(out_dir, overwrite_outputs)
-    ctx.params.pop("out_dir_is_root")
     ctx.params["out_dir"] = str(out_dir)
 
-    if not os.environ.get("BITBIRCHNOBANNER", ""):
-        console.print_banner()
+    console.print_banner()
     console.print_multiround_config(ctx.params)
 
+    # Optinally start a separate process that tracks RAM usage
     if monitor_rss:
         console.print("** Monitoring total RAM usage **\n")
         mp.Process(

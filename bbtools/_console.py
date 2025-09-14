@@ -1,4 +1,5 @@
 import typing as tp
+import os
 import multiprocessing as mp
 
 from rich.console import Console
@@ -8,6 +9,8 @@ from bbtools.memory import get_peak_memory, PeakMemoryStats
 
 class BBConsole(Console):
     def print_banner(self) -> None:
+        if os.environ.get("BITBIRCHNOBANNER", ""):
+            return
         banner = r"""
             ______ _ _  ______ _          _     
             | ___ (_) | | ___ (_)        | |    
