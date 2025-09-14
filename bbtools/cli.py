@@ -266,7 +266,11 @@ def _run(
     ] = 0.01,
     max_fps: Annotated[
         int | None,
-        Option("--max-fps", rich_help_panel="Debug", help="Max. num of fingerprints to read from each file"),
+        Option(
+            "--max-fps",
+            rich_help_panel="Debug",
+            help="Max. num of fingerprints to read from each file",
+        ),
     ] = None,
     variant: tpx.Annotated[
         str,
