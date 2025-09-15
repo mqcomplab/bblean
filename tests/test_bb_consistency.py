@@ -1,17 +1,17 @@
 import numpy as np
 
 
-from bbtools.legacy.bb_int64_dense import (  # type: ignore
+from bblean.legacy.bb_int64_dense import (  # type: ignore
     BitBirch as BitBirchInt64,
     set_merge as set_merge_int64,
 )
-from bbtools.legacy.bb_uint8 import (  # type: ignore
+from bblean.legacy.bb_uint8 import (  # type: ignore
     BitBirch as BitBirchUint8,
     set_merge as set_merge_uint8,
 )
-from bbtools.bb_lean import BitBirch
-from bbtools.packing import unpack_fingerprints
-from bbtools.fake_fingerprints import make_fake_fingerprints
+from bblean.bitbirch import BitBirch  # type: ignore
+from bblean.packing import unpack_fingerprints
+from bblean.fake_fingerprints import make_fake_fingerprints
 
 
 def test_random_fps_consistency() -> None:

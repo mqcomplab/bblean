@@ -1,7 +1,7 @@
 import numpy as np
 
-from bbtools.bb_lean import BitBirch
-from bbtools.packing import pack_fingerprints
+from bblean.bitbirch import BitBirch  # type: ignore
+from bblean.packing import pack_fingerprints
 
 
 def test_bb_lean_defaults() -> None:

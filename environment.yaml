@@ -1,4 +1,4 @@
-name: bbtools
+name: bblean
 channels:
   - nodefaults
   - https://conda.anaconda.org/conda-forge

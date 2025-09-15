@@ -1,5 +1,5 @@
 [project]
-name = "bbtools"
+name = "bblean"
 authors = [
     {name = "Ramon Alain Miranda Quintana", email = "quintana@chem.ufl.edu"},
     {name = "Krisztina Zsigmond", email = "kzsigmond@ufl.edu"},
@@ -48,20 +48,20 @@ requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
-homepage = "https://github.com/mqcomplab/bbtools.git"
-repository = "https://github.com/mqcomplab/bbtools.git"
-documentation = "https://github.com/mqcomplab/bbtools.git"
+homepage = "https://github.com/mqcomplab/bblean.git"
+repository = "https://github.com/mqcomplab/bblean.git"
+documentation = "https://github.com/mqcomplab/bblean.git"
 
 [project.scripts]
-bb="bbtools.cli:app"
+bb="bblean.cli:app"
 
 [tool.setuptools_scm]
-version_file = "bbtools/_version.py"
+version_file = "bblean/_version.py"
 fallback_version="0.0.0"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["bbtools*"]
+include = ["bblean*"]
 
 [tool.black]
 line-length = 88

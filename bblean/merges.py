@@ -2,7 +2,7 @@ from numpy.typing import NDArray
 import numpy as np
 import warnings
 
-from bbtools.utils import calc_centroid
+from bblean.utils import calc_centroid
 
 
 def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
