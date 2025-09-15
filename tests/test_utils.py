@@ -1,5 +1,5 @@
 import pytest
-from bbtools.bb_lean import min_safe_uint  # type: ignore
+from bbtools.utils import min_safe_uint
 
 
 def test_min_safe_uint() -> None:
