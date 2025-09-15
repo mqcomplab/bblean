@@ -106,24 +106,22 @@ def calc_centroid(
     centroid : np.ndarray[np.uint8]
                Centroid fingerprints of the given set
     """
-    # NOTE: I believe np guarantees bools are stored as 0xFF -> True and 0x00 -> False,
+    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
     # so this view is fully safe
     if n_samples <= 1:
         centroid = linear_sum.astype(np.uint8, copy=False)
     else:
         centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
     if pack:
-        return pack_fingerprints(centroid)
+        return np.packbits(centroid, axis=-1)
     return centroid
 
 
-def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Packs boolean or integer arrays into uint8 arrays"""
-    # packbits may pad with zeros if n_features is not a multiple of 8
-    return np.packbits(a, axis=-1)
-
-
-def unpack_fingerprints(a: NDArray[np.uint8], n_features: int) -> NDArray[np.uint8]:
-    """Unpacks uint8 arrays into boolean arrays"""
-    # n_features is required to discard padded zeros if it is not a multiple of 8
-    return np.unpackbits(a, axis=-1, count=n_features)
+# Returns the minimum uint dtype that safely holds a (positive) python int
+# Input must be a positive python integer
+def min_safe_uint(nmax: int) -> np.dtype:
+    out = np.min_scalar_type(nmax)
+    # Check if the dtype is a pointer to a python bigint
+    if out.hasobject:
+        raise ValueError(f"n_samples: {nmax} is too large to hold in a uint64 array")
+    return out

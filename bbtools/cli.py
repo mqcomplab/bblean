@@ -19,7 +19,8 @@ from typer import Typer, Argument, Option, Abort, Context
 
 from bbtools.memory import monitor_rss_daemon, get_peak_memory
 from bbtools.config import DEFAULTS, collect_system_specs_and_dump_config
-from bbtools.utils import _import_bitbirch_variant, pack_fingerprints, batched
+from bbtools.packing import pack_fingerprints
+from bbtools.utils import _import_bitbirch_variant, batched
 
 app = Typer(
     rich_markup_mode="markdown",

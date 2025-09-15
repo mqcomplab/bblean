@@ -9,8 +9,8 @@ from bbtools.legacy.bb_uint8 import (  # type: ignore
     BitBirch as BitBirchUint8,
     set_merge as set_merge_uint8,
 )
-from bbtools.bb_lean import BitBirch  # type: ignore
-from bbtools.utils import unpack_fingerprints
+from bbtools.bb_lean import BitBirch
+from bbtools.packing import unpack_fingerprints
 from bbtools.fake_fingerprints import make_fake_fingerprints
 
 

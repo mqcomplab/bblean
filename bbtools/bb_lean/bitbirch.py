@@ -1,4 +1,3 @@
-# type: ignore
 # BitBirch-Tools Python Package: An open-source clustering module based on iSIM.
 #
 # If you find this code useful, please cite the BitBirch paper:
@@ -47,36 +46,32 @@ from weakref import WeakSet
 import numpy as np
 from scipy import sparse
 
-from bbtools.utils import pack_fingerprints, unpack_fingerprints, calc_centroid
-from bbtools.merges import get_merge_accept_fn
-
-
-# Returns the minimum uint dtype that safely holds a (positive) python int
-# Input must be a positive python integer
-def min_safe_uint(nmax: int) -> np.dtype:
-    out = np.min_scalar_type(nmax)
-    # Check if the dtype is a pointer to a python bigint
-    if out.hasobject:
-        raise ValueError(f"n_samples: {nmax} is too large to hold in a uint64 array")
-    return out
+from bbtools.utils import calc_centroid, min_safe_uint
+from bbtools.packing import (
+    pack_fingerprints,
+    unpack_fingerprints,
+    popcount,
+    jt_sim_packed,
+)
+from bbtools.merges import get_merge_accept_fn, MergeAcceptFunction
 
 
 # For backwards compatibility with the global "set_merge", keep weak references to all
 # the BitBirch instances and update them when set_merge is called
-_BITBIRCH_INSTANCES: set["BitBirch"] = WeakSet()
+_BITBIRCH_INSTANCES: WeakSet["BitBirch"] = WeakSet()
 
 
 # For backwards compatibility: global function used to accept merges
-_global_merge_accept = None
+_global_merge_accept: MergeAcceptFunction | None = None
 
 
 # For backwards compatibility: set the global merge_accept function
-def set_merge(merge_criterion: str, tolerance=0.05):
+def set_merge(merge_criterion: str, tolerance: float = 0.05) -> None:
     r"""Sets the global criteria for merging subclusters in any BitBirch tree
 
     ..  warning::
         The use of this function is discouraged, instead please use either `bb_tree =
-        BitBirch(...); BitBirch.set_merge(merge_criterion=..., tolerance=...)`
+        BitBirch(...); bb_tree.set_merge(merge_criterion=..., tolerance=...)`
         or directly `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`.
 
     Parameters:
@@ -120,44 +115,7 @@ def _validate_n_features(
     return x_n_features
 
 
-# Requires numpy >= 2.0
-def popcount(a):
-    # a is packed uint8 array with last axis = bytes
-    # Sum bit-counts across bytes to get per-object totals
-
-    # If the array has columns that are a multiple of 8, doing a bitwise count
-    # over the buffer reinterpreted as uint64 is slightly faster.
-    # This is zero cost if the exception is not triggered. Not having a be a multiple of
-    # 8 is a very unlikely scenario, since fps are typically 1024 or 2048
-    try:
-        b = a.view(np.uint64)
-    except ValueError:
-        b = a
-    return np.bitwise_count(b).sum(axis=-1, dtype=np.uint32)
-
-
-def jt_sim_packed(arr, vec, cardinalities=None):
-    r"""Tanimoto similarity between a matrix of packed fingerprints and a single packed
-    fingerprint.
-
-    If "cardinalities" is passed, it must be the result of calling popcount(arr).
-    """
-    # Maximum value in the denominator sum is the 2 * n_features (which is typically
-    # uint16, but we use uint32 for safety)
-    intersection = popcount(np.bitwise_and(arr, vec))
-    if cardinalities is None:
-        cardinalities = popcount(arr)
-    # Return value requires an out-of-place operation since it casts uints to f64
-    #
-    # There may be NaN in the similarity array if the both the cardinality
-    # and the vector are just zeros, in which case the intersection is 0 -> 0 / 0
-    #
-    # In these cases the fps are equal so the similarity *should be 1*, so we
-    # clamp the denominator, which is A | B (zero only if A & B is zero too).
-    return intersection / np.maximum(cardinalities + popcount(vec) - intersection, 1)
-
-
-def _max_separation(Y, n_features: int):
+def _max_separation(Y: NDArray[np.uint8], n_features: int):
     """Finds two objects in Y that are very separated
     This is not guaranteed to find
     the two absolutely most separated objects, but it is
@@ -337,7 +295,7 @@ class _BFNode:
         # Append new_subcluster2
         self.append_subcluster(new_subcluster2)
 
-    def insert_bf_subcluster(self, subcluster, merge_accept_fn, threshold):
+    def insert_bf_subcluster(self, subcluster, merge_accept_fn, threshold) -> bool:
         """Insert a new subcluster into the node."""
         # Reusing tree with different features is forbidden
         if not self.subclusters_:
@@ -436,15 +394,10 @@ class _BFSubcluster:
     """
 
     # NOTE: Slots deactivates __dict__, and thus reduces memory usage of python objects
-    __slots__ = (
-        "_buffer",
-        "centroid_",
-        "child_",
-        "mol_indices",
-    )
+    __slots__ = ("_buffer", "centroid_", "child_", "mol_indices")
 
     def __init__(
-        self, *, linear_sum=None, mol_indices=(), n_features=2048, buffer=None
+        self, *, linear_sum=None, mol_indices=(), n_features: int = 2048, buffer=None
     ):
         # NOTE: Internally, _buffer holds both "linear_sum" and "n_samples" It is
         # guaranteed to always have the minimum required uint dtype It should not be
@@ -495,7 +448,7 @@ class _BFSubcluster:
         return len(self._buffer) - 1
 
     @property
-    def dtype_name(self):
+    def dtype_name(self) -> str:
         return self._buffer.dtype.name
 
     @property
@@ -505,14 +458,14 @@ class _BFSubcluster:
         return read_only_view
 
     @property
-    def n_samples_(self):
+    def n_samples_(self) -> int:
         # Returns a python int, which is guaranteed to never overflow in sums, so
         # n_samples_ can always be safely added when accessed through this property
         return self._buffer.item(-1)
 
     # NOTE: Part of the contract is that all elements of linear sum must always be
     # less or equal to n_samples. This function does not check this
-    def replace_n_samples_and_linear_sum(self, n_samples, linear_sum):
+    def replace_n_samples_and_linear_sum(self, n_samples, linear_sum) -> None:
         # Cast to the minimum uint that can hold the inputs
         self._buffer = self._buffer.astype(min_safe_uint(n_samples), copy=False)
         # NOTE: Assignments are safe and do not recast the buffer
@@ -522,7 +475,7 @@ class _BFSubcluster:
 
     # NOTE: Part of the contract is that all elements of linear sum must always be
     # less or equal to n_samples. This function does not check this
-    def add_to_n_samples_and_linear_sum(self, n_samples, linear_sum):
+    def add_to_n_samples_and_linear_sum(self, n_samples, linear_sum) -> None:
         # Cast to the minimum uint that can hold the inputs
         new_n_samples = self.n_samples_ + n_samples
         self._buffer = self._buffer.astype(min_safe_uint(new_n_samples), copy=False)
@@ -531,13 +484,13 @@ class _BFSubcluster:
         self._buffer[-1] = new_n_samples
         self.centroid_ = calc_centroid(self._buffer[:-1], new_n_samples, pack=True)
 
-    def update(self, subcluster):
+    def update(self, subcluster) -> None:
         self.add_to_n_samples_and_linear_sum(
             subcluster.n_samples_, subcluster.linear_sum_
         )
         self.mol_indices.extend(subcluster.mol_indices)
 
-    def merge_subcluster(self, nominee_cluster, threshold, merge_accept_fn):
+    def merge_subcluster(self, nominee_cluster, threshold, merge_accept_fn) -> bool:
         """Check if a cluster is worthy enough to be merged. If yes, merge."""
         old_n = self.n_samples_
         nom_n = nominee_cluster.n_samples_
@@ -764,8 +717,9 @@ class BitBirch:
         merge_accept_fn = self._merge_accept_fn
         threshold = self.threshold
         branching_factor = self.branching_factor
+        idx_provider: tp.Iterator[tp.Sequence[int]]
         if reinsert_index_sequences is None:
-            idx_provider = map(list, range(self.index_tracker))
+            idx_provider = map(list, range(self.index_tracker))  # type: ignore
         else:
             idx_provider = reinsert_index_sequences
         for idxs, buf in zip(idx_provider, arr_iterator):
@@ -821,7 +775,7 @@ class BitBirch:
         self.subcluster_centers_ = centroids
         self._n_features_out = self.subcluster_centers_.shape[0]
 
-    def _get_leaves(self):
+    def _get_leaves(self) -> tp.Iterator[_BFNode]:
         r"""Iterate over the leaf nodes of the tree
 
         Yields
@@ -847,21 +801,21 @@ class BitBirch:
             mol_ids.append(subcluster.mol_indices)
         return {"centroids": centroids, "mol_ids": mol_ids}
 
-    def get_centroids(self, sort: bool = True):
+    def get_centroids(self, sort: bool = True) -> list[NDArray[np.uint8]]:
         """Get a list of arrays with the centroids' fingerprints"""
         # NOTE: This is different from the original bitbirch, here outputs are sorted
         # by default
         if self.first_call:
             raise ValueError("The model has not been fitted yet.")
-        return [s.centroids_ for s in self._get_BFs(sort=sort)]
+        return [s.centroid_ for s in self._get_BFs(sort=sort)]
 
-    def get_cluster_mol_ids(self, sort: bool = True):
+    def get_cluster_mol_ids(self, sort: bool = True) -> list[list[int]]:
         """Get the indices of the molecules in each cluster"""
         if self.first_call:
             raise ValueError("The model has not been fitted yet.")
         return [s.mol_indices for s in self._get_BFs(sort=sort)]
 
-    def _get_BFs(self, sort: bool = True):
+    def _get_BFs(self, sort: bool = True) -> list[_BFSubcluster]:
         """Get the BitFeatures of the leaves"""
         if self.first_call:
             raise ValueError("The model has not been fitted yet.")
@@ -920,9 +874,9 @@ class BitBirch:
             dtypes_to_mols[BF.dtype_name].append(BF.mol_indices)
         return dtypes_to_fp, dtypes_to_mols
 
-    def get_assignments(self, n_mols):
+    def get_assignments(self, n_mols: int) -> NDArray[np.uint64]:
         clustered_ids = self.get_cluster_mol_ids()
-        assignments = np.full(n_mols, -1, dtype=int)
+        assignments = np.full(n_mols, -1, dtype=np.uint64)
         for i, cluster in enumerate(clustered_ids, 1):
             assignments[cluster] = i
         # Check that there are no unassigned molecules
@@ -951,7 +905,7 @@ class BitBirch:
 # Output is *always* of dtype uint8, but input (if unpacked) can be of arbitrary dtype
 # It is most efficient for input to be uint8 to prevent copies
 def _get_array_iterator(
-    X: tp.Any,
+    X,
     input_is_packed: bool = True,
     n_features: int | None = None,
     dtype: DTypeLike = np.uint8,
@@ -971,7 +925,7 @@ def _get_array_iterator(
     return (a.astype(dtype, copy=True) for a in X)
 
 
-def _iter_sparse(X: tp.Any) -> tp.Iterator[NDArray[np.uint8]]:
+def _iter_sparse(X) -> tp.Iterator[NDArray[np.uint8]]:
     n_samples, n_features = X.shape
     X_indices = X.indices  # type: ignore
     X_data = X.data

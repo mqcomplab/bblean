@@ -46,6 +46,8 @@ def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
 class MergeAcceptFunction:
     # For the merge functions, although outputs of jt_isim f64, directly using f64 is
     # *not* faster than starting with uint64
+    name: str = ""
+
     def __call__(
         self,
         threshold: float,
