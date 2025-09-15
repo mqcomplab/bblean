@@ -6,6 +6,6 @@ exclude =
     __pycache__,
     build,
     .eggs,
-    bbtools.egg-info,
-    bbtools/legacy/*.py,
+    bblean.egg-info,
+    bblean/legacy/*.py,
     docs,
