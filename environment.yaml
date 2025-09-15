@@ -33,3 +33,11 @@ dependencies:
   - rdkit
   - numpy
   - psutil
+#  Required for example notebooks
+ - pandas
+ - tqdm
+ - seaborn
+ - statsmodels
+ - scikit-learn
+ - matplotlib
+# useful_rdkit_utils
