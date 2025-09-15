@@ -462,7 +462,7 @@ def _run(
     else:
         input_files = [input_]
     ctx.params.pop("input_")
-    ctx.params["input_files"] = [str(p) for p in input_files]
+    ctx.params["input_files"] = [str(p.resolve()) for p in input_files]
     ctx.params["num_fps_present"] = [get_file_num_fps(p) for p in input_files]
     if max_fps is not None:
         ctx.params["num_fps_loaded"] = [
@@ -475,7 +475,7 @@ def _run(
         out_dir = Path.cwd() / "bb_run_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
     _validate_output_dir(out_dir, overwrite_outputs)
-    ctx.params["out_dir"] = str(out_dir)
+    ctx.params["out_dir"] = str(out_dir.resolve())
 
     console.print_banner()
     console.print_config(ctx.params)
@@ -543,16 +543,18 @@ def _multiround(
             help="Filename idxs are slices, e.g. *_1000_2000.npy, *_2000_3000.npy, ...",
         ),
     ] = False,
-    round2_process_fraction: Annotated[
-        float,
+    num_round2_processes: tpx.Annotated[
+        int,
         Option(
-            help="Fraction of processes to use for second round clustering. "
+            "--ps2",
+            "--round2-processes",
+            help="Num. processes to use for the second round (if multiprocessing)."
             "Second round clustering can be very memory intensive, "
-            "so it may be desirable to use a value of 0.5-0.33 if multiprocessing.",
+            "so it may be desirable to use 50%-30% of the first round processes",
         ),
-    ] = 1.0,
+    ] = 10,
     num_processes: Annotated[
-        int, Option("-p", "--processes", help="Num. processes")
+        int, Option("--ps", "--processes", help="Num. processes for first round")
     ] = 10,
     branching_factor: Annotated[
         int,
@@ -679,7 +681,7 @@ def _multiround(
     input_files = sorted(
         in_dir.glob("*.npy"), key=lambda x: int(x.name.split(".")[0].split("_")[-2])
     )[:max_files]
-    ctx.params["input_files"] = [str(p) for p in input_files]
+    ctx.params["input_files"] = [str(p.resolve()) for p in input_files]
     ctx.params["num_fps"] = [get_file_num_fps(p) for p in input_files]
     if max_fps is not None:
         ctx.params["num_fps_loaded"] = [min(n, max_fps) for n in ctx.params["num_fps"]]
@@ -692,7 +694,7 @@ def _multiround(
         out_dir = Path.cwd() / "bb_multiround_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
     _validate_output_dir(out_dir, overwrite_outputs)
-    ctx.params["out_dir"] = str(out_dir)
+    ctx.params["out_dir"] = str(out_dir.resolve())
 
     console.print_banner()
     console.print_multiround_config(ctx.params)
@@ -715,9 +717,10 @@ def _multiround(
         n_features=n_features,
         out_dir=out_dir,
         filename_idxs_are_slices=filename_idxs_are_slices,
-        round2_process_fraction=round2_process_fraction,
         merge_criterion=merge_criterion,
         num_processes=num_processes,
+        num_round2_processes=num_round2_processes,
+        num_midsection_rounds=1,
         branching_factor=branching_factor,
         threshold=threshold,
         tolerance=tolerance,

@@ -1,9 +1,14 @@
 # BitBIRCH-Lean
 
 ## Overview
-BitBIRCH paper: https://pubs.rsc.org/en/content/articlelanding/2025/dd/d5dd00030k
 
-BitBIRCH refinement: https://pubs.acs.org/doi/full/10.1021/acs.jcim.5c00627
+If you find this work useful please cite the following articles:
+
+- *BitBIRCH: efficient clustering of large molecular libraries*:
+    https://doi.org/10.1039/D5DD00030K
+- *BitBIRCH Clustering Refinement Strategies*:
+    https://doi.org/10.1021/acs.jcim.5c00627
+- *BitBIRCH-Lean*: TODO
 
 ## Installation
 
