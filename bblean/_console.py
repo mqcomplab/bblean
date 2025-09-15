@@ -1,3 +1,4 @@
+import numpy as np
 import typing as tp
 import os
 import multiprocessing as mp
@@ -40,24 +41,38 @@ If you find this work useful please cite the following articles:
             return
         return self.print_peak_mem_raw(stats)
 
-    def print_peak_mem_raw(self, stats: PeakMemoryStats) -> None:
-        self.print("Peak RAM use:\n" f"    Main proc.: {stats.self_gib:.4f} GiB")
+    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent_num: int = 4) -> None:
+        indent = " " * indent_num
+        indent_2 = indent * 2
+        self.print(
+            "".join(
+                (
+                    indent,
+                    "- Peak RAM use:\n",
+                    indent_2,
+                    f"- Main proc.: {stats.self_gib:.4f} GiB",
+                )
+            )
+        )
         if stats.child_gib is not None:
-            self.print(f"    Max of child procs.: {stats.child_gib:.4f} GiB")
+            self.print(
+                "".join((indent_2, f"- Max of child procs.: {stats.child_gib:.4f} GiB"))
+            )
 
     def print_config(self, config: dict[str, tp.Any]) -> None:
-        num_fps_loaded = ", ".join(f"{num:,}" for num in config["num_fps_loaded"])
-        self.print(
-            f"Running [bold]single-round, serial (1 process)[/bold] clustering\n\n"
-            f"- Branching factor: {config['branching_factor']:,}\n"
-            f"- Merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
-            f"- Threshold: {config['threshold']}\n"
-            f"- Num. files loaded: {len(config['input_files']):,}\n"
-            f"- Num. fingerprints loaded per file: [{num_fps_loaded}]\n"
-            f"- Use mmap: {config['use_mmap']}\n"
-            f"- Output directory: {config['out_dir']}\n",
-            end="",
-        )
+        num_fps_loaded = np.array(config["num_fps_loaded"])
+        with np.printoptions(formatter={"int": "{:,}".format}, threshold=10):
+            self.print(
+                f"Running [bold]single-round, serial (1 process)[/bold] clustering\n\n"
+                f"- Branching factor: {config['branching_factor']:,}\n"
+                f"- Merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
+                f"- Threshold: {config['threshold']}\n"
+                f"- Num. files loaded: {len(config['input_files']):,}\n"
+                f"- Num. fingerprints loaded per file: [{num_fps_loaded}]\n"
+                f"- Use mmap: {config['use_mmap']}\n"
+                f"- Output directory: {config['out_dir']}\n",
+                end="",
+            )
         bb_variant = config.get("bitbirch_variant", "lean")
         max_files = config.get("max_files", None)
         max_fps = config.get("max_fps", None)
@@ -85,19 +100,20 @@ If you find this work useful please cite the following articles:
             else "serial (1 process)"
         )
         desc = f"multi-round, {extra_desc}"
-        num_fps_loaded = ", ".join(f"{num:,}" for num in config["num_fps_loaded"])
-        self.print(
-            f"Running [bold]{desc}[/bold] clustering\n\n"
-            f"- Branching factor: {config['branching_factor']:,}\n"
-            f"- Round-1 merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
-            f"- Threshold: {config['threshold']}\n"
-            f"- Tolerance: {config['tolerance']}\n"
-            f"- Num. files loaded: {len(config['input_files']):,}\n"
-            f"- Num. fingerprints loaded per file: [{num_fps_loaded}]\n"
-            f"- Use mmap: {config['use_mmap']}\n"
-            f"- Output directory: {config['out_dir']}\n",
-            end="",
-        )
+        num_fps_loaded = np.array(config["num_fps_loaded"])
+        with np.printoptions(formatter={"int": "{:,}".format}, threshold=10):
+            self.print(
+                f"Running [bold]{desc}[/bold] clustering\n\n"
+                f"- Branching factor: {config['branching_factor']:,}\n"
+                f"- Initial round merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"  # noqa:E501
+                f"- Threshold: {config['threshold']}\n"
+                f"- Tolerance: {config['tolerance']}\n"
+                f"- Num. files loaded: {len(config['input_files']):,}\n"
+                f"- Num. fingerprints loaded per file: {num_fps_loaded}\n"
+                f"- Use mmap: {config['use_mmap']}\n"
+                f"- Output directory: {config['out_dir']}\n",
+                end="",
+            )
         double_cluster_init = config.get("double_cluster_init", False)
         bb_variant = config.get("bitbirch_variant", "lean")
         max_files = config.get("max_files", None)
@@ -137,7 +153,7 @@ class SilentConsole(BBConsole):
     def print_peak_mem(self, num_processes: int) -> None:
         pass
 
-    def print_peak_mem_raw(self, stats: PeakMemoryStats) -> None:
+    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent_num: int = 4) -> None:
         pass
 
     def print_banner(self) -> None:

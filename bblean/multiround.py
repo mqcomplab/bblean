@@ -40,7 +40,6 @@
 # You should have received a copy of the GNU General Public License along with this
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
-import functools
 import pickle
 import gc
 import re
@@ -53,8 +52,9 @@ import numpy as np
 from numpy.typing import NDArray
 
 from bblean._console import get_console
-from bblean.utils import numpy_streaming_save, batched, _import_bitbirch_variant
+from bblean.utils import numpy_streaming_save, batched
 from bblean.config import DEFAULTS
+from bblean.bitbirch import BitBirch  # type: ignore
 
 
 def _glob_and_sort_by_uint_bits(path: Path | str, glob_expr: str) -> list[Path]:
@@ -75,149 +75,153 @@ def _load_buffers_and_mol_idxs(
     fp_data = np.load(fp_filepath, mmap_mode="r" if use_mmap else None)
     # Infer the mol_idxs filename from the fp_np filename, and fetch the mol_idxs
     count, dtype = fp_filepath.name.split(".")[0].split("_")[-2:]
-    idxs_file = out_dir / f"mol_idxs_round{round}_{count}_{dtype}.pkl"
+    idxs_file = out_dir / f"mol_idxs_round_{round}_{count}_{dtype}.pkl"
     with open(idxs_file, "rb") as f:
         mol_idxs = pickle.load(f)
     return fp_data, mol_idxs
 
 
-def first_round(
-    fp_file: Path,
-    n_features: int,
-    double_cluster_init: bool,
-    branching_factor: int,
-    threshold: float,
-    tolerance: float,
-    out_dir: Path | str,
-    filename_idxs_are_slices: bool = False,
-    max_fps: int | None = None,
-    use_mmap: bool = True,
-    bitbirch_variant: str = "lean",
-    merge_criterion: str = "diameter",
-) -> None:
+class InitialRound:
+    def __init__(
+        self,
+        n_features: int,
+        double_cluster_init: bool,
+        branching_factor: int,
+        threshold: float,
+        tolerance: float,
+        out_dir: Path | str,
+        filename_idxs_are_slices: bool = False,
+        max_fps: int | None = None,
+        use_mmap: bool = True,
+        merge_criterion: str = "diameter",
+    ) -> None:
+        self.n_features = n_features
+        self.double_cluster_init = double_cluster_init
+        self.branching_factor = branching_factor
+        self.threshold = threshold
+        self.tolerance = tolerance
+        self.out_dir = Path(out_dir)
+        self.filename_idxs_are_slices = filename_idxs_are_slices
+        self.max_fps = max_fps
+        self.use_mmap = use_mmap
+        self.merge_criterion = merge_criterion
 
-    BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
-    out_dir = Path(out_dir)
-    fps = np.load(fp_file, mmap_mode="r" if use_mmap else None)[:max_fps]
+    def __call__(self, fp_file: Path) -> None:
+        fps = np.load(fp_file, mmap_mode="r" if self.use_mmap else None)[: self.max_fps]
 
-    # Fit the fps. `reinsert_indices` is necessary to keep track of proper molecule
-    # indices. Use indices of molecules in the current batch, according to the total set
-    idx0, idx1 = map(int, fp_file.name.split(".")[0].split("_")[-2:])
-    set_merge(merge_criterion)  # Initial batch uses diameter BitBIRCH
-    brc_diameter = BitBirch(branching_factor=branching_factor, threshold=threshold)
-    # TODO: Check this
-    if filename_idxs_are_slices:
-        # idxs are <start_mol_idx>_<end_mol_idx>
-        range_ = range(idx0, idx1)
-        start_mol_idx = idx0
-    else:
-        # idxs are <file_idx>_<start_mol_idx>
-        range_ = range(idx1, idx1 + len(fps))
-        start_mol_idx = idx1
+        # Fit the fps. `reinsert_indices` is necessary to keep track of proper molecule
+        # indices. Use indices of molecules in the current batch, according to the total
+        # set
+        idx0, idx1 = map(int, fp_file.name.split(".")[0].split("_")[-2:])
+        brc_diameter = BitBirch(
+            branching_factor=self.branching_factor,
+            threshold=self.threshold,
+            merge_criterion=self.merge_criterion,
+        )
+        # TODO: Check this
+        if self.filename_idxs_are_slices:
+            # idxs are <start_mol_idx>_<end_mol_idx>
+            range_ = range(idx0, idx1)
+            start_mol_idx = idx0
+        else:
+            # idxs are <file_idx>_<start_mol_idx>
+            range_ = range(idx1, idx1 + len(fps))
+            start_mol_idx = idx1
 
-    brc_diameter.fit(fps, reinsert_indices=range_, n_features=n_features)
+        brc_diameter.fit(fps, reinsert_indices=range_, n_features=self.n_features)
+        # Extract the BitFeatures of the leaves to refine the largest cluster
+        fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
+        del fps
+        del brc_diameter
+        gc.collect()
 
-    # Extract the BitFeatures info of the leaves to refine the top cluster
-    fps_bfs, mols_bfs = brc_diameter.bf_to_np_refine(fps, initial_mol=start_mol_idx)
-    del fps
-    del brc_diameter
-    gc.collect()
-
-    if double_cluster_init:
-        # Passing the previous BitFeatures through the new tree, singleton clusters are
-        # passed at the end
-        set_merge("tolerance", tolerance)  # 'tolerance' used to refine the tree
-        brc_tolerance = BitBirch(branching_factor=branching_factor, threshold=threshold)
-        if bitbirch_variant == "lean":
+        if self.double_cluster_init:
+            # Passing the previous BitFeatures through the new tree, singleton clusters
+            # are passed at the end
+            brc_tolerance = BitBirch(
+                branching_factor=self.branching_factor,
+                threshold=self.threshold,
+                merge_criterion="tolerance",
+                tolerance=self.tolerance,
+            )
             # For the "lean" variant, these are dicts
             iterable = zip(fps_bfs.values(), mols_bfs.values())
-        else:
-            iterable = zip(fps_bfs, mols_bfs)
+            for buffers, mol_idxs in iterable:
+                brc_tolerance.fit_np(buffers, reinsert_index_sequences=mol_idxs)
 
-        for buffers, mol_idxs in iterable:
-            brc_tolerance.fit_np(buffers, reinsert_index_sequences=mol_idxs)
+            fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
+            del brc_tolerance
+            gc.collect()
 
-        fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
-        del brc_tolerance
-        gc.collect()
-
-    if bitbirch_variant in ["lean", "lean_dense"]:
-        # In this case the fps_bfs and mols_idxs are *dicts*
         for dtype, buf_list in fps_bfs.items():
-            suffix = f"round1_{idx0}_{dtype}"
-            numpy_streaming_save(buf_list, out_dir / f"bufs_{suffix}")
-            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
+            suffix = f"round_1_{idx0}_{dtype}"
+            numpy_streaming_save(buf_list, self.out_dir / f"bufs_{suffix}")
+            with open(self.out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mols_bfs[dtype], f)
-    else:
-        # In this case fps_bfs is *list of arrays*, and mols_bfs is *list of lists*
-        for buf, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round1_{idx0}_{str(buf.dtype)}"
-            np.save(out_dir / f"bufs_{suffix}", buf)
-            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pickle.dump(mol_idxs, f)
 
 
-def second_round(
-    chunk_info: tuple[int, tp.Sequence[Path]],
-    branching_factor: int,
-    threshold: float,
-    tolerance: float,
-    out_dir: Path | str,
-    use_mmap: bool = True,
-    bitbirch_variant: str = "lean",
-) -> None:
-    BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
-    out_dir = Path(out_dir)
-    chunk_idx, chunk_filenames = chunk_info
+class MidsectionRound:
+    def __init__(
+        self,
+        branching_factor: int,
+        threshold: float,
+        tolerance: float,
+        round_idx: int,
+        out_dir: Path | str,
+        use_mmap: bool = True,
+    ) -> None:
+        self.branching_factor = branching_factor
+        self.threshold = threshold
+        self.tolerance = tolerance
+        self.round_idx = round_idx
+        self.out_dir = Path(out_dir)
+        self.use_mmap = use_mmap
 
-    set_merge("tolerance", tolerance)
-    brc_chunk = BitBirch(branching_factor=branching_factor, threshold=threshold)
-    for fp_filename in chunk_filenames:
-        buffers, mol_idxs = _load_buffers_and_mol_idxs(
-            out_dir, fp_filename, 1, use_mmap
+    def __call__(self, chunk_info: tuple[int, tp.Sequence[Path]]) -> None:
+        chunk_idx, chunk_filenames = chunk_info
+
+        brc_chunk = BitBirch(
+            branching_factor=self.branching_factor,
+            threshold=self.threshold,
+            merge_criterion="tolerance",
+            tolerance=self.tolerance,
         )
-        brc_chunk.fit_np(buffers, reinsert_index_sequences=mol_idxs)
-        del mol_idxs
-        del buffers
+        for fp_filename in chunk_filenames:
+            buffers, mol_idxs = _load_buffers_and_mol_idxs(
+                self.out_dir, fp_filename, self.round_idx - 1, self.use_mmap
+            )
+            brc_chunk.fit_np(buffers, reinsert_index_sequences=mol_idxs)
+            del mol_idxs
+            del buffers
+            gc.collect()
+
+        fps_bfs, mols_bfs = brc_chunk.bf_to_np()
+        del brc_chunk
         gc.collect()
 
-    fps_bfs, mols_bfs = brc_chunk.bf_to_np()
-    del brc_chunk
-    gc.collect()
-
-    if bitbirch_variant in ["lean", "lean_dense"]:
-        # In this case the fps_bfs and mols_idxs are *dicts*
         for dtype, buf_list in fps_bfs.items():
-            suffix = f"round2_{chunk_idx}_{dtype}"
-            numpy_streaming_save(buf_list, out_dir / f"bufs_{suffix}")
-            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
+            suffix = f"round_{self.round_idx}_{chunk_idx}_{dtype}"
+            numpy_streaming_save(buf_list, self.out_dir / f"bufs_{suffix}")
+            with open(self.out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
                 pickle.dump(mols_bfs[dtype], f)
-    else:
-        # In this case fps_bfs is *list of arrays*, and mols_bfs is *list of lists*
-        for buf, mol_idxs in zip(fps_bfs, mols_bfs):
-            suffix = f"round2_{chunk_idx}_{str(buf.dtype)}"
-            np.save(out_dir / f"bufs_{suffix}", buf)
-            with open(out_dir / f"mol_idxs_{suffix}.pkl", mode="wb") as f:
-                pickle.dump(mol_idxs, f)
 
 
-def third_round(
+def final_round(
+    final_files: tp.Iterable[Path],
     branching_factor: int,
     threshold: float,
     tolerance: float,
     out_dir: Path | str,
     use_mmap: bool = True,
-    bitbirch_variant: str = "lean",
 ) -> None:
-
-    BitBirch, set_merge = _import_bitbirch_variant(bitbirch_variant)
     out_dir = Path(out_dir)
-
-    set_merge("tolerance", tolerance)
-    brc_final = BitBirch(branching_factor=branching_factor, threshold=threshold)
-
-    sorted_files2 = _glob_and_sort_by_uint_bits(out_dir, "*round2*.npy")
-    for fp_filename in sorted_files2:
+    brc_final = BitBirch(
+        branching_factor=branching_factor,
+        threshold=threshold,
+        merge_criterion="tolerance",
+        tolerance=tolerance,
+    )
+    for fp_filename in final_files:
         buffers, mol_idxs = _load_buffers_and_mol_idxs(
             out_dir, fp_filename, 2, use_mmap
         )
@@ -247,13 +251,14 @@ def run_multiround_bitbirch(
     n_features: int,
     out_dir: Path,
     filename_idxs_are_slices: bool = False,
-    round2_process_fraction: float = 1.0,
     merge_criterion: str = DEFAULTS.merge_criterion,
     num_processes: int = 10,
+    num_round2_processes: int = 3,
     branching_factor: int = 254,
     threshold: float = DEFAULTS.threshold,
     tolerance: float = DEFAULTS.tolerance,
     # Advanced
+    num_midsection_rounds: int = 1,
     bin_size: int = 10,
     use_mmap: bool = DEFAULTS.use_mmap,
     max_tasks_per_process: int = 1,
@@ -263,8 +268,7 @@ def run_multiround_bitbirch(
     max_fps: int | None = None,
     max_files: int | None = None,
     verbose: bool = False,
-    bitbirch_variant: str = "lean",
-) -> dict[str, float | None]:
+) -> dict[str, float]:
     # Returns timing and for the different rounds
     # TODO: Also return peak-rss
     console = get_console(silent=not verbose)
@@ -275,21 +279,19 @@ def run_multiround_bitbirch(
         threshold=threshold,
         tolerance=tolerance,
         use_mmap=use_mmap,
-        bitbirch_variant=bitbirch_variant,
         out_dir=out_dir,
     )
+
+    timings_s: dict[str, float] = {}
     start_time = time.perf_counter()
     start_round1 = time.perf_counter()
-    timings_s: dict[str, float | None] = {
-        "round-1": None,
-        "round-2": None,
-        "round-3": None,
-        "total": None,
-    }
 
-    console.print("Round 1: Processing initial batch of packed fingerprints...")
-    round_1_fn: tp.Callable[[Path], None] = functools.partial(
-        first_round,
+    # Initial round
+    round_idx = 1
+    round_label = f"Round {round_idx}"
+    console.print(f"(Initial) {round_label}: Cluster initial batch of fingerprints...")
+
+    initial_round_fn = InitialRound(
         n_features=n_features,
         double_cluster_init=double_cluster_init,
         max_fps=max_fps,
@@ -298,51 +300,63 @@ def run_multiround_bitbirch(
         **common_kwargs,
     )
     num_ps = min(num_processes, len(input_files))
-    console.print(f"Running on {len(input_files)} files with {num_ps} processes")
+    console.print(f"    - Running on {len(input_files)} files with {num_ps} processes")
     if num_ps == 1:
         for file in input_files:
-            round_1_fn(file)
+            initial_round_fn(file)
     else:
         with mp.Pool(processes=num_ps, maxtasksperchild=max_tasks_per_process) as pool:
-            pool.map(round_1_fn, input_files)
-    sorted_files1 = _glob_and_sort_by_uint_bits(out_dir, "*round1*.npy")
-    chunks = list(enumerate(batched(sorted_files1, n=bin_size)))
-    console.print(f"Finished. Collected {len(sorted_files1)} output files")
-    console.print(f"Chunked files into {len(chunks)} chunks")
-    timings_s["round-1"] = time.perf_counter() - start_round1
-    console.print(f"Time for round 1: {timings_s['round-1']:.4f} s")
+            pool.map(initial_round_fn, input_files)
+    timings_s[round_label] = time.perf_counter() - start_round1
+    console.print(f"    - Time for {round_label}: {timings_s[round_label]:.4f} s")
     console.print_peak_mem(num_ps)
 
     if only_first_round:  # Early exit for debugging
         timings_s["total"] = time.perf_counter() - start_time
         return timings_s
 
-    start_round2 = time.perf_counter()
-    console.print("Round 2: Re-clustering in chunks...")
-    round_2_fn: tp.Callable[[tuple[int, tp.Sequence[Path]]], None] = functools.partial(
-        second_round, **common_kwargs
-    )
+    # Mid-section rounds (round-2 round-3 ...)
+    for _ in range(num_midsection_rounds):
+        round_idx += 1
+        round_label = f"Round {round_idx}"
+        start_round2 = time.perf_counter()
+        console.print(f"(Midsection) {round_label}: Re-clustering in chunks...")
+        sorted_files = _glob_and_sort_by_uint_bits(
+            out_dir, f"*round_{round_idx - 1}*.npy"
+        )
+        console.print(f"    - Collected {len(sorted_files)} output files")
+        chunks = list(enumerate(batched(sorted_files, n=bin_size)))
+        console.print(f"    - Chunked files into {len(chunks)} chunks")
 
-    num_ps = min(num_ps, round(num_ps * round2_process_fraction), len(chunks))
-    console.print(f"Running on {len(chunks)} chunks with {num_ps} processes")
-    if num_ps == 1:
-        for chunk_info_part in chunks:
-            round_2_fn(chunk_info_part)
-    else:
-        with mp.Pool(processes=num_ps, maxtasksperchild=max_tasks_per_process) as pool:
-            pool.map(round_2_fn, chunks)
-    timings_s["round-2"] = time.perf_counter() - start_round2
-    console.print(f"Time for round 2: {timings_s['round-2']:.4f} s")
-    console.print_peak_mem(num_ps)
+        round_fn = MidsectionRound(round_idx=round_idx, **common_kwargs)
+        num_ps = min(num_round2_processes, len(chunks))
+        console.print(f"    - Running on {len(chunks)} chunks with {num_ps} processes")
+        if num_ps == 1:
+            for chunk_info_part in chunks:
+                round_fn(chunk_info_part)
+        else:
+            with mp.Pool(
+                processes=num_ps, maxtasksperchild=max_tasks_per_process
+            ) as pool:
+                pool.map(round_fn, chunks)
+        timings_s[round_label] = time.perf_counter() - start_round2
+        console.print(f"    - Time for {round_label}: {timings_s[round_label]:.4f} s")
+        console.print_peak_mem(num_ps)
 
+    # Final round
+    round_idx += 1
     start_final = time.perf_counter()
-    console.print("Round 3: Final clustering...")
-    third_round(**common_kwargs)
+    console.print(f"(Final) Round {round_idx}: Final round of clustering...")
+    sorted_files = _glob_and_sort_by_uint_bits(out_dir, f"*round_{round_idx - 1}*.npy")
+    console.print(f"    - Collected {len(sorted_files)} output files")
+    final_round(sorted_files, **common_kwargs)
 
-    timings_s["round-3"] = time.perf_counter() - start_final
-    console.print(f"Time for round 3 (final clustering): {timings_s['round-3']:.4f} s")
+    round_label = f"Round {round_idx}"
+    timings_s[round_label] = time.perf_counter() - start_final
+    console.print(f"    - Time for {round_label}: {timings_s[round_label]:.4f} s")
     console.print_peak_mem(num_ps)
 
     timings_s["total"] = time.perf_counter() - start_time
+    console.print()
     console.print(f"Total time: {timings_s['total']:.4f} s")
     return timings_s
