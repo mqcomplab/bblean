@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# type: ignore
 
 from lightgbm import LGBMRegressor
 from rdkit import Chem
@@ -61,7 +62,7 @@ class LGBMMorganCountWrapper:
 
 def main():
     df = pd.read_csv(
-        "https://raw.githubusercontent.com/PatWalters/datafiles/refs/heads/main/biogen_logS.csv"
+        "https://raw.githubusercontent.com/PatWalters/datafiles/refs/heads/main/biogen_logS.csv"  # noqa
     )
     train, test = train_test_split(df)
     lgbm_wrapper = LGBMMorganCountWrapper("logS")

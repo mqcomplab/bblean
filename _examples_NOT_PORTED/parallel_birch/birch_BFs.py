@@ -4,6 +4,7 @@ import time
 
 if __name__ == "__main__":
     import bitbirch.bitbirch as bb
+
     # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
