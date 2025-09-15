@@ -21,6 +21,17 @@ class BBConsole(Console):
         [/bold]
         """  # noqa W291
         self.print(banner, highlight=False)
+        self.print(
+            r"""
+If you find this work useful please cite the following articles:
+    - [italic]BitBIRCH: efficient clustering of large molecular libraries[/italic]:
+        https://doi.org/10.1039/D5DD00030K
+    - [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
+        https://doi.org/10.1021/acs.jcim.5c00627
+    - [italic]BitBIRCH-Lean[/italic]:
+        (TODO)"""  # noqa
+        )
+        self.print()
 
     def print_peak_mem(self, num_processes: int) -> None:
         stats = get_peak_memory(num_processes)

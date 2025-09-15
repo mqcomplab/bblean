@@ -28,15 +28,7 @@ app = Typer(
     add_completion=False,
     help=r"""CLI tool for serial or parallel fast clustering of molecular fingerprints
     using the memory-efficient and compute-efficient *O(N)* BitBIRCH algorithm ('Lean'
-    version). For more info about the subcommands run `bb <subcommand> --help `. If you
-    find this work useful please cite the following articles:
-    - Original BitBIRCH article:
-        [https://doi.org/10.1039/D5DD00030K](https://doi.org/10.1039/D5DD00030K)
-    - BitBIRCH refinement strategies:
-        (TODO)
-    - BitBIRCH-Lean:
-        (TODO)
-    """,  # noqa
+    version). For more info about the subcommands run `bb <subcommand> --help `.""",
 )
 
 
