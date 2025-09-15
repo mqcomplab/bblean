@@ -1,16 +1,15 @@
 [project]
 name = "bblean"
 authors = [
+    {name = "The Miranda-Quintana Lab and other BitBirch developers"},
     {name = "Ramon Alain Miranda Quintana", email = "quintana@chem.ufl.edu"},
     {name = "Krisztina Zsigmond", email = "kzsigmond@ufl.edu"},
     {name = "Ignacio Pickering", email = "ipickering@ufl.edu"},
-    {name = "Vicky (Vic) Jung", email = "jungvicky@ufl.edu"},
     {name = "Kenneth Lopez Perez", email = "klopezperez@chem.ufl.edu"},
-    {name = "Kate Huddleston", email = "kdavis2@chem.ufl.edu"},
     {name = "Miroslav Lzicar", email= "miroslav.lzicar@deepmedchem.com"},
 ]
 license = {file = "LICENSE"}
-description = "BitBirch Tools python package"
+description = "BitBirch-Lean Python package"
 requires-python = ">=3.11"
 dynamic = ["version", "readme"]
 dependencies = [

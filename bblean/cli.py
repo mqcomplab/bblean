@@ -32,7 +32,7 @@ app = Typer(
         [https://doi.org/10.1039/D5DD00030K](https://doi.org/10.1039/D5DD00030K)
     - BitBirch refinement strategies:
         (TODO)
-    - BitBirch-Lean and BB-Tools:
+    - BitBirch-Lean:
         (TODO)
     """,  # noqa
 )
