@@ -1,4 +1,4 @@
-# BitBirch-Lean
+# BitBIRCH-Lean
 
 ## Overview
 
