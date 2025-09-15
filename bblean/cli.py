@@ -106,6 +106,13 @@ def main(
     pass
 
 
+def get_file_num_fps(path: Path) -> int:
+    with open(path, mode="rb") as f:
+        major, minor = np.lib.format.read_magic(f)
+        shape, _, _ = getattr(np.lib.format, f"read_array_header_{major}_{minor}")(f)
+        return shape[0]
+
+
 @app.command("fps-info")
 def fp_info(
     fp_paths: Annotated[
@@ -143,8 +150,8 @@ def fp_info(
         else:
             console.print("    - [red]Invalid fingerprint file[/red]")
         if shape_is_valid:
-            console.print(f"    - Num. fingerprints: {shape[0]}")
-            console.print(f"    - Num. features: {shape[1]}")
+            console.print(f"    - Num. fingerprints: {shape[0]:,}")
+            console.print(f"    - Num. features: {shape[1]:,}")
         else:
             console.print(f"    - Shape: {shape}")
         console.print(f"    - DType: [yellow]{dtype.name}[/yellow]")
@@ -464,6 +471,13 @@ def _run(
         input_files = [input_]
     ctx.params.pop("input_")
     ctx.params["input_files"] = [str(p) for p in input_files]
+    ctx.params["num_fps_present"] = [get_file_num_fps(p) for p in input_files]
+    if max_fps is not None:
+        ctx.params["num_fps_loaded"] = [
+            min(n, max_fps) for n in ctx.params["num_fps_present"]
+        ]
+    else:
+        ctx.params["num_fps_loaded"] = ctx.params["num_fps_present"]
     unique_id = str(uuid.uuid4()).split("-")[0]
     if out_dir is None:
         out_dir = Path.cwd() / "bb_run_outputs" / unique_id
@@ -674,6 +688,11 @@ def _multiround(
         in_dir.glob("*.npy"), key=lambda x: int(x.name.split(".")[0].split("_")[-2])
     )[:max_files]
     ctx.params["input_files"] = [str(p) for p in input_files]
+    ctx.params["num_fps"] = [get_file_num_fps(p) for p in input_files]
+    if max_fps is not None:
+        ctx.params["num_fps_loaded"] = [min(n, max_fps) for n in ctx.params["num_fps"]]
+    else:
+        ctx.params["num_fps_loaded"] = ctx.params["num_fps"]
 
     # If not passed, output dir is constructed as bb_multiround_outputs/<unique-id>/
     unique_id = str(uuid.uuid4()).split("-")[0]

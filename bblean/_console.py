@@ -35,12 +35,14 @@ class BBConsole(Console):
             self.print(f"    Max of child procs.: {stats.child_gib:.4f} GiB")
 
     def print_config(self, config: dict[str, tp.Any]) -> None:
+        num_fps_loaded = ", ".join(f"{num:,}" for num in config["num_fps_loaded"])
         self.print(
             f"Running [bold]single-round, serial (1 process)[/bold] clustering\n\n"
-            f"- Branching factor: {config['branching_factor']}\n"
+            f"- Branching factor: {config['branching_factor']:,}\n"
             f"- Merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
             f"- Threshold: {config['threshold']}\n"
-            f"- Num. files loaded: {len(config['input_files'])}\n"
+            f"- Num. files loaded: {len(config['input_files']):,}\n"
+            f"- Num. fingerprints loaded per file: [{num_fps_loaded}]\n"
             f"- Use mmap: {config['use_mmap']}\n"
             f"- Output directory: {config['out_dir']}\n",
             end="",
@@ -51,32 +53,36 @@ class BBConsole(Console):
         if "tolerance" in config["merge_criterion"]:
             self.print(f"- Tolerance: {config['tolerance']}\n")
         if bb_variant != "lean":
-            self.print("- DEBUG: Using bitbirch version: {variant}\n", end="")
+            self.print(
+                "- [bold]DEBUG:[/bold] Using bitbirch version: {variant}\n", end=""
+            )
         if max_files is not None:
             self.print(
-                f"- DEBUG: Max files to load: {max_files}\n", end=""
-            )  # noqa:E501
+                f"- [bold]DEBUG:[/bold] Max files to load: {max_files:,}\n", end=""
+            )
         if max_fps is not None:
             self.print(
-                f"- DEBUG: Max fingerprints to load per file: {max_fps}\n", end=""
+                f"- [bold]DEBUG:[/bold] Max fps to load per file: {max_fps:,}\n", end=""
             )
         self.print()
 
     def print_multiround_config(self, config: dict[str, tp.Any]) -> None:
         num_processes = config.get("num_processes", 1)
         extra_desc = (
-            f"parallel (max {num_processes} processes)"
+            f"parallel (max {num_processes:,} processes)"
             if num_processes > 1
             else "serial (1 process)"
         )
         desc = f"multi-round, {extra_desc}"
+        num_fps_loaded = ", ".join(f"{num:,}" for num in config["num_fps_loaded"])
         self.print(
             f"Running [bold]{desc}[/bold] clustering\n\n"
-            f"- Branching factor: {config['branching_factor']}\n"
+            f"- Branching factor: {config['branching_factor']:,}\n"
             f"- Round-1 merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
             f"- Threshold: {config['threshold']}\n"
             f"- Tolerance: {config['tolerance']}\n"
-            f"- Num. files loaded: {len(config['input_files'])}\n"
+            f"- Num. files loaded: {len(config['input_files']):,}\n"
+            f"- Num. fingerprints loaded per file: [{num_fps_loaded}]\n"
             f"- Use mmap: {config['use_mmap']}\n"
             f"- Output directory: {config['out_dir']}\n",
             end="",
@@ -84,10 +90,10 @@ class BBConsole(Console):
         double_cluster_init = config.get("double_cluster_init", False)
         bb_variant = config.get("bitbirch_variant", "lean")
         max_files = config.get("max_files", None)
-        max_fps = config.get("max_fps", None)
         bin_size = config.get("bin_size", None)
+        max_fps = config.get("max_fps", None)
         if bin_size is not None:
-            self.print(f"- Bin size for second round: {bin_size}\n", end="")
+            self.print(f"- Bin size for second round: {bin_size:,}\n", end="")
         if num_processes > 1:
             self.print(
                 f"- Multiprocessing method: [yellow]{mp.get_start_method()}[/yellow]\n",
@@ -99,14 +105,16 @@ class BBConsole(Console):
                 end="",
             )
         if bb_variant != "lean":
-            self.print("- DEBUG: Using bitbirch version: {variant}\n", end="")
+            self.print(
+                "- [bold]DEBUG:[/bold] Using bitbirch version: {variant}\n", end=""
+            )
         if max_files is not None:
             self.print(
-                f"- DEBUG: Max files to load: {max_files}\n", end=""
-            )  # noqa:E501
+                f"- [bold]DEBUG:[/bold] Max files to load: {max_files:,}\n", end=""
+            )
         if max_fps is not None:
             self.print(
-                f"- DEBUG: Max fingerprints to load per file: {max_fps}\n", end=""
+                f"- [bold]DEBUG:[/bold] Max fps to load per file: {max_fps:,}\n", end=""
             )
         self.print()
 
