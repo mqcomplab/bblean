@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import math
 import typing_extensions as tpx
 import shutil
 import json
@@ -18,7 +19,7 @@ from typer import Typer, Argument, Option, Abort, Context
 
 from bbtools.memory import monitor_rss_daemon, get_peak_memory
 from bbtools.config import DEFAULTS, collect_system_specs_and_dump_config
-from bbtools.utils import _import_bitbirch_variant, pack_fingerprints
+from bbtools.utils import _import_bitbirch_variant, pack_fingerprints, batched
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -200,9 +201,31 @@ def _fps_from_smiles(
 
 
 @app.command("split-fps")
-def _split_fps() -> None:
+def _split_fps(
+    input_: Annotated[
+        Path,
+        Argument(help="*.npy file with fingerprints"),
+    ],
+    num: tpx.Annotated[
+        int,
+        Option("-n", "--num", help="Number fo files to split into"),
+    ],
+    out_dir: tpx.Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+) -> None:
     r"""Split a *.npy fingerprint file into multiple *.npy files"""
-    raise NotImplementedError("Not yet implemented")
+    if num < 2:
+        raise ValueError("Num must be >= 2")
+    if out_dir is None:
+        out_dir = input_.parent
+    fps = np.load(input_, mmap_mode="r")
+    digits = len(str(num)) + 1
+    num_per_batch = math.ceil(fps.shape[0] / num)
+    for i, batch in enumerate(batched(fps, num_per_batch)):
+        name = f"{input_.with_suffix('').name}.{str(i).zfill(digits)}"
+        np.save(out_dir / name, batch)
 
 
 @app.command("run")

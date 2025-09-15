@@ -7,9 +7,9 @@ authors = [
     {name = "Vicky (Vic) Jung", email = "jungvicky@ufl.edu"},
     {name = "Kenneth Lopez Perez", email = "klopezperez@chem.ufl.edu"},
     {name = "Kate Huddleston", email = "kdavis2@chem.ufl.edu"},
+    {name = "Miroslav Lzicar", email= "miroslav.lzicar@deepmedchem.com"},
 ]
-license = "GPL-3-only"
-license-files = ["LICENSE", "GPL3.txt"]
+license = {file = "LICENSE"}
 description = "BitBirch Tools python package"
 requires-python = ">=3.11"
 dynamic = ["version", "readme"]
@@ -20,6 +20,24 @@ dependencies = [
     "rdkit",
     "scipy",
     "psutil",
+]
+classifiers=[
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering",
+  "Development Status :: 4 - Beta",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
 ]
 
 [tool.setuptools.dynamic]
