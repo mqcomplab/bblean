@@ -4,13 +4,13 @@ import typing as tp
 import json
 import sys
 import dataclasses
-from bbtools.memory import system_mem_gib
+from bblean.memory import system_mem_gib
 import multiprocessing as mp
 import os
 
 import numpy as np
 
-from bbtools.utils import cpu_name
+from bblean.utils import cpu_name
 
 
 @dataclasses.dataclass(slots=True)

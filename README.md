@@ -1,4 +1,4 @@
-# BitBirch-Tools
+# BitBirch-Lean
 
 ## Overview
 
@@ -8,6 +8,7 @@ From source, using a conda environment:
 
 ```bash
 conda env create --file ./environment.yaml
+conda activate bblean
 pip install -e .
 ```
 

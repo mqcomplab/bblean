@@ -17,10 +17,10 @@ import numpy as np
 import typer
 from typer import Typer, Argument, Option, Abort, Context
 
-from bbtools.memory import monitor_rss_daemon, get_peak_memory
-from bbtools.config import DEFAULTS, collect_system_specs_and_dump_config
-from bbtools.packing import pack_fingerprints
-from bbtools.utils import _import_bitbirch_variant, batched
+from bblean.memory import monitor_rss_daemon, get_peak_memory
+from bblean.config import DEFAULTS, collect_system_specs_and_dump_config
+from bblean.packing import pack_fingerprints
+from bblean.utils import _import_bitbirch_variant, batched
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -32,7 +32,7 @@ app = Typer(
         [https://doi.org/10.1039/D5DD00030K](https://doi.org/10.1039/D5DD00030K)
     - BitBirch refinement strategies:
         (TODO)
-    - BitBirch-Lean and BB-Tools:
+    - BitBirch-Lean:
         (TODO)
     """,  # noqa
 )
@@ -40,7 +40,7 @@ app = Typer(
 
 def _print_help_banner(ctx: Context, value: bool) -> None:
     if value:
-        from bbtools._console import get_console
+        from bblean._console import get_console
 
         console = get_console()
         console.print_banner()
@@ -146,7 +146,7 @@ def _fps_from_smiles(
     """
     import numpy as np
     from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
-    from bbtools._console import get_console
+    from bblean._console import get_console
 
     console = get_console(silent=not verbose)
 
@@ -320,7 +320,7 @@ def _run(
 ) -> None:
     r"""Run standard BitBirch clustering"""
     import numpy as np
-    from bbtools._console import get_console
+    from bblean._console import get_console
 
     console = get_console(silent=not verbose)
 
@@ -527,8 +527,8 @@ def _multiround(
     ] = True,
 ) -> None:
     r"""Run multi-round BitBirch clustering, with the option to parallelize"""
-    from bbtools._console import get_console
-    from bbtools.multiround import run_multiround_bitbirch
+    from bblean._console import get_console
+    from bblean.multiround import run_multiround_bitbirch
 
     console = get_console(silent=not verbose)
 
