@@ -1,15 +1,13 @@
-# bbtools
+# BitBirch-Tools
 
 ## Overview
 
 ## Installation
 
-From source:
-
-First install submodules, afterwards run:
+From source, using a conda environment:
 
 ```bash
-# conda|mamba env create --file ./environment.yaml
+conda env create --file ./environment.yaml
 pip install -e .
 ```
 
