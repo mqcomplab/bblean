@@ -27,14 +27,14 @@ app = Typer(
     rich_markup_mode="markdown",
     add_completion=False,
     help=r"""CLI tool for serial or parallel fast clustering of molecular fingerprints
-    using the memory-efficient and compute-efficient *O(N)* BitBirch algorithm ('Lean'
+    using the memory-efficient and compute-efficient *O(N)* BitBIRCH algorithm ('Lean'
     version). For more info about the subcommands run `bb <subcommand> --help `. If you
     find this work useful please cite the following articles:
-    - Original BitBirch article:
+    - Original BitBIRCH article:
         [https://doi.org/10.1039/D5DD00030K](https://doi.org/10.1039/D5DD00030K)
-    - BitBirch refinement strategies:
+    - BitBIRCH refinement strategies:
         (TODO)
-    - BitBirch-Lean:
+    - BitBIRCH-Lean:
         (TODO)
     """,  # noqa
 )
@@ -210,7 +210,7 @@ def _fps_from_smiles(
 ) -> None:
     r"""Generate a *.npy fingerprints file from one or more *.smi smiles files
 
-    In order to use the memory efficient BitBirch u8 algorithm you *must* use the
+    In order to use the memory efficient BitBIRCH u8 algorithm you *must* use the
     defaults: --dtype=uint8 and --pack
     """
     import numpy as np
@@ -375,7 +375,7 @@ def _run(
     branching_factor: Annotated[
         int,
         Option(
-            help="BitBirch branching factor. Under most circumstances 254 is"
+            help="BitBIRCH branching factor. Under most circumstances 254 is"
             " optimal for performance and memory efficiency. Set this above 254 for"
             " slightly less RAM usage at the cost of some performance."
         ),
@@ -395,7 +395,7 @@ def _run(
     tolerance: Annotated[
         float,
         Option(
-            help="BitBirch tolerance, only for --set-merge tolerance|tolerance_tough"
+            help="BitBIRCH tolerance, only for --set-merge tolerance|tolerance_tough"
         ),
     ] = DEFAULTS.tolerance,
     n_features: tpx.Annotated[
@@ -443,7 +443,7 @@ def _run(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Run standard, serial BitBirch clustering over *.npy fingerprint files"""
+    r"""Run standard, serial BitBIRCH clustering over *.npy fingerprint files"""
     import numpy as np
     from bblean._console import get_console
 
@@ -551,16 +551,16 @@ def _multiround(
     branching_factor: Annotated[
         int,
         Option(
-            help="BitBirch branching factor. Under most circumstances 254 is"
+            help="BitBIRCH branching factor. Under most circumstances 254 is"
             " optimal for performance and memory efficiency. Set this above 254 for"
             " slightly less RAM usage at the cost of some performance."
         ),
     ] = DEFAULTS.branching_factor,
-    threshold: Annotated[float, Option(help="BitBirch threshold")] = DEFAULTS.threshold,
+    threshold: Annotated[float, Option(help="BitBIRCH threshold")] = DEFAULTS.threshold,
     tolerance: Annotated[
         float,
         Option(
-            help="BitBirch tolerance"
+            help="BitBIRCH tolerance"
             " (Used in Round 1 'double-cluster-init', Round 2, and Final clustering)"
         ),
     ] = DEFAULTS.tolerance,
@@ -651,7 +651,7 @@ def _multiround(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Run multi-round BitBirch clustering, optionally parallelize over *.npy files"""
+    r"""Run multi-round BitBIRCH clustering, optionally parallelize over *.npy files"""
     from bblean._console import get_console
     from bblean.multiround import run_multiround_bitbirch
 

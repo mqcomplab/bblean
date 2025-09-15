@@ -1,4 +1,4 @@
-# BitBirch-Lean Python Package: An open-source clustering module based on iSIM.
+# BitBIRCH-Lean Python Package: An open-source clustering module based on iSIM.
 #
 # If you find this code useful, please cite the BitBirch paper:
 # https://doi.org/10.1039/D5DD00030K
