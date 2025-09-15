@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import typing as tp
 import math
 import typing_extensions as tpx
 import shutil
@@ -25,9 +26,10 @@ from bblean.utils import _import_bitbirch_variant, batched
 app = Typer(
     rich_markup_mode="markdown",
     add_completion=False,
-    help=r"""CLI interface for serial and parallel fast clustering of molecular
-    fingerprints using the *O(N)* BitBirch algorithm. If you find this work useful
-    please cite the following articles:
+    help=r"""CLI tool for serial or parallel fast clustering of molecular fingerprints
+    using the memory-efficient and compute-efficient *O(N)* BitBirch algorithm ('Lean'
+    version). For more info about the subcommands run `bb <subcommand> --help `. If you
+    find this work useful please cite the following articles:
     - Original BitBirch article:
         [https://doi.org/10.1039/D5DD00030K](https://doi.org/10.1039/D5DD00030K)
     - BitBirch refinement strategies:
@@ -104,11 +106,63 @@ def main(
     pass
 
 
+@app.command("fps-info")
+def fp_info(
+    fp_paths: Annotated[
+        list[Path] | None,
+        Argument(show_default=False, help="Paths to *.smi files with smiles"),
+    ] = None,
+) -> None:
+    """Show info about a *.npy fingerprint file, or a dir with *.npy files"""
+    from bblean._console import get_console
+
+    console = get_console()
+    if fp_paths is None:
+        fp_paths = [Path.cwd()]
+
+    def get_file_info(path: Path) -> tuple[tuple[int, int], np.dtype, bool, bool]:
+        with open(path, mode="rb") as f:
+            major, minor = np.lib.format.read_magic(f)
+            shape, _, dtype = getattr(
+                np.lib.format, f"read_array_header_{major}_{minor}"
+            )(f)
+        shape_is_valid = len(shape) == 2
+        dtype_is_valid = np.issubdtype(dtype, np.integer)
+        return shape, dtype, shape_is_valid, dtype_is_valid
+
+    def print_info(
+        path: Path,
+        shape: tuple[int, int],
+        dtype: np.dtype,
+        shape_is_valid: bool,
+        dtype_is_valid: bool,
+    ) -> None:
+        console.print(f"File: {path.resolve()}")
+        if shape_is_valid and dtype_is_valid:
+            console.print("    - [green]Valid fingerprint file[/green]")
+        else:
+            console.print("    - [red]Invalid fingerprint file[/red]")
+        if shape_is_valid:
+            console.print(f"    - Num. fingerprints: {shape[0]}")
+            console.print(f"    - Num. features: {shape[1]}")
+        else:
+            console.print(f"    - Shape: {shape}")
+        console.print(f"    - DType: [yellow]{dtype.name}[/yellow]")
+        console.print()
+
+    for path in fp_paths:
+        if path.is_dir():
+            for file in path.glob("*.npy"):
+                print_info(file, *get_file_info(file))
+        elif path.suffix == ".npy":
+            print_info(path, *get_file_info(path))
+
+
 @app.command("fps-from-smiles")
 def _fps_from_smiles(
     smiles_paths: Annotated[
         list[Path] | None,
-        Option("-s", "--smiles-path", show_default=False),
+        Argument(show_default=False, help="Paths to *.smi files with smiles"),
     ] = None,
     out_dir: Annotated[
         Path | None,
@@ -118,11 +172,26 @@ def _fps_from_smiles(
         str,
         Option("-d", "--dtype", help="NumPy dtype for the generated fingerprints"),
     ] = "uint8",
-    packed: Annotated[
+    parts: tpx.Annotated[
+        int | None,
+        Option(
+            "-n", "--num-parts", help="Split the created file into this number of parts"
+        ),
+    ] = None,
+    max_fps_per_file: tpx.Annotated[
+        int | None,
+        Option(
+            "-m",
+            "--max-fps",
+            help="Max. number of fps per file. Mutually exclusive with --num-parts",
+            show_default=False,
+        ),
+    ] = None,
+    pack: Annotated[
         bool,
         Option(
             "-p/-P",
-            "--packed/--no-packed",
+            "--pack/--no-pack",
             help="Pack bits in last dimension of fingerprints",
         ),
     ] = True,
@@ -139,14 +208,27 @@ def _fps_from_smiles(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Generate a *.npy fingerprints file from one or more smiles files
+    r"""Generate a *.npy fingerprints file from one or more *.smi smiles files
 
     In order to use the memory efficient BitBirch u8 algorithm you *must* use the
-    defaults: --dtype=uint8 and --packed
+    defaults: --dtype=uint8 and --pack
     """
     import numpy as np
+    from rdkit import Chem
     from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
     from bblean._console import get_console
+
+    def iter_mols_from_paths(smiles_paths: tp.Iterable[Path]) -> tp.Iterator[Chem.Mol]:
+        for smi_path in smiles_paths:
+            with open(smi_path, mode="rt", encoding="utf-8") as f:
+                for i, smi in enumerate(f):
+                    mol = MolFromSmiles(smi)
+                    if mol is None:
+                        console.print(
+                            f"Invalid smiles {smi} from {str(smi_path)} (line {i + 1})"
+                        )
+                        raise Abort()
+                    yield mol
 
     console = get_console(silent=not verbose)
 
@@ -164,10 +246,6 @@ def _fps_from_smiles(
     if not smiles_paths:
         console.print("No *.smi files found", style="red")
         raise Abort()
-    if out_dir is None:
-        unique_id = str(uuid.uuid4()).split("-")[0]
-        out_dir = Path.cwd() / ("packed_fps" if packed else "fps") / unique_id
-    out_dir.mkdir(parents=True, exist_ok=True)
 
     # Pass 1: check the total number of smiles
     smiles_num = 0
@@ -176,54 +254,101 @@ def _fps_from_smiles(
             for _ in f:
                 smiles_num += 1
 
+    digits: int | None
+    if parts is not None and max_fps_per_file is None:
+        num_per_batch = math.ceil(smiles_num / parts)
+        digits = len(str(parts)) + 1
+    elif parts is None and max_fps_per_file is not None:
+        num_per_batch = max_fps_per_file
+        digits = len(str(math.ceil(smiles_num / max_fps_per_file))) + 1
+    elif parts is None and max_fps_per_file is None:
+        parts = 1
+        num_per_batch = math.ceil(smiles_num / parts)
+        digits = None
+    else:
+        console.print(
+            "One and only one of '--max-fps' and '--num-parts' required", style="red"
+        )
+        raise Abort()
+
+    if out_dir is None:
+        unique_id = str(uuid.uuid4()).split("-")[0]
+        out_dir = Path.cwd() / ("packed-fps" if pack else "fps") / unique_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+
     # Pass 2: build the molecules
-    mols = []
-    for smi_path in smiles_paths:
-        with open(smi_path, mode="rt", encoding="utf-8") as f:
-            for i, smi in enumerate(f):
-                mol = MolFromSmiles(smi)
-                if mol is None:
-                    console.print(
-                        f"Invalid smiles {smi} from {str(smi_path)} (line {i + 1})"
-                    )
-                    raise Abort()
-                mols.append(mol)
-
-    # Pass 3: build the fingerprints
-    fps = np.empty((len(mols), fp_size), dtype=dtype)
-    for i, fp in enumerate(fpg.GetFingerprints(mols)):
-        DataStructs.ConvertToNumpyArray(fp, fps[i, :])
-
-    if packed:
-        fps = pack_fingerprints(fps)
-
-    # Save the fingerprints as a NumPy array
-    np.save(out_dir / f"{'packed-' if packed else ''}fps-{dtype}", fps)
+    for file_idx, mol_batch in enumerate(
+        batched(iter_mols_from_paths(smiles_paths), num_per_batch)
+    ):
+        fps = np.empty((len(mol_batch), fp_size), dtype=dtype)
+        for i, fp in enumerate(fpg.GetFingerprints(mol_batch)):
+            DataStructs.ConvertToNumpyArray(fp, fps[i, :])
+        if pack:
+            fps = pack_fingerprints(fps)
+        # Save the fingerprints as a NumPy array
+        name = f"{'packed-' if pack else ''}fps-{dtype}"
+        if digits is not None:
+            name = f"{name}.{str(file_idx).zfill(digits)}"
+        np.save(out_dir / name, fps)
 
 
-@app.command("split-fps")
+@app.command("fps-split")
 def _split_fps(
     input_: Annotated[
         Path,
         Argument(help="*.npy file with fingerprints"),
     ],
-    num: tpx.Annotated[
-        int,
-        Option("-n", "--num", help="Number fo files to split into"),
-    ],
+    parts: tpx.Annotated[
+        int | None,
+        Option(
+            "-n",
+            "--num-parts",
+            help="Num. of parts to split file into. Mutually exclusive with --max-fps",
+            show_default=False,
+        ),
+    ] = None,
+    max_fps_per_file: tpx.Annotated[
+        int | None,
+        Option(
+            "-m",
+            "--max-fps",
+            help="Max. number of fps per file. Mutually exclusive with --num-parts",
+            show_default=False,
+        ),
+    ] = None,
     out_dir: tpx.Annotated[
         Path | None,
         Option("-o", "--out-dir", show_default=False),
     ] = None,
 ) -> None:
-    r"""Split a *.npy fingerprint file into multiple *.npy files"""
-    if num < 2:
-        raise ValueError("Num must be >= 2")
+    r"""Split a *.npy fingerprint file into multiple *.npy files
+
+    Usage to split into multiple files with a max number of fps each (e.g. 10k) is `bb
+    split-fps --max-fps 10_000 ./fps.npy --out-dir ./split`. To split into a pre-defined
+    number of parts (e.g. 10) `bb split-fps --num-parts 10 ./fps.npy --out-dir ./split`.
+    """
+    from bblean._console import get_console
+
+    console = get_console()
+    if parts is not None and parts < 2:
+        console.print("Num must be >= 2", style="red")
+        raise Abort()
+    fps = np.load(input_, mmap_mode="r")
+    if parts is not None and max_fps_per_file is None:
+        num_per_batch = math.ceil(fps.shape[0] / parts)
+        digits = len(str(parts)) + 1
+    elif parts is None and max_fps_per_file is not None:
+        num_per_batch = max_fps_per_file
+        digits = len(str(math.ceil(fps.shape[0] / max_fps_per_file))) + 1
+    else:
+        console.print(
+            "One and only one of '--max-fps' and '--num-parts' required", style="red"
+        )
+        raise Abort()
+
     if out_dir is None:
         out_dir = input_.parent
-    fps = np.load(input_, mmap_mode="r")
-    digits = len(str(num)) + 1
-    num_per_batch = math.ceil(fps.shape[0] / num)
+    out_dir.mkdir(exist_ok=True)
     for i, batch in enumerate(batched(fps, num_per_batch)):
         name = f"{input_.with_suffix('').name}.{str(i).zfill(digits)}"
         np.save(out_dir / name, batch)
@@ -318,7 +443,7 @@ def _run(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Run standard BitBirch clustering"""
+    r"""Run standard, serial BitBirch clustering over *.npy fingerprint files"""
     import numpy as np
     from bblean._console import get_console
 
@@ -526,7 +651,7 @@ def _multiround(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Run multi-round BitBirch clustering, with the option to parallelize"""
+    r"""Run multi-round BitBirch clustering, optionally parallelize over *.npy files"""
     from bblean._console import get_console
     from bblean.multiround import run_multiround_bitbirch
 
@@ -534,7 +659,8 @@ def _multiround(
 
     # Set the multiprocessing start method
     if fork and not sys.platform == "linux":
-        raise ValueError("'fork' is only available on Linux")
+        console.print("'fork' is only available on Linux", style="red")
+        raise Abort()
     if sys.platform == "linux":
         mp.set_start_method("fork" if fork else "forkserver")
 

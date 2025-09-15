@@ -11,13 +11,14 @@ class BBConsole(Console):
     def print_banner(self) -> None:
         if os.environ.get("BITBIRCHNOBANNER", ""):
             return
-        banner = r"""
-            ______ _ _  ______ _          _     
-            | ___ (_) | | ___ (_)        | |    
-            | |_/ /_| |_| |_/ /_ _ __ ___| |__  
-            | ___ \ | __| ___ \ | '__/ __| '_ \ 
-            | |_/ / | |_| |_/ / | | | (__| | | |
-            \____/|_|\__\____/|_|_|  \___|_| |_|
+        banner = r"""[bold]
+            ______ _ _  ______ _          _        
+            | ___ (_) | | ___ (_)        | |     [/bold][cyan]   ______                      [/cyan][bold] 
+            | |_/ /_| |_| |_/ /_ _ __ ___| |__   [/bold][cyan]   ___  / ___________ _______  [/cyan][bold] 
+            | ___ \ | __| ___ \ | '__/ __| '_ \  [/bold][cyan]   __  /  _  _ \  __ `/_  __ \ [/cyan][bold] 
+            | |_/ / | |_| |_/ / | | | (__| | | | [/bold][cyan]   _  /___/  __/ /_/ /_  / / / [/cyan][bold] 
+            \____/|_|\__\____/|_|_|  \___|_| |_| [/bold][cyan]   /_____/\___/\__,_/ /_/ /_/  [/cyan][bold] 
+        [/bold]
         """  # noqa W291
         self.print(banner, highlight=False)
 
