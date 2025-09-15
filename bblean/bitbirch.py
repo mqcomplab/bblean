@@ -41,17 +41,13 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 # type: ignore
-from collections import defaultdict
-import numpy as np
-from scipy import sparse
-
-from numpy.typing import NDArray, DTypeLike
 import typing as tp
 from collections import defaultdict
 from weakref import WeakSet
 
-import numpy as np
 from scipy import sparse
+import numpy as np
+from numpy.typing import NDArray, DTypeLike
 
 from bblean.utils import calc_centroid, min_safe_uint
 from bblean.packing import (
