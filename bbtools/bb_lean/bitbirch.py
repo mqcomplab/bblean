@@ -1,3 +1,4 @@
+# type: ignore
 # BitBirch-Tools Python Package: An open-source clustering module based on iSIM.
 #
 # If you find this code useful, please cite the BitBirch paper:
