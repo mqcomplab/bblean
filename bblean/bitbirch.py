@@ -56,14 +56,12 @@ import pandas as pd
 import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
-from bblean.utils import calc_centroid, min_safe_uint
-from bblean.packing import (
-    pack_fingerprints,
-    unpack_fingerprints,
-    popcount,
-    jt_sim_packed,
-)
-from bblean.merges import get_merge_accept_fn, MergeAcceptFunction
+from bblean._merges import get_merge_accept_fn, MergeAcceptFunction
+from bblean.utils import calc_centroid, _popcount
+from bblean.fingerprints import pack_fingerprints, unpack_fingerprints
+from bblean.similarity import jt_sim_packed
+
+__all__ = ["BitBirch"]
 
 
 # For backwards compatibility with the global "set_merge", keep weak references to all
@@ -101,6 +99,16 @@ def set_merge(merge_criterion: str, tolerance: float = 0.05) -> None:
     _global_merge_accept = get_merge_accept_fn(merge_criterion, tolerance)
     for bbirch in _BITBIRCH_INSTANCES:
         bbirch._merge_accept_fn = _global_merge_accept
+
+
+# Returns the minimum uint dtype that safely holds a (positive) python int
+# Input must be a positive python integer
+def _min_safe_uint(nmax: int) -> np.dtype:
+    out = np.min_scalar_type(nmax)
+    # Check if the dtype is a pointer to a python bigint
+    if out.hasobject:
+        raise ValueError(f"n_samples: {nmax} is too large to hold in a uint64 array")
+    return out
 
 
 # Utility function to validate the n_features argument for packed inputs
@@ -152,10 +160,10 @@ def _max_separation(Y: NDArray[np.uint8], n_features: int):
     Y_unpacked = unpack_fingerprints(Y, n_features)
     n_samples = len(Y_unpacked)
     # np.sum() automatically promotes to uint64 unless forced to a smaller dtype
-    linear_sum = np.sum(Y_unpacked, axis=0, dtype=min_safe_uint(n_samples))
+    linear_sum = np.sum(Y_unpacked, axis=0, dtype=_min_safe_uint(n_samples))
     centroid_packed = calc_centroid(linear_sum, n_samples, pack=True)
 
-    cardinalities = popcount(Y)
+    cardinalities = _popcount(Y)
 
     # Get the similarity of each molecule to the centroid, and the least similar idx
     sims_med = jt_sim_packed(Y, centroid_packed, cardinalities)
@@ -477,7 +485,7 @@ class _BFSubcluster:
     # less or equal to n_samples. This function does not check this
     def replace_n_samples_and_linear_sum(self, n_samples, linear_sum) -> None:
         # Cast to the minimum uint that can hold the inputs
-        self._buffer = self._buffer.astype(min_safe_uint(n_samples), copy=False)
+        self._buffer = self._buffer.astype(_min_safe_uint(n_samples), copy=False)
         # NOTE: Assignments are safe and do not recast the buffer
         self._buffer[:-1] = linear_sum
         self._buffer[-1] = n_samples
@@ -488,7 +496,7 @@ class _BFSubcluster:
     def add_to_n_samples_and_linear_sum(self, n_samples, linear_sum) -> None:
         # Cast to the minimum uint that can hold the inputs
         new_n_samples = self.n_samples_ + n_samples
-        self._buffer = self._buffer.astype(min_safe_uint(new_n_samples), copy=False)
+        self._buffer = self._buffer.astype(_min_safe_uint(new_n_samples), copy=False)
         # NOTE: Assignment and inplace add are safe and do not recast the buffer
         self._buffer[:-1] += linear_sum
         self._buffer[-1] = new_n_samples
@@ -509,7 +517,7 @@ class _BFSubcluster:
         nom_ls = nominee_cluster.linear_sum_
         # np.add with explicit dtype is safe from overflows, e.g. :
         # np.add(np.uint8(255), np.uint8(255), dtype=np.uint16) = np.uint16(510)
-        new_ls = np.add(old_ls, nom_ls, dtype=min_safe_uint(new_n))
+        new_ls = np.add(old_ls, nom_ls, dtype=_min_safe_uint(new_n))
         if merge_accept_fn(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
             self.replace_n_samples_and_linear_sum(new_n, new_ls)
             self.mol_indices.extend(nominee_cluster.mol_indices)

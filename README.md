@@ -18,7 +18,7 @@ If you find this software useful please cite the following articles:
 
 ## Installation
 
-From source, using a conda environment:
+From source, editable mode, using a conda environment:
 
 ```bash
 conda env create --file ./environment.yaml
@@ -29,13 +29,13 @@ bb --help
 
 <img src="bb-demo.gif" width="600" />
 
-## Quick start
+## CLI Quick start
 
 1. **Generate fingerprints from SMILES.** The repository ships with a ChEMBL
    sample that you can use right away:
 
    ```bash
-   bb fps-from-smiles examples/chembl_33_10K.smi -o output
+   bb fps-from-smiles examples/chembl-sample.smi -o output
    ```
 
    This command writes a packed fingerprint array to
@@ -86,3 +86,56 @@ records.
 - `bb run`: Serial BitBIRCH clustering over packed fingerprint arrays.
   Additional options let you tune the branching factor, threshold, and
   tolerance; run `bb run --help` for details.
+
+## Python Quickstart
+
+For example of how to use the main `bblean` classes and functions consult
+`examples/bitbirch_quickstart.ipynb`. More examples will be added soon!
+
+A quick summary:
+
+```python
+import bblean
+import pickle
+import numpy as np
+
+# Create and pack the fingerprints
+smiles = bblean.smiles.load_smiles("./examples/chembl-smiles.smi")
+fps = bblean.fingerprints.fps_from_smiles(smiles, pack=True, n_features=2048)
+
+# Fit the figerprints
+tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion="diameter")
+tree.fit(fps, n_features=2048)
+
+# Refine the tree (if needed)
+tree.set_merge(threshold=0.70, merge_criterion="tolerance", tolerance=0.05)
+tree.refine_inplace(fps)
+
+# Visualize the results
+clusters = tree.get_cluster_mol_ids()
+ca = bblean.analysis.cluster_analysis(
+    clusters, smiles, fps, n_features=2048, input_is_packed=True
+)
+bblean.plotting.summary_plot(ca, title="ChEMBL Sample")
+plt.show()
+
+# Save the results
+ca.dump_metrics("./metrics.csv")
+np.save("./fps-packed-2048.npy", fps)
+with open("./clusters.pkl", "wb") as f:
+    pickle.dump(clusters, f)
+```
+
+## API and Documentation
+
+Documentation is currently a work in progress, for the time being you can consult
+functions and classes `"""docstrings"""` for info on usage, or the Jupyter notebook
+examples under `./examples`.
+
+- Functions and classes that *end in an underscore* are considered private (such as
+  `_private_function(...)`) and should not be used, since they can be removed or
+  modified without warning.
+- All functions and classes that are in *modules that end with an underscore* are also
+  considered private (such as `bblean._private_module.private_function(...)`) and should
+  not be used, since they can be removed or modified without warning.
+- All other functions and classes are part of the stable public API and can be safely used.

@@ -16,12 +16,15 @@ import numpy as np
 import typer
 from typer import Typer, Argument, Option, Abort, Context
 
-from bblean.memory import launch_monitor_rss_daemon, get_peak_memory
-from bblean.timer import Timer
-from bblean.config import DEFAULTS, collect_system_specs_and_dump_config
-from bblean.packing import pack_fingerprints
+from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
+from bblean._timer import Timer
+from bblean._config import DEFAULTS, collect_system_specs_and_dump_config
 from bblean.utils import _import_bitbirch_variant, batched
-from bblean.fingerprints_io import get_file_num_fps, print_file_info
+from bblean.fingerprints import (
+    _get_fps_file_num,
+    _print_fps_file_info,
+    pack_fingerprints,
+)
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -63,7 +66,7 @@ def _validate_input_dir(in_dir: Path | str) -> None:
 
 
 @app.callback()
-def main(
+def _main(
     ctx: typer.Context,
     help_: bool = typer.Option(
         None,
@@ -95,9 +98,9 @@ def _fps_info(
     for path in fp_paths:
         if path.is_dir():
             for file in path.glob("*.npy"):
-                print_file_info(file, console)
+                _print_fps_file_info(file, console)
         elif path.suffix == ".npy":
-            print_file_info(file, console)
+            _print_fps_file_info(file, console)
 
 
 @app.command("fps-from-smiles")
@@ -409,7 +412,7 @@ def _run(
         input_files = [input_]
     ctx.params.pop("input_")
     ctx.params["input_files"] = [str(p.resolve()) for p in input_files]
-    ctx.params["num_fps_present"] = [get_file_num_fps(p) for p in input_files]
+    ctx.params["num_fps_present"] = [_get_fps_file_num(p) for p in input_files]
     if max_fps is not None:
         ctx.params["num_fps_loaded"] = [
             min(n, max_fps) for n in ctx.params["num_fps_present"]
@@ -631,7 +634,7 @@ def _multiround(
     # All files in the input dir with *.npy suffix are considered input files
     input_files = sorted(in_dir.glob("*.npy"))[:max_files]
     ctx.params["input_files"] = [str(p.resolve()) for p in input_files]
-    ctx.params["num_fps"] = [get_file_num_fps(p) for p in input_files]
+    ctx.params["num_fps"] = [_get_fps_file_num(p) for p in input_files]
     if max_fps is not None:
         ctx.params["num_fps_loaded"] = [min(n, max_fps) for n in ctx.params["num_fps"]]
     else:

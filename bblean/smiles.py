@@ -2,6 +2,8 @@ from numpy.typing import NDArray
 import numpy as np
 from pathlib import Path
 
+__all__ = ["load_smiles"]
+
 
 def load_smiles(path: Path | str, max_num: int = -1) -> NDArray[np.str_]:
     path = Path(path)

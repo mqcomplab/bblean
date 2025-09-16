@@ -9,13 +9,13 @@ from legacy_merges import (  # type: ignore
     merge_tolerance_tough,
 )
 from bblean.utils import calc_centroid
-from bblean.merges import (
+from bblean._merges import (
     RadiusMerge,
     DiameterMerge,
     ToleranceMerge,
     ToleranceToughMerge,
 )
-from bblean.fake_fingerprints import make_fake_fingerprints
+from bblean.fingerprints import make_fake_fingerprints
 
 # Cases to test for all merges:
 # low|high tolerance
