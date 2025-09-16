@@ -11,18 +11,16 @@ from bblean.utils import _popcount
 def jt_sim_packed(
     arr: NDArray[np.uint8],
     vec: NDArray[np.uint8],
-    cardinalities: NDArray[np.integer] | None = None,
+    _cardinalities: NDArray[np.integer] | None = None,
 ) -> NDArray[np.float64]:
-    r"""Tanimoto similarity between a matrix of packed fingerprints and a single packed
-    fingerprint.
+    r"""Tanimoto similarity between a matrix of packed fps and a single packed fp"""
+    # NOTE: If _cardinalities is passed, it must be the result of calling _popcount(arr)
 
-    If "cardinalities" is passed, it must be the result of calling popcount(arr).
-    """
     # Maximum value in the denominator sum is the 2 * n_features (which is typically
     # uint16, but we use uint32 for safety)
     intersection = _popcount(np.bitwise_and(arr, vec))
-    if cardinalities is None:
-        cardinalities = _popcount(arr)
+    if _cardinalities is None:
+        _cardinalities = _popcount(arr)
     # Return value requires an out-of-place operation since it casts uints to f64
     #
     # There may be NaN in the similarity array if the both the cardinality
@@ -30,7 +28,7 @@ def jt_sim_packed(
     #
     # In these cases the fps are equal so the similarity *should be 1*, so we
     # clamp the denominator, which is A | B (zero only if A & B is zero too).
-    return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
+    return intersection / np.maximum(_cardinalities + _popcount(vec) - intersection, 1)
 
 
 def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:

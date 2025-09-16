@@ -23,12 +23,16 @@ __all__ = [
 
 @dataclasses.dataclass
 class ScaffoldAnalysis:
+    r""":meta private:"""
+
     unique_num: int
     isim: float
 
 
 @dataclasses.dataclass
 class ClusterAnalysis:
+    r""":meta private:"""
+
     df: pd.DataFrame
     fps: list[NDArray[np.uint8]]
     fps_are_packed: bool = True
@@ -46,6 +50,7 @@ class ClusterAnalysis:
 def scaffold_analysis(
     smiles: tp.Iterable[str], fp_kind: str = "rdkit"
 ) -> ScaffoldAnalysis:
+    r"""Perform a scaffold analysis of a sequence of smiles"""
     if isinstance(smiles, str):
         smiles = [smiles]
     smiles = np.asarray(smiles)
@@ -67,6 +72,7 @@ def cluster_analysis(
     scaffold_fp_kind: str = "rdkit",
     input_is_packed: bool = True,
 ) -> ClusterAnalysis:
+    r"""Perform a cluster analysis starting from clusters, smiles, and fingerprints"""
     if isinstance(smiles, str):
         smiles = [smiles]
     smiles = np.asarray(smiles)

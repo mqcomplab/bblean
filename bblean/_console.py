@@ -26,11 +26,11 @@ class BBConsole(Console):
         self.print()
         self.print(
             r"""If you find this software useful please cite the following articles:
-    - [italic]BitBIRCH: efficient clustering of large molecular libraries[/italic]:
+    [yellow]•[/yellow] [italic]BitBIRCH: efficient clustering of large molecular libraries[/italic]:
         https://doi.org/10.1039/D5DD00030K
-    - [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
+    [yellow]•[/yellow] [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
         https://doi.org/10.1021/acs.jcim.5c00627
-    - [italic]BitBIRCH-Lean[/italic]:
+    [yellow]•[/yellow] [italic]BitBIRCH-Lean[/italic]:
         TO-BE-ADDED"""  # noqa
         )
 
@@ -160,6 +160,16 @@ class SilentConsole(BBConsole):
 
     def print_banner(self) -> None:
         pass
+
+    def status(self, *args: tp.Any, **kwargs: tp.Any) -> tp.Any:
+        class DummyStatus:
+            def __enter__(self) -> tp.Any:
+                return self
+
+            def __exit__(self, *args: tp.Any, **kwargs: tp.Any) -> None:
+                pass
+
+        return DummyStatus()
 
 
 _console = BBConsole()

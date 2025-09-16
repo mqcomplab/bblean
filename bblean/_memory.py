@@ -7,6 +7,7 @@ import time
 import os
 import multiprocessing as mp
 
+import psutil
 from rich.console import Console
 
 try:
@@ -15,54 +16,13 @@ except Exception:
     # resource is only available on Unix systems
     pass
 
-try:
-    import psutil
-except Exception:
-    # psutil not available
-    pass
-
 
 _BYTES_TO_GIB = 1 / 1024**3
 
 
-# Requires psutil
 def system_mem_gib() -> tuple[int, int] | tuple[None, None]:
-    if "psutil" not in sys.modules:
-        return None, None
     mem = psutil.virtual_memory()
     return mem.total * _BYTES_TO_GIB, mem.available * _BYTES_TO_GIB
-
-
-# Requires psutil
-def monitor_rss_process(file: Path | str, interval_s: float, start_time: float) -> None:
-    if "psutil" not in sys.modules:
-        raise ValueError("psutil is required to monitor RSS")
-
-    def total_rss() -> float:
-        total_rss = 0.0
-        for proc in psutil.process_iter(["pid", "name", "cmdline", "memory_info"]):
-            info = proc.info
-            cmdline = info["cmdline"]
-            if cmdline is None:
-                continue
-            if Path(__file__).name in cmdline:
-                total_rss += info["memory_info"].rss
-        return total_rss
-
-    t = start_time
-    with open(file, mode="w", encoding="utf-8") as f:
-        f.write("rss_gib,time_s\n")
-        f.flush()
-        os.fsync(f.fileno())
-
-    while True:
-        total_rss_gib = total_rss() * _BYTES_TO_GIB
-        t = time.perf_counter() - start_time
-        with open(file, mode="a", encoding="utf-8") as f:
-            f.write(f"{total_rss_gib},{t}\n")
-            f.flush()
-            os.fsync(f.fileno())
-        time.sleep(interval_s)
 
 
 @dataclasses.dataclass
@@ -93,6 +53,34 @@ def get_peak_memory(num_processes: int) -> PeakMemoryStats | None:
     if num_processes == 1:
         return PeakMemoryStats(max_mem_gib_self, None)
     return PeakMemoryStats(max_mem_gib_self, max_mem_gib_child)
+
+
+def monitor_rss_process(file: Path | str, interval_s: float, start_time: float) -> None:
+    def total_rss() -> float:
+        total_rss = 0.0
+        for proc in psutil.process_iter(["pid", "name", "cmdline", "memory_info"]):
+            info = proc.info
+            cmdline = info["cmdline"]
+            if cmdline is None:
+                continue
+            if Path(__file__).name in cmdline:
+                total_rss += info["memory_info"].rss
+        return total_rss
+
+    t = start_time
+    with open(file, mode="w", encoding="utf-8") as f:
+        f.write("rss_gib,time_s\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+    while True:
+        total_rss_gib = total_rss() * _BYTES_TO_GIB
+        t = time.perf_counter() - start_time
+        with open(file, mode="a", encoding="utf-8") as f:
+            f.write(f"{total_rss_gib},{t}\n")
+            f.flush()
+            os.fsync(f.fileno())
+        time.sleep(interval_s)
 
 
 def launch_monitor_rss_daemon(

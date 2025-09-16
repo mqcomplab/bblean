@@ -21,7 +21,7 @@ class BitBirchConfig:
     branching_factor: int = 254
     merge_criterion: str = "diameter"
     tolerance: float = 0.05
-    features_num: int = 2048
+    n_features: int = 2048
     use_mmap: bool = True
 
 
