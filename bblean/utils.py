@@ -2,7 +2,6 @@ import functools
 import itertools
 import numpy as np
 import typing as tp
-from pathlib import Path
 import sys
 import subprocess
 import platform
@@ -72,18 +71,6 @@ def cpu_name() -> str:
 
     # Fallback for windows and all cases where it could not be found
     return platform.processor()
-
-
-# Save a list of numpy arrays into a single array in a streaming fashion, avoiding
-# stacking them in memory
-def numpy_streaming_save(fp_list: list[NDArray[np.integer]], path: Path | str) -> None:
-    first_arr = np.ascontiguousarray(fp_list[0])
-    header = np.lib.format.header_data_from_array_1_0(first_arr)
-    header["shape"] = (len(fp_list), len(first_arr))
-    with open(Path(path).with_suffix(".npy"), "wb") as f:
-        np.lib.format.write_array_header_1_0(f, header)
-        for arr in fp_list:
-            np.ascontiguousarray(arr).tofile(f)
 
 
 def calc_centroid(
