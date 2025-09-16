@@ -24,6 +24,7 @@ __all__ = [
 @dataclasses.dataclass
 class ScaffoldAnalysis:
     r""":meta private:"""
+
     unique_num: int
     isim: float
 
@@ -31,6 +32,7 @@ class ScaffoldAnalysis:
 @dataclasses.dataclass
 class ClusterAnalysis:
     r""":meta private:"""
+
     df: pd.DataFrame
     fps: list[NDArray[np.uint8]]
     fps_are_packed: bool = True
