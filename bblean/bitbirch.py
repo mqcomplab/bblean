@@ -768,8 +768,8 @@ class BitBirch:
             Fitted estimator.
         """
         n_features = _validate_n_features(X, input_is_packed=False) - 1
-
-        if self.is_init:
+        # Start a new tree the first time this function is called
+        if not self.is_init:
             self._initialize_tree(n_features)
 
         # The array iterator either copies, un-sparsifies, or does nothing with the
@@ -878,14 +878,14 @@ class BitBirch:
         smiles = np.asarray(smiles, dtype=np.str_)
         # Dump cluster assignments to *.csv
         assignments = self.get_assignments()
-        if smiles and (len(assignments) != len(smiles)):
+        if smiles.size and (len(assignments) != len(smiles)):
             raise ValueError(
                 f"Len of the provided smiles {len(smiles)}"
                 f" must match the number of fitted fingerprints {self.num_fitted_fps}"
             )
         if not smiles:
             df = pd.DataFrame({"assignments": assignments})
-        if smiles:
+        if smiles.size:
             df["smiles"] = smiles
         df.to_csv(path, index=False)
 
