@@ -1,4 +1,5 @@
 r"""Plotting and visualization convenience functions"""
+
 from numpy.typing import NDArray
 import typing as tp
 
