@@ -79,3 +79,7 @@ timings*.json
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# Outputs from examples
+examples/*.png
+examples/*.csv

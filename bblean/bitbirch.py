@@ -45,12 +45,14 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 # type: ignore
+from pathlib import Path
 import warnings
 import typing as tp
 from collections import defaultdict
 from weakref import WeakSet
 
 from scipy import sparse
+import pandas as pd
 import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
@@ -897,6 +899,16 @@ class BitBirch:
         if (assignments == 0).any():
             raise ValueError("There are unasigned molecules")
         return assignments
+
+    def dump_assignments(self, smiles: tp.Iterable[str], path: Path | str) -> None:
+        path = Path(path)
+        if isinstance(smiles, str):
+            smiles = [smiles]
+        smiles = np.asarray(smiles)
+        # Dump cluster assignments to *.csv
+        assignments = self.get_assignments(len(smiles))
+        df = pd.DataFrame({"smiles": smiles, "assignments": assignments})
+        df.to_csv(path, index=False)
 
     def refine_inplace(
         self,

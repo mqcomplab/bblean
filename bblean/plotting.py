@@ -65,7 +65,12 @@ def tsne_plot(
     fps_list: list[NDArray[np.uint8]] = []
     label_list: list[int] = []
     for fps, label in zip(c.fps, df["label"]):
-        cluster_fps = [fp for fp in unpack_fingerprints(fps, n_features=c.n_features)]
+        if c.fps_are_packed:
+            cluster_fps = [
+                fp for fp in unpack_fingerprints(fps, n_features=c.n_features)
+            ]
+        else:
+            cluster_fps = list(fps)
         fps_list.extend(cluster_fps)
         label_list.extend([label] * len(cluster_fps))
     num_clusters = c.num_clusters

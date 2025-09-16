@@ -26,6 +26,7 @@ class ClusterAnalysis:
     df: pd.DataFrame
     fps: list[NDArray[np.uint8]]
     n_features: int
+    fps_are_packed: bool
 
     @property
     def num_clusters(self) -> int:
@@ -58,6 +59,7 @@ def cluster_analysis(
     top: int = 20,
     assume_sorted: bool = True,
     scaffold_fp_kind: str = "rdkit",
+    input_is_packed: bool = True,
 ) -> ClusterAnalysis:
     if isinstance(smiles, str):
         smiles = [smiles]
@@ -75,11 +77,16 @@ def cluster_analysis(
         analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
         size = len(c)
         _fps = fps_u8[c]
-        _fps_unpacked = unpack_fingerprints(_fps, n_features=n_features)
+        if input_is_packed:
+            _fps_unpacked = unpack_fingerprints(_fps, n_features=n_features)
+        else:
+            _fps_unpacked = _fps.copy()
         info["label"].append(i)
         info["mol_num"].append(size)
         info["isim"].append(jt_isim(np.sum(_fps_unpacked, axis=0), size))
         info["unique_scaffolds_num"].append(analysis.unique_num)
         info["unique_scaffolds_isim"].append(analysis.isim)
         cluster_fps.append(_fps)  # Lets see if something uses this
-    return ClusterAnalysis(pd.DataFrame(info), cluster_fps, n_features)
+    return ClusterAnalysis(
+        pd.DataFrame(info), cluster_fps, n_features, fps_are_packed=input_is_packed
+    )
