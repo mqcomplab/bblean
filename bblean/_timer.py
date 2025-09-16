@@ -1,3 +1,5 @@
+r"""General timing tools"""
+
 import json
 from pathlib import Path
 import time

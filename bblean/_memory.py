@@ -1,3 +1,5 @@
+r"""Monitor and collect memory stats"""
+
 import dataclasses
 from pathlib import Path
 import sys

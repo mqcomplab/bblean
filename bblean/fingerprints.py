@@ -1,3 +1,5 @@
+r"""Utilites for manipulating fingerprints and fingerprint files"""
+
 from pathlib import Path
 from numpy.typing import NDArray, DTypeLike
 import numpy as np

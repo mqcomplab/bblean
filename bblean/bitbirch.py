@@ -45,6 +45,7 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 # type: ignore
+r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
 from pathlib import Path
 import warnings
 import typing as tp

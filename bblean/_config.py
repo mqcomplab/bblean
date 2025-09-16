@@ -1,3 +1,5 @@
+r"""Global defaults and related utilities"""
+
 from copy import deepcopy
 from pathlib import Path
 import typing as tp
