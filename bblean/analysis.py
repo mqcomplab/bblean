@@ -1,4 +1,4 @@
-r"""Utilities for analyzing clustering results"""
+r"""Analysis of clustering results"""
 
 from pathlib import Path
 from collections import defaultdict

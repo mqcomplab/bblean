@@ -1,3 +1,5 @@
+r"""Optimized molecular similarity calculators"""
+
 import warnings
 
 from numpy.typing import NDArray

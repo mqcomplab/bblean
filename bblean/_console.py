@@ -1,3 +1,5 @@
+r"""Pretty printing"""
+
 import numpy as np
 import typing as tp
 import os

@@ -1,3 +1,5 @@
+r"""Merging criteria for BitBIRCH clustering"""
+
 from numpy.typing import NDArray
 import numpy as np
 
