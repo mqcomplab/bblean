@@ -32,13 +32,15 @@ dependencies:
   - scipy 
   - rdkit
   - numpy
-  - psutil
-#  Required for example notebooks
   - pandas
+  - psutil
+  - matplotlib
+  - scikit-learn
+#  Required for example notebooks only
   - tqdm
   - seaborn
   - statsmodels
-  - scikit-learn
-  - matplotlib
-  - jupytext  # Simple text conversion of notebooks
-# useful_rdkit_utils
+  # - useful_rdkit_utils
+# Loading and converting jupyter notebooks
+  - jupyter
+  - jupytext

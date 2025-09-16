@@ -45,12 +45,14 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 # type: ignore
+from pathlib import Path
 import warnings
 import typing as tp
 from collections import defaultdict
 from weakref import WeakSet
 
 from scipy import sparse
+import pandas as pd
 import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
@@ -890,12 +892,23 @@ class BitBirch:
 
     def get_assignments(self, n_mols: int) -> NDArray[np.uint64]:
         clustered_ids = self.get_cluster_mol_ids()
-        assignments = np.full(n_mols, -1, dtype=np.uint64)
+        assignments = np.full(n_mols, 0, dtype=np.uint64)
         for i, cluster in enumerate(clustered_ids, 1):
             assignments[cluster] = i
         # Check that there are no unassigned molecules
-        assert np.all(assignments != -1)
+        if (assignments == 0).any():
+            raise ValueError("There are unasigned molecules")
         return assignments
+
+    def dump_assignments(self, smiles: tp.Iterable[str], path: Path | str) -> None:
+        path = Path(path)
+        if isinstance(smiles, str):
+            smiles = [smiles]
+        smiles = np.asarray(smiles)
+        # Dump cluster assignments to *.csv
+        assignments = self.get_assignments(len(smiles))
+        df = pd.DataFrame({"smiles": smiles, "assignments": assignments})
+        df.to_csv(path, index=False)
 
     def refine_inplace(
         self,
@@ -911,7 +924,7 @@ class BitBirch:
 
         # Reset the whole tree
         del self.root_
-        self.first_call = False
+        self.first_call = True
         self.index_tracker = 0
 
         # Rebuild the tree again from scratch, reinserting all the subclusters

@@ -59,7 +59,7 @@ from bblean._console import get_console
 from bblean.utils import batched
 from bblean.config import DEFAULTS
 from bblean.bitbirch import BitBirch  # type: ignore
-from bblean.fingerprint_io import get_file_num_fps, numpy_streaming_save
+from bblean.fingerprints_io import get_file_num_fps, numpy_streaming_save
 from bblean.timer import Timer
 
 

@@ -21,7 +21,7 @@ from bblean.timer import Timer
 from bblean.config import DEFAULTS, collect_system_specs_and_dump_config
 from bblean.packing import pack_fingerprints
 from bblean.utils import _import_bitbirch_variant, batched
-from bblean.fingerprint_io import get_file_num_fps, print_file_info
+from bblean.fingerprints_io import get_file_num_fps, print_file_info
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -174,20 +174,22 @@ def _fps_from_smiles(
 
     console = get_console(silent=not verbose)
 
-    if kind not in ["rdkit", "ecfp4"]:
-        console.print("Kind must be one of 'rdkit|ecfp4'", style="red")
+    if smiles_paths is None:
+        smiles_paths = list(Path.cwd().glob("*.smi"))
+    if not smiles_paths:
+        console.print("No *.smi files found", style="red")
+        raise Abort()
+
+    if kind not in ["rdkit", "ecfp4", "ecfp6"]:
+        console.print("Kind must be one of 'rdkit|ecfp4|ecfp6'", style="red")
         raise Abort()
 
     if kind == "rdkit":
         fpg = rdFingerprintGenerator.GetRDKitFPGenerator(fpSize=fp_size)
     elif kind == "ecfp4":
         fpg = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=fp_size)
-
-    if smiles_paths is None:
-        smiles_paths = list(Path.cwd().glob("*.smi"))
-    if not smiles_paths:
-        console.print("No *.smi files found", style="red")
-        raise Abort()
+    elif kind == "ecfp6":
+        fpg = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=fp_size)
 
     # Pass 1: check the total number of smiles
     smiles_num = 0
