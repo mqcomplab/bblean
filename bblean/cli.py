@@ -2,7 +2,6 @@ r"""Command line interface entrypoints"""
 
 import typing as tp
 import math
-import typing_extensions as tpx
 import shutil
 import json
 import sys
@@ -13,8 +12,7 @@ from typing import Annotated
 from pathlib import Path
 
 import numpy as np
-import typer
-from typer import Typer, Argument, Option, Abort, Context
+from typer import Typer, Argument, Option, Abort, Context, Exit
 
 from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
 from bblean._timer import Timer
@@ -37,7 +35,7 @@ def _print_help_banner(ctx: Context, value: bool) -> None:
         console = get_console()
         console.print_banner()
         console.print(ctx.get_help())
-        raise typer.Exit()
+        raise Exit()
 
 
 def _validate_output_dir(out_dir: Path, overwrite: bool = False) -> None:
@@ -62,8 +60,8 @@ def _validate_input_dir(in_dir: Path | str) -> None:
 
 @app.callback()
 def _main(
-    ctx: typer.Context,
-    help_: bool = typer.Option(
+    ctx: Context,
+    help_: bool = Option(
         None,
         "--help",
         "-h",
@@ -78,32 +76,30 @@ def _main(
 
 @app.command("summary-plot")
 def _summary_plot(
-    clusters_path: tpx.Annotated[
-        Path, Option("-c", "--clusters-path", show_default=False)
-    ],
-    fps_path: tpx.Annotated[Path, Option("-f", "--fps-path", show_default=False)],
-    smiles_path: tpx.Annotated[Path, Option("-s", "--smiles-path", show_default=False)],
-    use_mmap: tpx.Annotated[
+    clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
+    fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
+    smiles_path: Annotated[Path, Option("-s", "--smiles-path", show_default=False)],
+    use_mmap: Annotated[
         bool,
         Option("--use-mmap/--no-use-mmap"),
     ] = True,
-    title: tpx.Annotated[
+    title: Annotated[
         str | None,
         Option("--title"),
     ] = None,
-    top: tpx.Annotated[
+    top: Annotated[
         int,
         Option("--top"),
     ] = 20,
-    input_is_packed: tpx.Annotated[
+    input_is_packed: Annotated[
         bool,
         Option("--packed-input/--unpacked-input"),
     ] = True,
-    scaffold_fp_kind: tpx.Annotated[
+    scaffold_fp_kind: Annotated[
         str,
         Option("--scaffold-fp-kind"),
     ] = "rdkit",
-    n_features: tpx.Annotated[
+    n_features: Annotated[
         int | None,
         Option(
             "--n-features",
@@ -113,30 +109,39 @@ def _summary_plot(
             rich_help_panel="Advanced",
         ),
     ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
 ) -> None:
     r"""Summary plot of the clustering results"""
-    import matplotlib.pyplot as plt
+    from bblean._console import get_console
 
-    from bblean.smiles import load_smiles
-    from bblean.analysis import cluster_analysis
-    from bblean.plotting import summary_plot
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        import matplotlib.pyplot as plt
 
-    if clusters_path.is_dir():
-        clusters_path = clusters_path / "clusters.pkl"
-    with open(clusters_path, mode="rb") as f:
-        clusters = pickle.load(f)
-    fps = np.load(fps_path, mmap_mode="r" if use_mmap else None)
-    smiles = load_smiles(smiles_path)
-    ca = cluster_analysis(
-        clusters,
-        smiles,
-        fps,
-        top=top,
-        n_features=n_features,
-        input_is_packed=input_is_packed,
-        scaffold_fp_kind=scaffold_fp_kind,
-    )
-    summary_plot(ca, title)
+        from bblean.smiles import load_smiles
+        from bblean.analysis import cluster_analysis
+        from bblean.plotting import summary_plot
+
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        with open(clusters_path, mode="rb") as f:
+            clusters = pickle.load(f)
+        fps = np.load(fps_path, mmap_mode="r" if use_mmap else None)
+        smiles = load_smiles(smiles_path)
+        ca = cluster_analysis(
+            clusters,
+            smiles,
+            fps,
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            scaffold_fp_kind=scaffold_fp_kind,
+        )
+        summary_plot(ca, title)
     plt.show()
 
 
@@ -185,7 +190,7 @@ def _run(
             rich_help_panel="Advanced",
         ),
     ] = DEFAULTS.use_mmap,
-    n_features: tpx.Annotated[
+    n_features: Annotated[
         int | None,
         Option(
             "--n-features",
@@ -195,7 +200,7 @@ def _run(
             rich_help_panel="Advanced",
         ),
     ] = None,
-    input_is_packed: tpx.Annotated[
+    input_is_packed: Annotated[
         bool,
         Option(
             "--packed-input/--unpacked-input",
@@ -227,7 +232,7 @@ def _run(
             help="Max. num of fingerprints to read from each file",
         ),
     ] = None,
-    variant: tpx.Annotated[
+    variant: Annotated[
         str,
         Option(
             "--bb-variant",
@@ -345,7 +350,7 @@ def _multiround(
     num_initial_processes: Annotated[
         int, Option("--ps", "--processes", help="Num. processes for first round")
     ] = 10,
-    num_midsection_processes: tpx.Annotated[
+    num_midsection_processes: Annotated[
         int | None,
         Option(
             "--mid-ps",
@@ -378,7 +383,7 @@ def _multiround(
             help="Initial merge criterion for Round 1 ('diameter' is recommended)",
         ),
     ] = DEFAULTS.merge_criterion,
-    n_features: tpx.Annotated[
+    n_features: Annotated[
         int | None,
         Option(
             "--n-features",
@@ -388,7 +393,7 @@ def _multiround(
             rich_help_panel="Advanced",
         ),
     ] = None,
-    input_is_packed: tpx.Annotated[
+    input_is_packed: Annotated[
         bool,
         Option(
             "--packed-input/--unpacked-input",
@@ -397,7 +402,7 @@ def _multiround(
         ),
     ] = True,
     # Advanced options
-    num_midsection_rounds: tpx.Annotated[
+    num_midsection_rounds: Annotated[
         int,
         Option(
             "--num-midsection-rounds", help="Number of midsection rounds to perform"
@@ -432,7 +437,7 @@ def _multiround(
         Option(help="Bin size for chunking during Round 2", rich_help_panel="Advanced"),
     ] = 10,
     # Debug options
-    variant: tpx.Annotated[
+    variant: Annotated[
         str,
         Option(
             "--bb-variant",
@@ -582,7 +587,7 @@ def _fps_from_smiles(
         Path | None,
         Option("-o", "--out-dir", show_default=False),
     ] = None,
-    out_name: tpx.Annotated[
+    out_name: Annotated[
         str | None,
         Option("--name", help="Base name of output file"),
     ] = None,
@@ -594,13 +599,13 @@ def _fps_from_smiles(
         int,
         Option("--n-features", help="Num. features of the generated fingerprints"),
     ] = DEFAULTS.n_features,
-    parts: tpx.Annotated[
+    parts: Annotated[
         int | None,
         Option(
             "-n", "--num-parts", help="Split the created file into this number of parts"
         ),
     ] = None,
-    max_fps_per_file: tpx.Annotated[
+    max_fps_per_file: Annotated[
         int | None,
         Option(
             "-m",
@@ -738,11 +743,11 @@ def _split_fps(
         Path,
         Argument(help="`*.npy` file with fingerprints"),
     ],
-    out_dir: tpx.Annotated[
+    out_dir: Annotated[
         Path | None,
         Option("-o", "--out-dir", show_default=False),
     ] = None,
-    parts: tpx.Annotated[
+    parts: Annotated[
         int | None,
         Option(
             "-n",
@@ -751,7 +756,7 @@ def _split_fps(
             show_default=False,
         ),
     ] = None,
-    max_fps_per_file: tpx.Annotated[
+    max_fps_per_file: Annotated[
         int | None,
         Option(
             "-m",

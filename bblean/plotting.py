@@ -55,7 +55,7 @@ def summary_plot(
     ax_isim.set_ylim(0, 1)
     ax_isim.legend(loc="upper right", bbox_to_anchor=(0.80, 1), fontsize=12)
 
-    msg = "Top {num_clusters} cluster metrics"
+    msg = f"Top {num_clusters} cluster metrics"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg, fontsize=14)
