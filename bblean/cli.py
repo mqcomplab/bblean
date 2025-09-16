@@ -466,6 +466,9 @@ def _run(
         )
 
 
+# TODO: Currently sometimes after a round is triggered *more* files are output, since
+# the files are divided *both* by uint8/uint16 and the batch idx. I believe this is not
+# ideal
 @app.command("multiround")
 def _multiround(
     ctx: Context,
