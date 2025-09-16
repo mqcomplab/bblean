@@ -93,7 +93,7 @@ If you find this work useful please cite the following articles:
         self.print()
 
     def print_multiround_config(self, config: dict[str, tp.Any]) -> None:
-        num_processes = config.get("num_processes", 1)
+        num_processes = config.get("num_initial_processes", 1)
         extra_desc = (
             f"parallel (max {num_processes:,} processes)"
             if num_processes > 1
@@ -105,7 +105,7 @@ If you find this work useful please cite the following articles:
             self.print(
                 f"Running [bold]{desc}[/bold] clustering\n\n"
                 f"- Branching factor: {config['branching_factor']:,}\n"
-                f"- Initial round merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"  # noqa:E501
+                f"- Initial round merge criterion: [yellow]{config['initial_merge_criterion']}[/yellow]\n"  # noqa:E501
                 f"- Threshold: {config['threshold']}\n"
                 f"- Tolerance: {config['tolerance']}\n"
                 f"- Num. files loaded: {len(config['input_files']):,}\n"
