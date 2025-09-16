@@ -311,12 +311,12 @@ def _run(
 
         # TODO: Fix peak memory stats
         cluster_mol_ids = tree.get_cluster_mol_ids()
-    timer.end_timing("total", console)
+    timer.end_timing("total", console, indent=False)
     stats = get_peak_memory(1)
     if stats is None:
         console.print("[Peak memory stats not tracked for non-Unix systems]")
     else:
-        console.print_peak_mem_raw(stats)
+        console.print_peak_mem_raw(stats, indent=False)
 
     # Dump outputs (peak memory, timings, config, cluster ids)
     with open(out_dir / "clusters.pkl", mode="wb") as f:

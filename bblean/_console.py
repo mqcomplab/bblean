@@ -34,29 +34,35 @@ class BBConsole(Console):
         TO-BE-ADDED"""  # noqa
         )
 
-    def print_peak_mem(self, num_processes: int) -> None:
+    def print_peak_mem(self, num_processes: int, indent: bool = True) -> None:
         stats = get_peak_memory(num_processes)
         if stats is None:
             self.print("[Peak RAM not tracked for non-Unix systems]")
             return
-        return self.print_peak_mem_raw(stats)
+        return self.print_peak_mem_raw(stats, indent)
 
-    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent_num: int = 4) -> None:
-        indent = " " * indent_num
-        indent_2 = indent * 2
+    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent: bool = True) -> None:
+        if indent:
+            indent_str = " " * 4
+            indent_str_2 = 2 * indent_str
+        else:
+            indent_str = ""
+            indent_str_2 = " " * 4
         self.print(
             "".join(
                 (
-                    indent,
+                    indent_str,
                     "- Peak RAM use:\n",
-                    indent_2,
+                    indent_str_2,
                     f"- Main proc.: {stats.self_gib:.4f} GiB",
                 )
             )
         )
         if stats.child_gib is not None:
             self.print(
-                "".join((indent_2, f"- Max of child procs.: {stats.child_gib:.4f} GiB"))
+                "".join(
+                    (indent_str_2, f"- Max of child procs.: {stats.child_gib:.4f} GiB")
+                )
             )
 
     def print_config(self, config: dict[str, tp.Any]) -> None:
@@ -152,10 +158,10 @@ class SilentConsole(BBConsole):
     def print(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         pass
 
-    def print_peak_mem(self, num_processes: int) -> None:
+    def print_peak_mem(self, num_processes: int, indent: bool = True) -> None:
         pass
 
-    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent_num: int = 4) -> None:
+    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent: bool = True) -> None:
         pass
 
     def print_banner(self) -> None:
