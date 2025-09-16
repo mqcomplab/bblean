@@ -518,6 +518,10 @@ def _fps_from_smiles(
         Path | None,
         Option("-o", "--out-dir", show_default=False),
     ] = None,
+    out_name: tpx.Annotated[
+        str | None,
+        Option("--name", help="Base name of output file"),
+    ] = None,
     kind: Annotated[
         str,
         Option("-k", "--kind"),
@@ -637,7 +641,14 @@ def _fps_from_smiles(
     out_dir = out_dir.resolve()
 
     # Pass 2: build the molecules
-    unique_id = str(uuid.uuid4()).split("-")[0]
+    if out_name is None:
+        unique_id = str(uuid.uuid4()).split("-")[0]
+        # Save the fingerprints as a NumPy array
+        out_name = f"{'packed-' if pack else ''}fps-{dtype}-{unique_id}"
+    else:
+        # Strip suffix
+        if out_name.endswith(".npy"):
+            out_name = out_name[:-4]
     with console.status("[italic]Generating fingerprints...[/italic]", spinner="dots"):
         for file_idx, mol_batch in enumerate(
             batched(iter_mols_from_paths(smiles_paths), num_per_batch)
@@ -647,10 +658,8 @@ def _fps_from_smiles(
                 DataStructs.ConvertToNumpyArray(fp, fps[i, :])
             if pack:
                 fps = pack_fingerprints(fps)
-            # Save the fingerprints as a NumPy array
-            name = f"{'packed-' if pack else ''}fps-{dtype}-{unique_id}"
             if digits is not None:
-                name = f"{name}.{str(file_idx).zfill(digits)}"
+                name = f"{out_name}.{str(file_idx).zfill(digits)}"
             np.save(out_dir / name, fps)
     if file_idx > 0:
         stem = name.split(".")[0]
