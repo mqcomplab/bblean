@@ -7,5 +7,5 @@ exclude =
     build,
     .eggs,
     bblean.egg-info,
-    bblean/legacy/*.py,
+    bblean/_legacy/*.py,
     docs,

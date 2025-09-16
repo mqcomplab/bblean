@@ -37,7 +37,7 @@ repos:
     hooks:
       - id: autoflake
         files: \.py$
-        exclude: bblean/bitbirch\.py$|bblean/legacy/bb_uint8\.py$|bblean/legacy/bb_int64_dense\.py$
+        exclude: bblean/bitbirch\.py$|bblean/_legacy/bb_uint8\.py$|bblean/_legacy/bb_int64_dense\.py$
         stages: [pre-push]
 
   - repo: local
