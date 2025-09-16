@@ -313,12 +313,15 @@ def run_multiround_bitbirch(
     )
     num_ps = min(num_initial_processes, num_files)
     console.print(f"    - Processing {num_files} inputs with {num_ps} processes")
-    if num_ps == 1:
-        for tup in files_range_tuples:
-            initial_fn(tup)
-    else:
-        with mp.Pool(processes=num_ps, maxtasksperchild=max_tasks_per_process) as pool:
-            pool.map(initial_fn, files_range_tuples)
+    with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
+        if num_ps == 1:
+            for tup in files_range_tuples:
+                initial_fn(tup)
+        else:
+            with mp.Pool(
+                processes=num_ps, maxtasksperchild=max_tasks_per_process
+            ) as pool:
+                pool.map(initial_fn, files_range_tuples)
 
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
@@ -338,14 +341,15 @@ def run_multiround_bitbirch(
         merging_fn = TreeMergingRound(round_idx=round_idx, **common_kwargs)
         num_ps = min(num_midsection_processes, len(batches))
         console.print(f"    - Processing {len(batches)} inputs with {num_ps} processes")
-        if num_ps == 1:
-            for batch_info in batches:
-                merging_fn(batch_info)
-        else:
-            with mp.Pool(
-                processes=num_ps, maxtasksperchild=max_tasks_per_process
-            ) as pool:
-                pool.map(merging_fn, batches)
+        with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
+            if num_ps == 1:
+                for batch_info in batches:
+                    merging_fn(batch_info)
+            else:
+                with mp.Pool(
+                    processes=num_ps, maxtasksperchild=max_tasks_per_process
+                ) as pool:
+                    pool.map(merging_fn, batches)
 
         timer.end_timing(f"round-{round_idx}", console)
         console.print_peak_mem(num_ps)
@@ -357,7 +361,8 @@ def run_multiround_bitbirch(
     file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
     final_fn = TreeMergingRound(round_idx=round_idx, is_final=True, **common_kwargs)
-    final_fn(("", file_pairs))
+    with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
+        final_fn(("", file_pairs))
 
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
