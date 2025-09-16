@@ -43,7 +43,7 @@ def summary_plot(
     ax.set_xlabel("Cluster ID", fontsize=12)
     ax.set_ylabel("Count", fontsize=12)
     ax.set_xticks(range(num_clusters))
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper right", fontsize=12)
 
     # Plot iSIM
     ax_isim = ax.twinx()
@@ -53,11 +53,12 @@ def summary_plot(
     ax_isim.set_ylabel("iSIM", fontsize=12)
     ax_isim.set_yticks(np.arange(0, 1.1, 0.1))
     ax_isim.set_ylim(0, 1)
-    ax_isim.legend(loc="upper right", bbox_to_anchor=(0.80, 1))
+    ax_isim.legend(loc="upper right", bbox_to_anchor=(0.80, 1), fontsize=12)
 
-    # fig.tight_layout()
+    msg = "Top {num_clusters} cluster metrics"
     if title is not None:
-        fig.suptitle(f"Top {num_clusters} Cluster Metrics for {title}", fontsize=14)
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg, fontsize=14)
     return fig, (ax, ax_isim)
 
 

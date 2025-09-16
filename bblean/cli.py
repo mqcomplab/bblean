@@ -76,6 +76,70 @@ def _main(
     pass
 
 
+@app.command("summary-plot")
+def _summary_plot(
+    clusters_path: tpx.Annotated[
+        Path, Option("-c", "--clusters-path", show_default=False)
+    ],
+    fps_path: tpx.Annotated[Path, Option("-f", "--fps-path", show_default=False)],
+    smiles_path: tpx.Annotated[Path, Option("-s", "--smiles-path", show_default=False)],
+    use_mmap: tpx.Annotated[
+        bool,
+        Option("--use-mmap/--no-use-mmap"),
+    ] = True,
+    title: tpx.Annotated[
+        str | None,
+        Option("--title"),
+    ] = None,
+    top: tpx.Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    input_is_packed: tpx.Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input"),
+    ] = True,
+    scaffold_fp_kind: tpx.Annotated[
+        str,
+        Option("--scaffold-fp-kind"),
+    ] = "rdkit",
+    n_features: tpx.Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " It must be provided for packed inputs *if it is not a multiple of 8*."
+            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+) -> None:
+    r"""Summary plot of the clustering results"""
+    import matplotlib.pyplot as plt
+
+    from bblean.smiles import load_smiles
+    from bblean.analysis import cluster_analysis
+    from bblean.plotting import summary_plot
+
+    if clusters_path.is_dir():
+        clusters_path = clusters_path / "clusters.pkl"
+    with open(clusters_path, mode="rb") as f:
+        clusters = pickle.load(f)
+    fps = np.load(fps_path, mmap_mode="r" if use_mmap else None)
+    smiles = load_smiles(smiles_path)
+    ca = cluster_analysis(
+        clusters,
+        smiles,
+        fps,
+        top=top,
+        n_features=n_features,
+        input_is_packed=input_is_packed,
+        scaffold_fp_kind=scaffold_fp_kind,
+    )
+    summary_plot(ca, title)
+    plt.show()
+
+
 @app.command("run")
 def _run(
     ctx: Context,
@@ -659,13 +723,13 @@ def _fps_from_smiles(
             if pack:
                 fps = pack_fingerprints(fps)
             if digits is not None:
-                name = f"{out_name}.{str(file_idx).zfill(digits)}"
-            np.save(out_dir / name, fps)
+                out_name = f"{out_name}.{str(file_idx).zfill(digits)}"
+            np.save(out_dir / out_name, fps)
     if file_idx > 0:
-        stem = name.split(".")[0]
+        stem = out_name.split(".")[0]
         console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
     else:
-        console.print(f"Finished. Outputs written to {str(out_dir / name)}.npy")
+        console.print(f"Finished. Outputs written to {str(out_dir / out_name)}.npy")
 
 
 @app.command("fps-split")
