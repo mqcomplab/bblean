@@ -5,11 +5,11 @@ channels:
 dependencies:
   # General
   - python=3.11
-  - pip>=24.0  # Installs python packages
+  - pip>=25.0  # Installs python packages
 
   # Build system
-  - setuptools>=64
-  - setuptools-scm>=8
+  - setuptools>=75.6
+  - setuptools-scm>=9
 
   # Core dependencies
   - scipy 
