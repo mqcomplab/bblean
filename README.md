@@ -42,13 +42,13 @@ millions of molecules.
 
    This command writes a packed fingerprint array to the current working directory (use
    `--out-dir <dir>` for a different location). The naming convention is
-   `packed-fps-uint8-508e53ef.npy`, where `508e53ef` is a unique identifier. The packed
-   `uint8` format is required for maximum memory-efficient in the BitBIRCH Lean
-   implementation, so keep the default `--pack` and `--dtype` values unless you have a
-   specific reason to change them.
+   `packed-fps-uint8-508e53ef.npy`, where `508e53ef` is a unique identifier (use `--name
+   <name>` if you prefer a different name). The packed `uint8` format is required for
+   maximum memory-efficient in the BitBIRCH Lean implementation, so keep the default
+   `--pack` and `--dtype` values unless you have a very good reason to change them.
 
-2. **Cluster the fingerprints.** Point `bb run` at the generated array (or a directory
-   with multiple `.npy` files):
+2. **Cluster the fingerprints.** To cluster in serial mode, point `bb run` at the
+   generated array (or a directory with multiple `.npy` files):
 
    ```bash
    bb run ./packed-fps-uint8-508e53ef.npy
@@ -56,6 +56,13 @@ millions of molecules.
 
    The outputs are stored in directory such as `bb_run_outputs/504e40ef/`, where
    `504e40ef` is a unique identifier (use `--out-dir <dir>` for a different location).
+
+   To cluster in parallel mode, use `bb multiround ./file-or-dir` instead. If pointed to
+   a directory with multiple `*.npy` files, files will be clustered in parallel and
+   sub-trees will be merged iteratively in intermediate rounds. For more information:
+   `bb multiround --help`. In this case the outputs are written by default to
+   `bb_multiround_outputs/<unique-id>/`. *Note that currently intermediate numpy files
+   are saved but please do not rely on this, it may change in the near future.*
 
 3. **Inspect the log.** The CLI prints a run banner with the parameters used, memory
    usage (when available), and elapsed timings so you can track each job at a glance.
