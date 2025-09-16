@@ -9,7 +9,7 @@ from legacy_merges import (  # type: ignore
     merge_tolerance_tough,
 )
 from bblean.utils import calc_centroid
-from bblean.merges import (
+from bblean._merges import (
     RadiusMerge,
     DiameterMerge,
     ToleranceMerge,

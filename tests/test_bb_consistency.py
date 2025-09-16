@@ -1,11 +1,11 @@
 import numpy as np
 
 
-from bblean.legacy.bb_int64_dense import (  # type: ignore
+from bblean._legacy.bb_int64_dense import (  # type: ignore
     BitBirch as BitBirchInt64,
     set_merge as set_merge_int64,
 )
-from bblean.legacy.bb_uint8 import (  # type: ignore
+from bblean._legacy.bb_uint8 import (  # type: ignore
     BitBirch as BitBirchUint8,
     set_merge as set_merge_uint8,
 )

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from bblean.merges import jt_isim
+from bblean.similarity import jt_isim
 from bblean.fingerprints import make_fake_fingerprints
 
 
