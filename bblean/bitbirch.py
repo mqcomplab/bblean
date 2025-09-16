@@ -117,8 +117,14 @@ def _validate_n_features(
     X, input_is_packed: bool, n_features: int | None = None
 ) -> int:
     if input_is_packed:
+        _padded_n_features = len(unpack_fingerprints(X[0]))
         if n_features is None:
-            raise ValueError("n_features is required for packed inputs")
+            # Assume multiple of 8
+            return _padded_n_features
+        if _padded_n_features < n_features:
+            raise ValueError(
+                "n_features is larger than the padded length, which is inconsistent"
+            )
         return n_features
 
     x_n_features = len(X[0]) if isinstance(X, list) else X.shape[1]
@@ -134,7 +140,7 @@ def _validate_n_features(
     return x_n_features
 
 
-def _max_separation(Y: NDArray[np.uint8], n_features: int):
+def _max_separation(Y: NDArray[np.uint8], n_features: int | None = None):
     """Finds two objects in Y that are very separated
     This is not guaranteed to find
     the two absolutely most separated objects, but it is
@@ -704,7 +710,7 @@ class BitBirch:
         self.first_call = False
         return self
 
-    def fit_np(
+    def _fit_np(
         self,
         X,
         reinsert_index_sequences: tp.Iterator[tp.Sequence[int]] | None = None,
@@ -780,13 +786,13 @@ class BitBirch:
         )
 
     # Provided for backwards compatibility
-    def fit_np_reinsert(
+    def _fit_np_reinsert(
         self,
         X,
         reinsert_index_sequences: tp.Iterator[tp.Sequence[int]],
         store_centroids: bool = False,
     ):
-        return self.fit_np(X, reinsert_index_sequences, store_centroids)
+        return self._fit_np(X, reinsert_index_sequences, store_centroids)
 
     def _initialize_tree(self, n_features: int) -> None:
         # Initialize the root (and a dummy node to get back the subclusters
@@ -850,7 +856,7 @@ class BitBirch:
             bfs.sort(key=lambda x: x.n_samples_, reverse=True)
         return bfs
 
-    def bf_to_np_refine(
+    def _bf_to_np_refine(
         self,
         X,
         initial_mol: int = 0,
@@ -883,7 +889,7 @@ class BitBirch:
             dtypes_to_mols["uint8"].append([mol_idx])
         return dtypes_to_fp, dtypes_to_mols
 
-    def bf_to_np(self):
+    def _bf_to_np(self):
         """Prepare numpy buffers ('np') for BitFeatures of all clusters"""
         if self.first_call:
             raise ValueError("The model has not been fitted yet.")
@@ -927,7 +933,7 @@ class BitBirch:
     ):
         # Extract the BitFeatures of the leaves, breaking the largest cluster apart into
         # singleton subclusters
-        fps_bfs, mols_bfs = self.bf_to_np_refine(
+        fps_bfs, mols_bfs = self._bf_to_np_refine(
             X, initial_mol=initial_mol, input_is_packed=input_is_packed
         )
 
@@ -938,7 +944,7 @@ class BitBirch:
 
         # Rebuild the tree again from scratch, reinserting all the subclusters
         for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-            self.fit_np(bufs, reinsert_index_sequences=mol_idxs)
+            self._fit_np(bufs, reinsert_index_sequences=mol_idxs)
         return self
 
     def __repr__(self) -> str:
@@ -970,9 +976,7 @@ def _get_array_iterator(
 ) -> tp.Iterator[NDArray[np.integer]]:
 
     if input_is_packed:
-        if n_features is None:
-            raise ValueError("n_features is required for packed inputs")
-        return (np.unpackbits(a, axis=-1, count=n_features) for a in X)  # type: ignore
+        return (unpack_fingerprints(a, n_features) for a in X)  # type: ignore
     if isinstance(X, list):
         return (a.astype(dtype, copy=False) for a in X)
     if sparse.issparse(X):

@@ -136,15 +136,16 @@ def _save_bufs_and_mol_idxs(
 class _InitialRound:
     def __init__(
         self,
-        n_features: int,
         double_cluster_init: bool,
         branching_factor: int,
         threshold: float,
         tolerance: float,
         out_dir: Path | str,
+        n_features: int | None = None,
         max_fps: int | None = None,
         use_mmap: bool = True,
         merge_criterion: str = "diameter",
+        input_is_packed: bool = True,
     ) -> None:
         self.n_features = n_features
         self.double_cluster_init = double_cluster_init
@@ -155,6 +156,7 @@ class _InitialRound:
         self.max_fps = max_fps
         self.use_mmap = use_mmap
         self.merge_criterion = merge_criterion
+        self.input_is_packed = input_is_packed
 
     def __call__(self, file_info: tuple[str, Path, int, int]) -> None:
         file_label, fp_file, start_idx, end_idx = file_info
@@ -168,9 +170,14 @@ class _InitialRound:
             merge_criterion=self.merge_criterion,
         )
         range_ = range(start_idx, end_idx)
-        brc_init.fit(fps, reinsert_indices=range_, n_features=self.n_features)
+        brc_init.fit(
+            fps,
+            reinsert_indices=range_,
+            n_features=self.n_features,
+            input_is_packed=self.input_is_packed,
+        )
         # Extract the BitFeatures of the leaves, breaking the largest cluster apart
-        fps_bfs, mols_bfs = brc_init.bf_to_np_refine(fps, initial_mol=start_idx)
+        fps_bfs, mols_bfs = brc_init._bf_to_np_refine(fps, initial_mol=start_idx)
         del fps
         del brc_init
         gc.collect()
@@ -184,8 +191,8 @@ class _InitialRound:
                 tolerance=self.tolerance,
             )
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                brc_tolerance.fit_np(bufs, reinsert_index_sequences=mol_idxs)
-            fps_bfs, mols_bfs = brc_tolerance.bf_to_np()
+                brc_tolerance._fit_np(bufs, reinsert_index_sequences=mol_idxs)
+            fps_bfs, mols_bfs = brc_tolerance._bf_to_np()
             del brc_tolerance
             gc.collect()
 
@@ -222,7 +229,7 @@ class _TreeMergingRound:
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
         for buf_path, idx_path in batch_path_pairs:
             bufs, mol_idxs = _load_bufs_and_mol_idxs(buf_path, idx_path, self.use_mmap)
-            brc_merger.fit_np(bufs, reinsert_index_sequences=mol_idxs)
+            brc_merger._fit_np(bufs, reinsert_index_sequences=mol_idxs)
             del mol_idxs
             del bufs
             gc.collect()
@@ -238,7 +245,7 @@ class _TreeMergingRound:
             return
 
         # Otherwise fetch and save the bufs and idxs for the next round
-        fps_bfs, mols_bfs = brc_merger.bf_to_np()
+        fps_bfs, mols_bfs = brc_merger._bf_to_np()
         del brc_merger
         gc.collect()
 
@@ -272,8 +279,9 @@ def _get_files_range_tuples(
 #     batch it might need to be skipped, but this is a more solid/robust choice
 def run_multiround_bitbirch(
     input_files: tp.Sequence[Path],
-    n_features: int,
     out_dir: Path,
+    n_features: int | None = None,
+    input_is_packed: bool = True,
     num_initial_processes: int = 10,
     num_midsection_processes: int | None = None,
     initial_merge_criterion: str = DEFAULTS.merge_criterion,
@@ -327,6 +335,7 @@ def run_multiround_bitbirch(
         double_cluster_init=double_cluster_init,
         max_fps=max_fps,
         merge_criterion=initial_merge_criterion,
+        input_is_packed=input_is_packed,
         **common_kwargs,
     )
     num_ps = min(num_initial_processes, num_files)

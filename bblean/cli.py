@@ -45,12 +45,12 @@ def _print_help_banner(ctx: Context, value: bool) -> None:
         raise typer.Exit()
 
 
-def _validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None:
+def _validate_output_dir(out_dir: Path, overwrite: bool = False) -> None:
     if out_dir.exists():
         if not out_dir.is_dir():
             raise RuntimeError("Output dir should be a dir")
         if any(out_dir.iterdir()):
-            if overwrite_outputs:
+            if overwrite:
                 shutil.rmtree(out_dir)
             else:
                 raise RuntimeError(f"Output dir {out_dir} has files")
@@ -88,7 +88,7 @@ def _fps_info(
         Argument(show_default=False, help="Paths to *.smi files with smiles"),
     ] = None,
 ) -> None:
-    """Show info about a *.npy fingerprint file, or a dir with *.npy files"""
+    """Show info about a `*.npy` fingerprint file, or a dir with `*.npy` files"""
     from bblean._console import get_console
 
     console = get_console()
@@ -111,12 +111,16 @@ def _fps_from_smiles(
     ] = None,
     out_dir: Annotated[
         Path | None,
-        Option("-o", "--output-dir", show_default=False),
+        Option("-o", "--out-dir", show_default=False),
     ] = None,
-    dtype: Annotated[
+    kind: Annotated[
         str,
-        Option("-d", "--dtype", help="NumPy dtype for the generated fingerprints"),
-    ] = "uint8",
+        Option("-k", "--kind"),
+    ] = "rdkit",
+    fp_size: Annotated[
+        int,
+        Option("--n-features", help="Num. features of the generated fingerprints"),
+    ] = DEFAULTS.features_num,
     parts: tpx.Annotated[
         int | None,
         Option(
@@ -138,22 +142,24 @@ def _fps_from_smiles(
             "-p/-P",
             "--pack/--no-pack",
             help="Pack bits in last dimension of fingerprints",
+            rich_help_panel="Advanced",
         ),
     ] = True,
-    kind: Annotated[
+    dtype: Annotated[
         str,
-        Option("-k", "--kind"),
-    ] = "rdkit",
-    fp_size: Annotated[
-        int,
-        Option("--fp-size"),
-    ] = DEFAULTS.features_num,
+        Option(
+            "-d",
+            "--dtype",
+            help="NumPy dtype for the generated fingerprints",
+            rich_help_panel="Advanced",
+        ),
+    ] = "uint8",
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Generate a *.npy fingerprints file from one or more *.smi smiles files
+    r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
     In order to use the memory efficient BitBIRCH u8 algorithm you *must* use the
     defaults: --dtype=uint8 and --pack
@@ -243,8 +249,12 @@ def _fps_from_smiles(
 def _split_fps(
     input_: Annotated[
         Path,
-        Argument(help="*.npy file with fingerprints"),
+        Argument(help="`*.npy` file with fingerprints"),
     ],
+    out_dir: tpx.Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
     parts: tpx.Annotated[
         int | None,
         Option(
@@ -263,12 +273,8 @@ def _split_fps(
             show_default=False,
         ),
     ] = None,
-    out_dir: tpx.Annotated[
-        Path | None,
-        Option("-o", "--out-dir", show_default=False),
-    ] = None,
 ) -> None:
-    r"""Split a *.npy fingerprint file into multiple *.npy files
+    r"""Split a `*.npy` fingerprint file into multiple `*.npy` files
 
     Usage to split into multiple files with a max number of fps each (e.g. 10k) is `bb
     split-fps --max-fps 10_000 ./fps.npy --out-dir ./split`. To split into a pre-defined
@@ -306,19 +312,17 @@ def _run(
     ctx: Context,
     input_: Annotated[
         Path | None,
-        Argument(help="*.npy file with packed fingerprints, or dir *.npy files"),
+        Argument(help="`*.npy` file with packed fingerprints, or dir `*.npy` files"),
     ] = None,
     out_dir: Annotated[
         Path | None,
         Option(
             "-o",
-            "--output-dir",
+            "--out-dir",
             help="Dir to dump the output files",
         ),
     ] = None,
-    overwrite_outputs: Annotated[
-        bool, Option(help="Allow overwriting output files")
-    ] = False,
+    overwrite: Annotated[bool, Option(help="Allow overwriting output files")] = False,
     branching_factor: Annotated[
         int,
         Option(
@@ -327,10 +331,6 @@ def _run(
             " slightly less RAM usage at the cost of some performance."
         ),
     ] = DEFAULTS.branching_factor,
-    use_mmap: Annotated[
-        bool,
-        Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
-    ] = DEFAULTS.use_mmap,
     threshold: Annotated[
         float,
         Option("--threshold"),
@@ -345,14 +345,31 @@ def _run(
             help="BitBIRCH tolerance, only for --set-merge tolerance|tolerance_tough"
         ),
     ] = DEFAULTS.tolerance,
-    n_features: tpx.Annotated[
-        int,
+    use_mmap: Annotated[
+        bool,
         Option(
-            "-n",
-            "--n-features",
-            help="Number of features in the fingerprints. Required for packed inputs",
+            help="Toggle mmap of the fingerprint files (True recommended)",
+            rich_help_panel="Advanced",
         ),
-    ] = 2048,
+    ] = DEFAULTS.use_mmap,
+    n_features: tpx.Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " It must be provided for packed inputs *if it is not a multiple of 8*."
+            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    input_is_packed: tpx.Annotated[
+        bool,
+        Option(
+            "--packed-input/--unpacked-input",
+            help="Toggle whether the input consists on packed or unpacked fingerprints",
+            rich_help_panel="Advanced",
+        ),
+    ] = True,
     # Debug options
     monitor_rss: Annotated[
         bool,
@@ -390,12 +407,14 @@ def _run(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Run standard, serial BitBIRCH clustering over *.npy fingerprint files"""
+    r"""Run standard, serial BitBIRCH clustering over `*.npy` fingerprint files"""
     # TODO: Remove code duplication with multiround
     import numpy as np
     from bblean._console import get_console
 
     console = get_console(silent=not verbose)
+    if variant == "int64_dense" and input_is_packed:
+        raise ValueError("Packed inputs are not supported for the int64_dense variant")
 
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
@@ -423,7 +442,7 @@ def _run(
     if out_dir is None:
         out_dir = Path.cwd() / "bb_run_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
-    _validate_output_dir(out_dir, overwrite_outputs)
+    _validate_output_dir(out_dir, overwrite)
     ctx.params["out_dir"] = str(out_dir.resolve())
 
     console.print_banner()
@@ -449,7 +468,7 @@ def _run(
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         for file in input_files:
             fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
-            tree.fit(fps, n_features=n_features)
+            tree.fit(fps, n_features=n_features, input_is_packed=input_is_packed)
 
         # TODO: Fix peak memory stats
         cluster_mol_ids = tree.get_cluster_mol_ids()
@@ -482,15 +501,13 @@ def _multiround(
     ctx: Context,
     in_dir: Annotated[
         Path | None,
-        Argument(help="Directory with input *.npy files with packed fingerprints"),
+        Argument(help="Directory with input `*.npy` files with packed fingerprints"),
     ] = None,
     out_dir: Annotated[
         Path | None,
-        Option("-o", "--output-dir", help="Dir for output files"),
+        Option("-o", "--out-dir", help="Dir for output files"),
     ] = None,
-    overwrite_outputs: Annotated[
-        bool, Option(help="Allow overwriting output files")
-    ] = False,
+    overwrite: Annotated[bool, Option(help="Allow overwriting output files")] = False,
     num_initial_processes: Annotated[
         int, Option("--ps", "--processes", help="Num. processes for first round")
     ] = 10,
@@ -528,13 +545,23 @@ def _multiround(
         ),
     ] = DEFAULTS.merge_criterion,
     n_features: tpx.Annotated[
-        int,
+        int | None,
         Option(
-            "-n",
             "--n-features",
-            help="Number of features in the fingerprints. Required for packed inputs",
+            help="Number of features in the fingerprints."
+            " It must be provided for packed inputs *if it is not a multiple of 8*."
+            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            rich_help_panel="Advanced",
         ),
-    ] = 2048,
+    ] = None,
+    input_is_packed: tpx.Annotated[
+        bool,
+        Option(
+            "--packed-input/--unpacked-input",
+            help="Toggle whether the input consists on packed or unpacked fingerprints",
+            rich_help_panel="Advanced",
+        ),
+    ] = True,
     # Advanced options
     num_midsection_rounds: tpx.Annotated[
         int,
@@ -554,7 +581,10 @@ def _multiround(
     ] = 1,
     use_mmap: Annotated[
         bool,
-        Option(help="Toggle mmap of the fingerprint files", rich_help_panel="Advanced"),
+        Option(
+            help="Toggle mmap of the fingerprint files (True recommended)",
+            rich_help_panel="Advanced",
+        ),
     ] = DEFAULTS.use_mmap,
     fork: Annotated[
         bool,
@@ -613,7 +643,7 @@ def _multiround(
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
 ) -> None:
-    r"""Run multi-round BitBIRCH clustering, optionally parallelize over *.npy files"""
+    r"""Run multi-round BitBIRCH clustering, optionally parallelize over `*.npy` files"""  # noqa:E501
     from bblean._console import get_console
     from bblean.multiround import run_multiround_bitbirch
 
@@ -646,7 +676,7 @@ def _multiround(
     if out_dir is None:
         out_dir = Path.cwd() / "bb_multiround_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
-    _validate_output_dir(out_dir, overwrite_outputs)
+    _validate_output_dir(out_dir, overwrite)
     ctx.params["out_dir"] = str(out_dir.resolve())
 
     console.print_banner()
@@ -660,6 +690,7 @@ def _multiround(
     timer = run_multiround_bitbirch(
         input_files=input_files,
         n_features=n_features,
+        input_is_packed=input_is_packed,
         out_dir=out_dir,
         initial_merge_criterion=initial_merge_criterion,
         num_initial_processes=num_initial_processes,
