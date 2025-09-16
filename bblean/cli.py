@@ -5,7 +5,6 @@ import math
 import typing_extensions as tpx
 import shutil
 import json
-import time
 import sys
 import pickle
 import uuid
@@ -17,7 +16,8 @@ import numpy as np
 import typer
 from typer import Typer, Argument, Option, Abort, Context
 
-from bblean.memory import monitor_rss_daemon, get_peak_memory
+from bblean.memory import launch_monitor_rss_daemon, get_peak_memory
+from bblean.timer import Timer
 from bblean.config import DEFAULTS, collect_system_specs_and_dump_config
 from bblean.packing import pack_fingerprints
 from bblean.utils import _import_bitbirch_variant, batched
@@ -386,6 +386,7 @@ def _run(
     ] = True,
 ) -> None:
     r"""Run standard, serial BitBIRCH clustering over *.npy fingerprint files"""
+    # TODO: Remove code duplication with multiround
     import numpy as np
     from bblean._console import get_console
 
@@ -426,18 +427,10 @@ def _run(
 
     # Optinally start a separate process that tracks RAM usage
     if monitor_rss:
-        console.print("** Monitoring total RAM usage **\n")
-        mp.Process(
-            target=monitor_rss_daemon,
-            kwargs=dict(
-                file=out_dir / "monitor-rss.csv",
-                interval_s=monitor_rss_interval_s,
-                start_time=time.perf_counter(),
-            ),
-            daemon=True,
-        ).start()
+        launch_monitor_rss_daemon(out_dir / "monitor-rss.csv", monitor_rss_interval_s)
 
-    start_time = time.perf_counter()
+    timer = Timer()
+    timer.init_timing("total")
     if "lean" not in variant:
         set_merge(merge_criterion, tolerance)
         tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
@@ -451,9 +444,10 @@ def _run(
     for file in input_files:
         fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
         tree.fit(fps, n_features=n_features)
+
+    # TODO: Fix peak memory stats
     cluster_mol_ids = tree.get_cluster_mol_ids()
-    total_time_s = time.perf_counter() - start_time
-    console.print(f"Time elapsed: {total_time_s:.5f} s")
+    timer.end_timing("total", console)
     stats = get_peak_memory(1)
     if stats is None:
         console.print("[Peak memory stats not tracked for non-Unix systems]")
@@ -465,9 +459,8 @@ def _run(
         pickle.dump(cluster_mol_ids, f)
 
     collect_system_specs_and_dump_config(ctx.params)
-    timings_fpath = out_dir / "timings.json"
-    with open(timings_fpath, mode="wt", encoding="utf-8") as f:
-        json.dump({"total": total_time_s}, f, indent=4)
+    timer.dump(out_dir / "timings.json")
+
     peak_rss_fpath = out_dir / "peak-rss.json"
     with open(peak_rss_fpath, mode="wt", encoding="utf-8") as f:
         json.dump(
@@ -620,22 +613,20 @@ def _multiround(
 
     console = get_console(silent=not verbose)
 
-    # Set the multiprocessing start method
+    # Set multiprocessing start method
     if fork and not sys.platform == "linux":
         console.print("'fork' is only available on Linux", style="red")
         raise Abort()
     if sys.platform == "linux":
         mp.set_start_method("fork" if fork else "forkserver")
 
+    # Collect inputs:
     # If not passed, input dir is bb_inputs/
     if in_dir is None:
         in_dir = Path.cwd() / "bb_inputs"
     _validate_input_dir(in_dir)
-
     # All files in the input dir with *.npy suffix are considered input files
-    input_files = sorted(
-        in_dir.glob("*.npy"), key=lambda x: int(x.name.split(".")[0].split("_")[-2])
-    )[:max_files]
+    input_files = sorted(in_dir.glob("*.npy"))[:max_files]
     ctx.params["input_files"] = [str(p.resolve()) for p in input_files]
     ctx.params["num_fps"] = [get_file_num_fps(p) for p in input_files]
     if max_fps is not None:
@@ -643,6 +634,7 @@ def _multiround(
     else:
         ctx.params["num_fps_loaded"] = ctx.params["num_fps"]
 
+    # Set up outputs:
     # If not passed, output dir is constructed as bb_multiround_outputs/<unique-id>/
     unique_id = str(uuid.uuid4()).split("-")[0]
     if out_dir is None:
@@ -657,29 +649,9 @@ def _multiround(
 
     # Optinally start a separate process that tracks RAM usage
     if monitor_rss:
-        console.print("** Monitoring total RAM usage **\n")
-        mp.Process(
-            target=monitor_rss_daemon,
-            kwargs=dict(
-                file=out_dir / "monitor-rss.csv",
-                interval_s=monitor_rss_interval_s,
-                start_time=time.perf_counter(),
-            ),
-            daemon=True,
-        ).start()
+        launch_monitor_rss_daemon(out_dir / "monitor-rss.csv", monitor_rss_interval_s)
 
-    if num_midsection_processes is None:
-        num_midsection_processes = num_initial_processes
-    else:
-        # Sanity check
-        if num_midsection_processes > num_initial_processes:
-            console.print(
-                "Num. midsection processes must be <= num. initial processes",
-                style="red",
-            )
-            raise Abort()
-
-    timings_stats = run_multiround_bitbirch(
+    timer = run_multiround_bitbirch(
         input_files=input_files,
         n_features=n_features,
         out_dir=out_dir,
@@ -700,7 +672,6 @@ def _multiround(
         max_fps=max_fps,
         verbose=verbose,
     )
-    with open(out_dir / "timings.json", mode="wt", encoding="utf-8") as f:
-        json.dump(timings_stats, f, indent=4)
+    timer.dump(out_dir / "timings.json")
     # TODO: Also dump peak-rss.json
     collect_system_specs_and_dump_config(ctx.params)

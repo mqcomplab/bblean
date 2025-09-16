@@ -47,7 +47,6 @@
 import math
 import pickle
 import gc
-import time
 import typing as tp
 import multiprocessing as mp
 from pathlib import Path
@@ -61,6 +60,7 @@ from bblean.utils import batched
 from bblean.config import DEFAULTS
 from bblean.bitbirch import BitBirch  # type: ignore
 from bblean.fingerprint_io import get_file_num_fps, numpy_streaming_save
+from bblean.timer import Timer
 
 
 # Glob and sort by uint bits and label, if a console is passed then the number of output
@@ -256,10 +256,10 @@ def run_multiround_bitbirch(
     input_files: tp.Sequence[Path],
     n_features: int,
     out_dir: Path,
-    initial_merge_criterion: str = DEFAULTS.merge_criterion,
     num_initial_processes: int = 10,
-    num_midsection_processes: int = 3,
-    branching_factor: int = 254,
+    num_midsection_processes: int | None = None,
+    initial_merge_criterion: str = DEFAULTS.merge_criterion,
+    branching_factor: int = DEFAULTS.branching_factor,
     threshold: float = DEFAULTS.threshold,
     tolerance: float = DEFAULTS.tolerance,
     # Advanced
@@ -272,12 +272,19 @@ def run_multiround_bitbirch(
     only_first_round: bool = False,
     max_fps: int | None = None,
     verbose: bool = False,
-) -> dict[str, float]:
+) -> Timer:
     # Returns timing and for the different rounds
     # TODO: Also return peak-rss
     console = get_console(silent=not verbose)
 
-    # Common BitBIRCH params
+    if num_midsection_processes is None:
+        num_midsection_processes = num_initial_processes
+    else:
+        # Sanity check
+        if num_midsection_processes > num_initial_processes:
+            raise ValueError("Num. midsection procs. must be <= num. initial processes")
+
+    # Common params to all rounds BitBIRCH
     common_kwargs: dict[str, tp.Any] = dict(
         branching_factor=branching_factor,
         threshold=threshold,
@@ -285,19 +292,17 @@ def run_multiround_bitbirch(
         use_mmap=use_mmap,
         out_dir=out_dir,
     )
+    timer = Timer()
+    timer.init_timing("total")
 
-    timings_s: dict[str, float] = {}
-    start_time = time.perf_counter()
-    start_round1 = time.perf_counter()
-
-    # Get starting and ending idxs for each file
+    # Get starting and ending idxs for each file, and collect them into tuples
     files_range_tuples = _get_files_range_tuples(input_files)
     num_files = len(input_files)
 
-    # Initial round
+    # Initial round of clustering
     round_idx = 1
-    round_label = f"Round {round_idx}"
-    console.print(f"(Initial) {round_label}: Cluster initial batch of fingerprints")
+    timer.init_timing(f"round-{round_idx}")
+    console.print(f"(Initial) Round {round_idx}: Cluster initial batch of fingerprints")
 
     initial_fn = InitialRound(
         n_features=n_features,
@@ -307,33 +312,32 @@ def run_multiround_bitbirch(
         **common_kwargs,
     )
     num_ps = min(num_initial_processes, num_files)
-    console.print(f"    - Running on {num_files} files with {num_ps} processes")
+    console.print(f"    - Processing {num_files} inputs with {num_ps} processes")
     if num_ps == 1:
         for tup in files_range_tuples:
             initial_fn(tup)
     else:
         with mp.Pool(processes=num_ps, maxtasksperchild=max_tasks_per_process) as pool:
             pool.map(initial_fn, files_range_tuples)
-    timings_s[round_label] = time.perf_counter() - start_round1
-    console.print(f"    - Time for {round_label}: {timings_s[round_label]:.4f} s")
+
+    timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
 
     if only_first_round:  # Early exit for debugging
-        timings_s["total"] = time.perf_counter() - start_time
-        return timings_s
+        timer.end_timing("total")
+        return timer
 
-    # Mid-section "Tree-Merging" rounds
+    # Mid-section "Tree-Merging" rounds of clustering
     for _ in range(num_midsection_rounds):
         round_idx += 1
-        round_label = f"Round {round_idx}"
-        start_round2 = time.perf_counter()
-        console.print(f"(Midsection) {round_label}: Re-clustering in chunks")
+        timer.init_timing(f"round-{round_idx}")
+        console.print(f"(Midsection) Round {round_idx}: Re-clustering in chunks")
 
         file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
         batches = _chunk_file_pairs_in_batches(file_pairs, bin_size, console)
         merging_fn = TreeMergingRound(round_idx=round_idx, **common_kwargs)
         num_ps = min(num_midsection_processes, len(batches))
-        console.print(f"    - Running on {len(batches)} chunks with {num_ps} processes")
+        console.print(f"    - Processing {len(batches)} inputs with {num_ps} processes")
         if num_ps == 1:
             for batch_info in batches:
                 merging_fn(batch_info)
@@ -342,25 +346,22 @@ def run_multiround_bitbirch(
                 processes=num_ps, maxtasksperchild=max_tasks_per_process
             ) as pool:
                 pool.map(merging_fn, batches)
-        timings_s[round_label] = time.perf_counter() - start_round2
-        console.print(f"    - Time for {round_label}: {timings_s[round_label]:.4f} s")
+
+        timer.end_timing(f"round-{round_idx}", console)
         console.print_peak_mem(num_ps)
 
-    # Final "Tree-Merging" round
+    # Final "Tree-Merging" round of clustering
     round_idx += 1
-    start_final = time.perf_counter()
+    timer.init_timing(f"round-{round_idx}")
     console.print(f"(Final) Round {round_idx}: Final round of clustering")
     file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
     final_fn = TreeMergingRound(round_idx=round_idx, is_final=True, **common_kwargs)
     final_fn(("", file_pairs))
 
-    round_label = f"Round {round_idx}"
-    timings_s[round_label] = time.perf_counter() - start_final
-    console.print(f"    - Time for {round_label}: {timings_s[round_label]:.4f} s")
+    timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
 
-    timings_s["total"] = time.perf_counter() - start_time
     console.print()
-    console.print(f"Total time: {timings_s['total']:.4f} s")
-    return timings_s
+    timer.end_timing("total", console, indent=False)
+    return timer
