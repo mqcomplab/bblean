@@ -20,11 +20,6 @@ from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
 from bblean._timer import Timer
 from bblean._config import DEFAULTS, collect_system_specs_and_dump_config
 from bblean.utils import _import_bitbirch_variant, batched
-from bblean.fingerprints import (
-    _get_fps_file_num,
-    _print_fps_file_info,
-    pack_fingerprints,
-)
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -185,6 +180,7 @@ def _run(
     # TODO: Remove code duplication with multiround
     import numpy as np
     from bblean._console import get_console
+    from bblean.fingerprints import _get_fps_file_num
 
     console = get_console(silent=not verbose)
     if variant == "int64_dense" and input_is_packed:
@@ -420,6 +416,7 @@ def _multiround(
     r"""Run multi-round BitBIRCH clustering, optionally parallelize over `*.npy` files"""  # noqa:E501
     from bblean._console import get_console
     from bblean.multiround import run_multiround_bitbirch
+    from bblean.fingerprints import _get_fps_file_num
 
     console = get_console(silent=not verbose)
 
@@ -497,6 +494,7 @@ def _fps_info(
 ) -> None:
     """Show info about a `*.npy` fingerprint file, or a dir with `*.npy` files"""
     from bblean._console import get_console
+    from bblean.fingerprints import _print_fps_file_info
 
     console = get_console()
     if fp_paths is None:
@@ -527,7 +525,7 @@ def _fps_from_smiles(
     fp_size: Annotated[
         int,
         Option("--n-features", help="Num. features of the generated fingerprints"),
-    ] = DEFAULTS.features_num,
+    ] = DEFAULTS.n_features,
     parts: tpx.Annotated[
         int | None,
         Option(
@@ -574,7 +572,9 @@ def _fps_from_smiles(
     import numpy as np
     from rdkit import Chem
     from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
+
     from bblean._console import get_console
+    from bblean.fingerprints import pack_fingerprints
 
     def iter_mols_from_paths(smiles_paths: tp.Iterable[Path]) -> tp.Iterator[Chem.Mol]:
         for smi_path in smiles_paths:

@@ -299,6 +299,13 @@ def run_multiround_bitbirch(
     max_fps: int | None = None,
     verbose: bool = False,
 ) -> Timer:
+    r"""Perform (possibly parallel) multi-round BitBirch clustering
+
+    ..  warning::
+
+        The functionality provided by this function is stable, but its API
+        (the arguments it takes and its return values) may change in the future.
+    """
     # Returns timing and for the different rounds
     # TODO: Also return peak-rss
     console = get_console(silent=not verbose)

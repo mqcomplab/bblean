@@ -23,6 +23,7 @@ __all__ = ["summary_plot", "tsne_plot", "dump_mol_images"]
 def summary_plot(
     c: ClusterAnalysis, /, title: str | None = None
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Obtain a summary plot from a cluster analysis"""
     df = c.df
     num_clusters = c.num_clusters
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -63,6 +64,7 @@ def summary_plot(
 def tsne_plot(
     c: ClusterAnalysis, /, title: str | None = None
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Obtain a t-SNE plot from a cluster analysis"""
     df = c.df
     fps_list: list[NDArray[np.uint8]] = []
     label_list: list[int] = []
@@ -102,6 +104,7 @@ def dump_mol_images(
     cluster_idx: int = 0,
     batch_size: int = 30,
 ) -> None:
+    r"""Dump smiles associated with a specific cluster as *.png image files"""
     if isinstance(smiles, str):
         smiles = [smiles]
     smiles = np.asarray(smiles)

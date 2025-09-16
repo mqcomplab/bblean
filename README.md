@@ -95,13 +95,17 @@ For example of how to use the main `bblean` classes and functions consult
 A quick summary:
 
 ```python
-import bblean
 import pickle
+
 import numpy as np
 
-# Create and pack the fingerprints
-smiles = bblean.smiles.load_smiles("./examples/chembl-smiles.smi")
-fps = bblean.fingerprints.fps_from_smiles(smiles, pack=True, n_features=2048)
+import bblean
+import bblean.plotting as plotting
+import bblean.analysis as analysis
+
+# Create the fingerprints and pack them into a numpy array, starting from a *.smi file
+smiles = bblean.load_smiles("./examples/chembl-smiles.smi")
+fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048)
 
 # Fit the figerprints (by default all bblean functions take *packed* fingerprints)
 tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion="diameter")
@@ -113,15 +117,15 @@ tree.refine_inplace(fps)
 
 # Visualize the results
 clusters = tree.get_cluster_mol_ids()
-ca = bblean.analysis.cluster_analysis(clusters, smiles, fps)
-bblean.plotting.summary_plot(ca, title="ChEMBL Sample")
+ca = analysis.cluster_analysis(clusters, smiles, fps)
+plotting.summary_plot(ca, title="ChEMBL Sample")
 plt.show()
 
-# Save the results
-ca.dump_metrics("./metrics.csv")
-np.save("./fps-packed-2048.npy", fps)
+# Save the resulting clusters, metrics, and fps
 with open("./clusters.pkl", "wb") as f:
     pickle.dump(clusters, f)
+ca.dump_metrics("./metrics.csv")
+np.save("./fps-packed-2048.npy", fps)
 ```
 
 ## API and Documentation

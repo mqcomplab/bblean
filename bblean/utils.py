@@ -37,7 +37,10 @@ def _import_bitbirch_variant(
 
 # Itertools recipe
 def batched(iterable: tp.Iterable[_T], n: int) -> tp.Iterator[tuple[_T, ...]]:
-    r"""Batch data into tuples of length n. The last batch may be shorter."""
+    r"""Batch data into tuples of length n. The last batch may be shorter.
+
+    This is equivalent to the batched receip from `itertools`.
+    """
     # batched('ABCDEFG', 3) --> ('A', 'B', 'C') ('D', 'E', 'F') ('G',)
     if n < 1:
         raise ValueError("n must be at least one")

@@ -52,8 +52,6 @@ import typing as tp
 from collections import defaultdict
 from weakref import WeakSet
 
-from scipy import sparse
-import pandas as pd
 import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
@@ -535,51 +533,58 @@ class _BFSubcluster:
 
 
 class BitBirch:
-    r"""Implements the BitBIRCH clustering algorithm.
+    r"""Implements the BitBIRCH clustering algorithm, 'Lean' version
 
-    BitBIRCH paper:
-
-    Memory- and time-efficient, online-learning algorithm. It constructs a tree data
+    Memory and time efficient, online-learning algorithm. It constructs a tree data
     structure with the cluster centroids being read off the leaf.
+
+    If you find this software useful please cite the following articles:
+    - BitBIRCH: efficient clustering of large molecular libraries:
+      https://doi.org/10.1039/D5DD00030K
+    - BitBIRCH Clustering Refinement Strategies:
+      https://doi.org/10.1021/acs.jcim.5c00627
+    - BitBIRCH-Lean: TO-BE-ADDED
 
     Parameters
     ----------
-    threshold : float, default=0.65
+
+    threshold : float = 0.65
         The similarity radius of the subcluster obtained by merging a new sample and the
         closest subcluster should be greater than the threshold. Otherwise a new
         subcluster is started. Setting this value to be very low promotes splitting and
         vice-versa.
 
-    branching_factor : int, default=50
-        Maximum number of BF subclusters in each node. If a new samples enters such that
-        the number of subclusters exceed the branching_factor then that node is split
-        into two nodes with the subclusters redistributed in each. The parent subcluster
-        of that node is removed and two new subclusters are added as parents of the 2
-        split nodes.
+    branching_factor : int = 50
+        Maximum number of 'BitFeatures' subclusters in each node. If a new sample
+        enters such that the number of subclusters exceed the branching_factor then that
+        node is split into two nodes with the subclusters redistributed in each. The
+        parent subcluster of that node is removed and two new subclusters are added as
+        parents of the 2 split nodes.
 
-    Attributes
-    ----------
-    root_ : _BFNode
-        Root of the BFTree.
+    merge_criterion: str
+        radius, diameter or tolerance
+        - radius: merge subcluster based on comparison to centroid of the cluster
+        - diameter: merge subcluster based on instant Tanimoto similarity of cluster
+        - tolerance: applies tolerance threshold to diameter merge criteria, which
+            will merge subcluster with stricter threshold for newly added molecules
 
-    dummy_leaf_ : _BFNode
-        Start pointer to all the leaves.
-
-    subcluster_centers_ : ndarray
-        Centroids of all subclusters read directly from the leaves.
-        Only generated if `store_centroids` is passed to `BitBirch.fit()`
+    tolerance: float
+        Penalty value for similarity threshold of the 'tolerance' merge criteria
 
     Notes
     -----
-    The tree data structure consists of nodes with each node consisting of a number of
-    subclusters. The maximum number of subclusters in a node is determined by the
-    branching factor. Each subcluster maintains a linear sum, mol_indices and the number
-    of samples in that subcluster. In addition, each subcluster can also have a node as
-    its child, if the subcluster is not a member of a leaf node.
 
-    For a new point entering the root, it is merged with the subcluster closest to it
-    and the linear sum, mol_indices and the number of samples of that subcluster are
-    updated. This is done recursively till the properties of the leaf node are updated.
+    The tree data structure consists of nodes with each node holdint a number of
+    subclusters ('BitFeatures'). The maximum number of subclusters in a node is
+    determined by the branching factor. Each subcluster maintains a linear sum,
+    mol_indices and the number of samples in that subcluster. In addition, each
+    subcluster can also have a node as its child, if the subcluster is not a member of a
+    leaf node.
+
+    Each time a new fingerprint is fitted, it is merged with the subcluster closest to
+    it and the linear sum, mol_indices and the number of samples int the corresponding
+    subcluster are updated. This is done recursively untils the properties of a leaf
+    node are updated.
     """
 
     def __init__(
@@ -590,10 +595,9 @@ class BitBirch:
         merge_criterion: str | None = None,
         tolerance: float | None = None,
     ):
-        self.threshold = threshold
-        self.branching_factor = branching_factor
-        self.index_tracker = 0
-        self.first_call = True
+        # Criterion for merges
+        self._threshold = threshold
+        self._branching_factor = branching_factor
         if _global_merge_accept is not None:
             # Backwards compat
             if tolerance is not None:
@@ -611,13 +615,45 @@ class BitBirch:
             merge_criterion = "diameter" if merge_criterion is None else merge_criterion
             tolerance = 0.05 if tolerance is None else tolerance
             self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
+
+        # Tree state
+        self._num_fitted_fps = 0
+        self._root: _BFNode | None = None
+        self._dummy_leaf: _BFNode | None = None
+
         # For backwards compatibility, weak-register in global state This is used to
         # update the merge_accept function if the global set_merge() is called
+        # (discouraged)
         _BITBIRCH_INSTANCES.add(self)
+
+    @property
+    def threshold(self) -> float:
+        return self._threshold
+
+    @property
+    def branching_factor(self) -> int:
+        return self._branching_factor
 
     @property
     def merge_criterion(self) -> str:
         return self._merge_accept_fn.name
+
+    @property
+    def tolerance(self) -> float | None:
+        fn = self._merge_accept_fn
+        if hasattr(fn, "tolerance"):
+            return fn.tolerance
+        return None
+
+    @property
+    def is_init(self) -> bool:
+        r"""Whether the tree has been initialized (True after first call to `fit()`)"""
+        return self._root is not None
+
+    @property
+    def num_fitted_fps(self) -> int:
+        r"""Total number of fitted fingerprints"""
+        return self._num_fitted_fps
 
     def set_merge(
         self,
@@ -627,18 +663,9 @@ class BitBirch:
         threshold: float | None = None,
         branching_factor: int | None = None,
     ) -> None:
-        r"""Sets the criteria for merging subclusters in this BitBirch tree
+        r"""Changes the criteria for merging subclusters in this BitBirch tree
 
-        Parameters:
-        -----------
-        merge_criterion: str
-            radius, diameter or tolerance
-            - radius: merge subcluster based on comparison to centroid of the cluster
-            - diameter: merge subcluster based on instant Tanimoto similarity of cluster
-            - tolerance: applies tolerance threshold to diameter merge criteria, which
-                will merge subcluster with stricter threshold for newly added molecules
-        tolerance: float
-            Penalty value for similarity threshold of the 'tolerance' merge criteria
+        For an explanation of the parameters see the `BitBirch` class docstring.
         """
         if _global_merge_accept is not None:
             raise ValueError(
@@ -647,76 +674,77 @@ class BitBirch:
             )
         self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
         if threshold is not None:
-            self.threshold = threshold
+            self._threshold = threshold
         if branching_factor is not None:
-            self.branching_factor = branching_factor
+            self._branching_factor = branching_factor
 
     def fit(
         self,
         X,
         reinsert_indices: tp.Iterator[int] | None = None,
-        store_centroids: bool = False,
         input_is_packed: bool = True,
         n_features: int | None = None,
     ):
         r"""Build a BF Tree for the input data.
 
-        if `reinsert_indices` is passed, X corresponds only to the molecules that will
-        be reinserted into the tree, and `reinsert_indices` are the indices associated
-        with these molecules.
-
         Parameters
         ----------
+
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Input data.
 
+        reinsert_indices: Iterable[int]
+            if `reinsert_indices` is passed, X corresponds only to the molecules that
+            will be reinserted into the tree, and `reinsert_indices` are the indices
+            associated with these molecules.
+
+        input_is_packed: bool
+            Whether the input fingerprints are packed
+
+        n_features: int
+            Number of featurs of input fingerprints. Only required for packed inputs if
+            it is not a multiple of 8, otherwise it is redundant.
+
         Returns
         -------
+
         self
             Fitted estimator.
         """
         n_features = _validate_n_features(X, input_is_packed, n_features)
         # Start a new tree the first time this function is called
-        if self.first_call:
+        if not self.is_init:
             self._initialize_tree(n_features)
 
         # The array iterator either copies, un-sparsifies, or does nothing
         # with the array rows, depending on the kind of X passed
         arr_iterator = _get_array_iterator(X, input_is_packed, n_features)
         if reinsert_indices is None:
-            iterable = enumerate(arr_iterator, self.index_tracker)
+            iterable = enumerate(arr_iterator, self.num_fitted_fps)
         else:
             iterable = zip(reinsert_indices, arr_iterator)
 
-        threshold = self.threshold
-        branching_factor = self.branching_factor
+        threshold = self._threshold
+        branching_factor = self._branching_factor
         merge_accept_fn = self._merge_accept_fn
         for idx, fp in iterable:
             subcluster = _BFSubcluster(
                 linear_sum=fp, mol_indices=[idx], n_features=n_features
             )
-            split = self.root_.insert_bf_subcluster(
+            split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
             )
 
             if split:
-                new_subcluster1, new_subcluster2 = _split_node(self.root_)
-                self.root_ = _BFNode(branching_factor, n_features)
-                self.root_.append_subcluster(new_subcluster1)
-                self.root_.append_subcluster(new_subcluster2)
-
-        if reinsert_indices is None and len(X) > 0:
-            self.index_tracker = idx + 1
-        if store_centroids:
-            self._store_centroids_array()
-        self.first_call = False
+                new_subcluster1, new_subcluster2 = _split_node(self._root)
+                self._root = _BFNode(branching_factor, n_features)
+                self._root.append_subcluster(new_subcluster1)
+                self._root.append_subcluster(new_subcluster2)
+            self._num_fitted_fps += 1
         return self
 
     def _fit_np(
-        self,
-        X,
-        reinsert_index_sequences: tp.Iterator[tp.Sequence[int]] | None = None,
-        store_centroids: bool = False,
+        self, X, reinsert_index_sequences: tp.Iterator[tp.Sequence[int]] | None = None
     ):
         r"""Build a BF Tree starting from buffers
 
@@ -741,37 +769,33 @@ class BitBirch:
         """
         n_features = _validate_n_features(X, input_is_packed=False) - 1
 
-        if self.first_call:
+        if self.is_init:
             self._initialize_tree(n_features)
 
         # The array iterator either copies, un-sparsifies, or does nothing with the
         # array rows, depending on the kind of X passed
         arr_iterator = _get_array_iterator(X, input_is_packed=False, dtype=X[0].dtype)
         merge_accept_fn = self._merge_accept_fn
-        threshold = self.threshold
-        branching_factor = self.branching_factor
+        threshold = self._threshold
+        branching_factor = self._branching_factor
         idx_provider: tp.Iterator[tp.Sequence[int]]
         if reinsert_index_sequences is None:
-            idx_provider = map(list, range(self.index_tracker))  # type: ignore
+            idx_provider = map(list, range(self.num_fitted_fps))  # type: ignore
         else:
             idx_provider = reinsert_index_sequences
         for idxs, buf in zip(idx_provider, arr_iterator):
             subcluster = _BFSubcluster(
                 buffer=buf, mol_indices=idxs, n_features=n_features
             )
-            split = self.root_.insert_bf_subcluster(
+            split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
             )
             if split:
-                new_subcluster1, new_subcluster2 = _split_node(self.root_)
-                self.root_ = _BFNode(branching_factor, n_features)
-                self.root_.append_subcluster(new_subcluster1)
-                self.root_.append_subcluster(new_subcluster2)
-        if reinsert_index_sequences is None and len(X) > 0:
-            self.index_tracker = idxs[0] + 1
-        if store_centroids:
-            self._store_centroids_array()
-        self.first_call = False
+                new_subcluster1, new_subcluster2 = _split_node(self._root)
+                self._root = _BFNode(branching_factor, n_features)
+                self._root.append_subcluster(new_subcluster1)
+                self._root.append_subcluster(new_subcluster2)
+            self._num_fitted_fps += len(idxs)
         return self
 
     # Provided for backwards compatibility
@@ -779,44 +803,22 @@ class BitBirch:
         self,
         X,
         reinsert_indices: tp.Iterator[int],
-        store_centroids: bool = False,
         input_is_packed: bool = True,
         n_features: int | None = None,
     ):
-        return self.fit(
-            X, reinsert_indices, store_centroids, input_is_packed, n_features
-        )
-
-    # Provided for backwards compatibility
-    def _fit_np_reinsert(
-        self,
-        X,
-        reinsert_index_sequences: tp.Iterator[tp.Sequence[int]],
-        store_centroids: bool = False,
-    ):
-        return self._fit_np(X, reinsert_index_sequences, store_centroids)
+        r""":meta private:"""
+        return self.fit(X, reinsert_indices, input_is_packed, n_features)
 
     def _initialize_tree(self, n_features: int) -> None:
         # Initialize the root (and a dummy node to get back the subclusters
-        self.root_ = _BFNode(self.branching_factor, n_features)
-        self.dummy_leaf_ = _BFNode(self.branching_factor, n_features)
-        self.dummy_leaf_.next_leaf_ = self.root_
-        self.root_.prev_leaf_ = self.dummy_leaf_
-
-    def _store_centroids_array(self) -> None:
-        centroids = np.concatenate([leaf.centroids_ for leaf in self._get_leaves()])
-        self.subcluster_centers_ = centroids
-        self._n_features_out = self.subcluster_centers_.shape[0]
+        self._root = _BFNode(self.branching_factor, n_features)
+        self._dummy_leaf = _BFNode(self.branching_factor, n_features)
+        self._dummy_leaf.next_leaf_ = self._root
+        self._root.prev_leaf_ = self._dummy_leaf
 
     def _get_leaves(self) -> tp.Iterator[_BFNode]:
-        r"""Iterate over the leaf nodes of the tree
-
-        Yields
-        -------
-        leaf: _BFNode
-            Node of the tree that is a leaf
-        """
-        leaf = self.dummy_leaf_.next_leaf_
+        r"""Yields all leaf nodes"""
+        leaf = self._dummy_leaf.next_leaf_
         while leaf is not None:
             yield leaf
             leaf = leaf.next_leaf_
@@ -825,7 +827,7 @@ class BitBirch:
         """Get a dict with centroids and mol indices of the leaves"""
         # NOTE: This is different from the original bitbirch, here outputs are sorted
         # by default
-        if self.first_call:
+        if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         centroids = []
         mol_ids = []
@@ -835,22 +837,88 @@ class BitBirch:
         return {"centroids": centroids, "mol_ids": mol_ids}
 
     def get_centroids(self, sort: bool = True) -> list[NDArray[np.uint8]]:
-        """Get a list of arrays with the centroids' fingerprints"""
+        r"""Get a list of arrays with the centroids' fingerprints"""
         # NOTE: This is different from the original bitbirch, here outputs are sorted
         # by default
-        if self.first_call:
+        if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         return [s.centroid_ for s in self._get_BFs(sort=sort)]
 
     def get_cluster_mol_ids(self, sort: bool = True) -> list[list[int]]:
-        """Get the indices of the molecules in each cluster"""
-        if self.first_call:
+        r"""Get the indices of the molecules in each cluster"""
+        if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         return [s.mol_indices for s in self._get_BFs(sort=sort)]
 
+    def get_assignments(self, n_mols: int | None = None) -> NDArray[np.uint64]:
+        r"""Get an array with the cluster labels associated with each fingerprint idx"""
+        if n_mols is not None:
+            warnings.warn("The n_mols argument is redundant", DeprecationWarning)
+        if n_mols is not None and n_mols != self.num_fitted_fps:
+            raise ValueError(
+                f"Provided n_mols {n_mols} is different"
+                f" from the number of fitted fingerprints {self.num_fitted_fps}"
+            )
+        clustered_ids = self.get_cluster_mol_ids()
+        assignments = np.full(self.num_fitted_fps, 0, dtype=np.uint64)
+        for i, cluster in enumerate(clustered_ids, 1):
+            assignments[cluster] = i
+        # Check that there are no unassigned molecules
+        if (assignments == 0).any():
+            raise ValueError("There are unasigned molecules")
+        return assignments
+
+    def dump_assignments(self, path: Path | str, smiles: tp.Iterable[str] = ()) -> None:
+        r"""Dump the cluster assignments to a *.csv file"""
+        import pandas as pd  # Hide pandas import since it is heavy
+
+        path = Path(path)
+        if isinstance(smiles, str):
+            smiles = [smiles]
+        smiles = np.asarray(smiles, dtype=np.str_)
+        # Dump cluster assignments to *.csv
+        assignments = self.get_assignments()
+        if smiles and (len(assignments) != len(smiles)):
+            raise ValueError(
+                f"Len of the provided smiles {len(smiles)}"
+                f" must match the number of fitted fingerprints {self.num_fitted_fps}"
+            )
+        if not smiles:
+            df = pd.DataFrame({"assignments": assignments})
+        if smiles:
+            df["smiles"] = smiles
+        df.to_csv(path, index=False)
+
+    def reset(self) -> None:
+        r"""Reset the tree state (does not reset the merge criterion)"""
+        # Reset the whole tree
+        self._root = None
+        self._dummy_leaf = None
+        self._num_fitted_fps = 0
+
+    def refine_inplace(
+        self,
+        X,
+        initial_mol: int = 0,
+        input_is_packed: bool = True,
+    ):
+        r"""Refine the tree: break the largest cluster in singletons and re-fit"""
+        # Extract the BitFeatures of the leaves, breaking the largest cluster apart into
+        # singleton subclusters
+        fps_bfs, mols_bfs = self._bf_to_np_refine(
+            X, initial_mol=initial_mol, input_is_packed=input_is_packed
+        )
+        # Reset the tree
+        self.reset()
+
+        # Rebuild the tree again from scratch, reinserting all the subclusters
+        for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
+            self._fit_np(bufs, reinsert_index_sequences=mol_idxs)
+        return self
+
     def _get_BFs(self, sort: bool = True) -> list[_BFSubcluster]:
-        """Get the BitFeatures of the leaves"""
-        if self.first_call:
+        r"""Get the BitFeatures of the leaves"""
+        if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         bfs = [s for leaf in self._get_leaves() for s in leaf.subclusters_]
         if sort:
@@ -873,7 +941,7 @@ class BitBirch:
         The split is only performed for the returned 'np' buffers, the cluster in the
         tree itself is not modified
         """
-        if self.first_call:
+        if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
 
         BFs = self._get_BFs()
@@ -893,7 +961,7 @@ class BitBirch:
 
     def _bf_to_np(self):
         """Prepare numpy buffers ('np') for BitFeatures of all clusters"""
-        if self.first_call:
+        if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         return self._prepare_bf_to_buffer_dicts(self._get_BFs())
 
@@ -907,56 +975,16 @@ class BitBirch:
             dtypes_to_mols[BF.dtype_name].append(BF.mol_indices)
         return dtypes_to_fp, dtypes_to_mols
 
-    def get_assignments(self, n_mols: int) -> NDArray[np.uint64]:
-        clustered_ids = self.get_cluster_mol_ids()
-        assignments = np.full(n_mols, 0, dtype=np.uint64)
-        for i, cluster in enumerate(clustered_ids, 1):
-            assignments[cluster] = i
-        # Check that there are no unassigned molecules
-        if (assignments == 0).any():
-            raise ValueError("There are unasigned molecules")
-        return assignments
-
-    def dump_assignments(self, smiles: tp.Iterable[str], path: Path | str) -> None:
-        path = Path(path)
-        if isinstance(smiles, str):
-            smiles = [smiles]
-        smiles = np.asarray(smiles)
-        # Dump cluster assignments to *.csv
-        assignments = self.get_assignments(len(smiles))
-        df = pd.DataFrame({"smiles": smiles, "assignments": assignments})
-        df.to_csv(path, index=False)
-
-    def refine_inplace(
-        self,
-        X,
-        initial_mol: int = 0,
-        input_is_packed: bool = True,
-    ):
-        # Extract the BitFeatures of the leaves, breaking the largest cluster apart into
-        # singleton subclusters
-        fps_bfs, mols_bfs = self._bf_to_np_refine(
-            X, initial_mol=initial_mol, input_is_packed=input_is_packed
-        )
-
-        # Reset the whole tree
-        del self.root_
-        self.first_call = True
-        self.index_tracker = 0
-
-        # Rebuild the tree again from scratch, reinserting all the subclusters
-        for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-            self._fit_np(bufs, reinsert_index_sequences=mol_idxs)
-        return self
-
     def __repr__(self) -> str:
         fn = self._merge_accept_fn
-        _str = f"{self.__class__.__name__}(threshold={self.threshold}, branching_factor={self.branching_factor}, merge_criterion='{fn.name}'"  # noqa:E501
-        if hasattr(fn, "tolerance"):
-            _str += f", tolerance={fn.tolerance})"
-        else:
-            _str += ")"
-        return _str
+        parts = [
+            f"threshold={self.threshold}",
+            f"branching_factor={self.branching_factor}",
+            f"merge_criterion='{fn.name}'",
+        ]
+        if self.tolerance is not None:
+            parts.append(f"tolerance={self.tolerance}")
+        return f"{self.__class__.__name__}({', '.join(parts)})"
 
 
 # There are 4 cases here:
@@ -978,18 +1006,22 @@ def _get_array_iterator(
 ) -> tp.Iterator[NDArray[np.integer]]:
 
     if input_is_packed:
+        # Unpacking copies the fingerprints, so no extra copy required
         return (unpack_fingerprints(a, n_features) for a in X)  # type: ignore
     if isinstance(X, list):
+        # No copy is required here unless the dtype is not uint8
         return (a.astype(dtype, copy=False) for a in X)
-    if sparse.issparse(X):
-        if input_is_packed:
-            raise ValueError("Packed input not supported for scipy sparse arrays")
-        return _iter_sparse(X)
-    # A copy is required here to avoid keeping a ref to the full array alive
-    return (a.astype(dtype, copy=True) for a in X)
+    if isinstance(X, np.ndarray):
+        # A copy is required here to avoid keeping a ref to the full array alive
+        return (a.astype(dtype, copy=True) for a in X)
+    return _iter_sparse(X)
 
 
 def _iter_sparse(X) -> tp.Iterator[NDArray[np.uint8]]:
+    import scipy.sparse  # Hide this import since scipy is heavy
+
+    if not scipy.sparse.issparse(X):
+        raise ValueError(f"Input of type {type(X)} is not supported")
     n_samples, n_features = X.shape
     X_indices = X.indices  # type: ignore
     X_data = X.data

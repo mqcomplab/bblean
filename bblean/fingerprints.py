@@ -7,7 +7,8 @@ import typing as tp
 
 from rich.console import Console
 from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
-from scipy.stats import truncnorm
+
+from bblean._config import DEFAULTS
 
 __all__ = [
     "make_fake_fingerprints",
@@ -18,7 +19,7 @@ __all__ = [
 
 
 def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    r"""Packs binary uint8 arrays (only 0s and 1s) to uint8 arrays"""
+    r"""Pack binary (only 0s and 1s) uint8 fingerprint arrays"""
     # packbits may pad with zeros if n_features is not a multiple of 8
     return np.packbits(a, axis=-1)
 
@@ -26,7 +27,7 @@ def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
 def unpack_fingerprints(
     a: NDArray[np.uint8], n_features: int | None = None
 ) -> NDArray[np.uint8]:
-    r"""Unpacks packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)
+    r"""Unpack packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)
 
     .. note::
 
@@ -43,11 +44,14 @@ def unpack_fingerprints(
 
 def make_fake_fingerprints(
     num: int,
-    n_features: int = 2048,
+    n_features: int = DEFAULTS.n_features,
     pack: bool = False,
     seed: int | None = None,
     dtype: DTypeLike = np.uint8,
 ) -> NDArray[np.uint8]:
+    r"""Make random fingerprints with statistics similar to (some) real databases"""
+    import scipy.stats  # Hide this import since scipy is heavy
+
     if n_features < 1 or n_features % 8 != 0:
         raise ValueError("n_features must be a multiple of 8, and greater than 0")
     # Generate "synthetic" fingerprints with a popcount distribution
@@ -63,7 +67,7 @@ def make_fake_fingerprints(
     safe_bounds = (bounds[0] + 1, bounds[1] - 1)
     a = (safe_bounds[0] - loc) / scale
     b = (safe_bounds[1] - loc) / scale
-    popcounts_fake_float = truncnorm.rvs(
+    popcounts_fake_float = scipy.stats.truncnorm.rvs(
         a, b, loc=loc, scale=scale, size=num, random_state=rng
     )
     popcounts_fake = np.rint(popcounts_fake_float).astype(np.int64)
@@ -82,10 +86,11 @@ def make_fake_fingerprints(
 def fps_from_smiles(
     smiles: tp.Iterable[str],
     kind: str = "rdkit",
-    n_features: int = 2048,
+    n_features: int = DEFAULTS.n_features,
     dtype: DTypeLike = np.uint8,
     pack: bool = True,
 ) -> NDArray[np.uint8]:
+    r"""Convert a sequence of smiles into chemical fingerprints"""
     if n_features < 1 or n_features % 8 != 0:
         raise ValueError("n_features must be a multiple of 8, and greater than 0")
     if isinstance(smiles, str):
@@ -100,6 +105,11 @@ def fps_from_smiles(
         fpg = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=n_features)
     elif kind == "ecfp6":
         fpg = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=n_features)
+    else:
+        raise ValueError(
+            f"Unknown fingerprint kind {kind}. Valid kinds are 'rdkit|ecfp4|ecfp6'"
+        )
+
     mols = []
     for smi in smiles:
         mol = MolFromSmiles(smi)
