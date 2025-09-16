@@ -8,7 +8,7 @@ If you find this work useful please cite the following articles:
     https://doi.org/10.1039/D5DD00030K
 - *BitBIRCH Clustering Refinement Strategies*:
     https://doi.org/10.1021/acs.jcim.5c00627
-- *BitBIRCH-Lean*: TODO
+- *BitBIRCH-Lean*: TO-BE-ADDED
 
 ## Installation
 
