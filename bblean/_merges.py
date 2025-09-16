@@ -1,46 +1,8 @@
 from numpy.typing import NDArray
 import numpy as np
-import warnings
 
 from bblean.utils import calc_centroid
-
-
-def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
-    r"""iSIM Tanimoto calculation
-
-    iSIM Tanimoto was first propsed in:
-    https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
-
-    Parameters
-    ----------
-    c_total : np.ndarray
-              Sum of the elements from an array of fingerprints X, column-wise
-              c_total = np.sum(X, axis=0)
-
-    n_objects : int
-                Number of elements
-                n_objects = X.shape[0]
-
-    Returns
-    ----------
-    isim : float
-           iSIM Jaccard-Tanimoto value
-    """
-    if n_objects < 2:
-        warnings.warn(
-            f"Invalid n_objects = {n_objects} in isim. Expected n_objects >= 2",
-            RuntimeWarning,
-        )
-        return np.nan
-
-    x = c_total.astype(np.uint64, copy=False)
-    sum_kq = np.sum(x)
-    # isim of fingerprints that are all zeros should be 1 (they are all equal)
-    if sum_kq == 0:
-        return 1
-    sum_kqsq = np.dot(x, x)  # *dot* conserves dtype
-    a = (sum_kqsq - sum_kq) / 2  # 'a' is scalar f64
-    return a / (a + n_objects * sum_kq - sum_kqsq)
+from bblean.similarity import jt_isim
 
 
 class MergeAcceptFunction:

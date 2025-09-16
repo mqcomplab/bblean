@@ -15,7 +15,7 @@ from bblean.merges import (
     ToleranceMerge,
     ToleranceToughMerge,
 )
-from bblean.fake_fingerprints import make_fake_fingerprints
+from bblean.fingerprints import make_fake_fingerprints
 
 # Cases to test for all merges:
 # low|high tolerance

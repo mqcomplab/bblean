@@ -44,6 +44,7 @@
 # You should have received a copy of the GNU General Public License along with this
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
+r"""Multi-round BitBirch workflow for clustering huge datasets in parallel"""
 import math
 import pickle
 import gc
@@ -56,11 +57,28 @@ from numpy.typing import NDArray
 from rich.console import Console
 
 from bblean._console import get_console
+from bblean._timer import Timer
+from bblean._config import DEFAULTS
 from bblean.utils import batched
-from bblean.config import DEFAULTS
 from bblean.bitbirch import BitBirch  # type: ignore
-from bblean.fingerprints_io import get_file_num_fps, numpy_streaming_save
-from bblean.timer import Timer
+from bblean.fingerprints import _get_fps_file_num
+
+__all__ = ["run_multiround_bitbirch"]
+
+
+# Save a list of numpy arrays into a single array in a streaming fashion, avoiding
+# stacking them in memory
+def _numpy_streaming_save(fp_list: list[NDArray[np.integer]], path: Path | str) -> None:
+    first_arr = np.ascontiguousarray(fp_list[0])
+    header = np.lib.format.header_data_from_array_1_0(first_arr)
+    header["shape"] = (len(fp_list), len(first_arr))
+    path = Path(path)
+    if not path.suffix:
+        path = path.with_suffix(".npy")
+    with open(path, "wb") as f:
+        np.lib.format.write_array_header_1_0(f, header)
+        for arr in fp_list:
+            np.ascontiguousarray(arr).tofile(f)
 
 
 # Glob and sort by uint bits and label, if a console is passed then the number of output
@@ -110,12 +128,12 @@ def _save_bufs_and_mol_idxs(
 ) -> None:
     for dtype, buf_list in fps_bfs.items():
         suffix = f".label-{label}-{dtype.replace('8', '08')}"
-        numpy_streaming_save(buf_list, out_dir / f"round-{round_idx}-bufs{suffix}.npy")
+        _numpy_streaming_save(buf_list, out_dir / f"round-{round_idx}-bufs{suffix}.npy")
         with open(out_dir / f"round-{round_idx}-idxs{suffix}.pkl", mode="wb") as f:
             pickle.dump(mols_bfs[dtype], f)
 
 
-class InitialRound:
+class _InitialRound:
     def __init__(
         self,
         n_features: int,
@@ -174,7 +192,7 @@ class InitialRound:
         _save_bufs_and_mol_idxs(self.out_dir, fps_bfs, mols_bfs, file_label, 1)
 
 
-class TreeMergingRound:
+class _TreeMergingRound:
     def __init__(
         self,
         branching_factor: int,
@@ -238,7 +256,7 @@ def _get_files_range_tuples(
     z = len(str(len(files)))
     for i, file in enumerate(files):
         start_idx = running_idx
-        end_idx = running_idx + get_file_num_fps(file)
+        end_idx = running_idx + _get_fps_file_num(file)
         files_info.append((str(i).zfill(z), file, start_idx, end_idx))
         running_idx = end_idx
     return files_info
@@ -304,7 +322,7 @@ def run_multiround_bitbirch(
     timer.init_timing(f"round-{round_idx}")
     console.print(f"(Initial) Round {round_idx}: Cluster initial batch of fingerprints")
 
-    initial_fn = InitialRound(
+    initial_fn = _InitialRound(
         n_features=n_features,
         double_cluster_init=double_cluster_init,
         max_fps=max_fps,
@@ -338,7 +356,7 @@ def run_multiround_bitbirch(
 
         file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
         batches = _chunk_file_pairs_in_batches(file_pairs, bin_size, console)
-        merging_fn = TreeMergingRound(round_idx=round_idx, **common_kwargs)
+        merging_fn = _TreeMergingRound(round_idx=round_idx, **common_kwargs)
         num_ps = min(num_midsection_processes, len(batches))
         console.print(f"    - Processing {len(batches)} inputs with {num_ps} processes")
         with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
@@ -360,7 +378,7 @@ def run_multiround_bitbirch(
     console.print(f"(Final) Round {round_idx}: Final round of clustering")
     file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
-    final_fn = TreeMergingRound(round_idx=round_idx, is_final=True, **common_kwargs)
+    final_fn = _TreeMergingRound(round_idx=round_idx, is_final=True, **common_kwargs)
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         final_fn(("", file_pairs))
 

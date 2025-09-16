@@ -10,8 +10,7 @@ from bblean.legacy.bb_uint8 import (  # type: ignore
     set_merge as set_merge_uint8,
 )
 from bblean.bitbirch import BitBirch  # type: ignore
-from bblean.packing import unpack_fingerprints
-from bblean.fake_fingerprints import make_fake_fingerprints
+from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
 
 
 def test_random_fps_consistency() -> None:

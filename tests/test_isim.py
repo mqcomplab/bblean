@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from bblean.merges import jt_isim
-from bblean.fake_fingerprints import make_fake_fingerprints
+from bblean.fingerprints import make_fake_fingerprints
 
 
 def test_jt_isim() -> None:

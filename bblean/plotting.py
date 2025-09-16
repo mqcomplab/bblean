@@ -12,7 +12,9 @@ from sklearn.preprocessing import StandardScaler
 
 from bblean.utils import batched
 from bblean.analysis import ClusterAnalysis
-from bblean.packing import unpack_fingerprints
+from bblean.fingerprints import unpack_fingerprints
+
+__all__ = ["summary_plot", "tsne_plot", "dump_mol_images"]
 
 # TODO: Mol relocation plots?
 

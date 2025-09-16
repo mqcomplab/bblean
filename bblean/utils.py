@@ -9,6 +9,8 @@ import importlib
 
 from numpy.typing import NDArray
 
+__all__ = ["batched", "calc_centroid"]
+
 _T = tp.TypeVar("_T")
 
 
@@ -51,7 +53,7 @@ def batched(iterable: tp.Iterable[_T], n: int) -> tp.Iterator[tuple[_T, ...]]:
         yield batch
 
 
-def cpu_name() -> str:
+def _cpu_name() -> str:
     if sys.platform == "darwin":
         try:
             return subprocess.run(
@@ -104,11 +106,18 @@ def calc_centroid(
     return centroid
 
 
-# Returns the minimum uint dtype that safely holds a (positive) python int
-# Input must be a positive python integer
-def min_safe_uint(nmax: int) -> np.dtype:
-    out = np.min_scalar_type(nmax)
-    # Check if the dtype is a pointer to a python bigint
-    if out.hasobject:
-        raise ValueError(f"n_samples: {nmax} is too large to hold in a uint64 array")
-    return out
+# Requires numpy >= 2.0
+def _popcount(a: NDArray[np.uint8]) -> NDArray[np.uint32]:
+    # a is packed uint8 array with last axis = bytes
+    # Sum bit-counts across bytes to get per-object totals
+
+    # If the array has columns that are a multiple of 8, doing a bitwise count
+    # over the buffer reinterpreted as uint64 is slightly faster.
+    # This is zero cost if the exception is not triggered. Not having a be a multiple of
+    # 8 is a very unlikely scenario, since fps are typically 1024 or 2048
+    b: NDArray[np.integer]
+    try:
+        b = a.view(np.uint64)
+    except ValueError:
+        b = a
+    return np.bitwise_count(b).sum(axis=-1, dtype=np.uint32)

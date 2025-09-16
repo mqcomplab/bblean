@@ -4,13 +4,13 @@ import typing as tp
 import json
 import sys
 import dataclasses
-from bblean.memory import system_mem_gib
 import multiprocessing as mp
 import os
 
 import numpy as np
 
-from bblean.utils import cpu_name
+from bblean._memory import system_mem_gib
+from bblean.utils import _cpu_name
 
 
 @dataclasses.dataclass(slots=True)
@@ -36,7 +36,7 @@ def collect_system_specs_and_dump_config(
     config["total_memory_gib"] = total_mem
     config["initial_available_memory_gib"] = avail_mem
     config["platform"] = sys.platform
-    config["cpu"] = cpu_name()
+    config["cpu"] = _cpu_name()
     config["numpy_version"] = np.__version__
     config["python_version"] = sys.version.split()[0]
     # Multiprocessing info

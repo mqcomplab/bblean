@@ -5,7 +5,7 @@ import multiprocessing as mp
 
 from rich.console import Console
 
-from bblean.memory import get_peak_memory, PeakMemoryStats
+from bblean._memory import get_peak_memory, PeakMemoryStats
 
 
 class BBConsole(Console):

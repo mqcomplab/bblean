@@ -1,4 +1,4 @@
-from bblean.fake_fingerprints import make_fake_fingerprints
+from bblean.fingerprints import make_fake_fingerprints
 
 
 def test_make() -> None:
