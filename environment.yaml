@@ -6,29 +6,12 @@ dependencies:
   # General
   - python=3.11
   - pip>=24.0  # Installs python packages
+
   # Build system
   - setuptools>=64
   - setuptools-scm>=8
-  # Automatic linters / checkers / tests / CI
-  - pre-commit  # Runs pre commit/push hooks
-  - black  # Code formatter
-  - flake8  # PEP8 linter
-  - autoflake  # Remove unused imports / variables
-  - mypy  # Type checker
-  # Non automatic CI
-  - pytest  # Python testing framework
-  - cruft # Keep up with cookiecutter updates
-  # Profiling tools
-  - memray
-  - py-spy
 
-  # Docs
-  - sphinx  # Documentation framework, uses restructured text (.rst)
-
-  # CLI
-  - typer  # Handy cli library with support for type checking
-  - rich  # Colorful styles and terminal outputs
-  # Other
+  # Core dependencies
   - scipy 
   - rdkit
   - numpy
@@ -36,11 +19,29 @@ dependencies:
   - psutil
   - matplotlib
   - scikit-learn
-#  Required for example notebooks only
-  - tqdm
-  - seaborn
-  - statsmodels
-  # - useful_rdkit_utils
-# Loading and converting jupyter notebooks
+  # CLI
+  - typer  # Handy cli library with support for type checking
+  - rich  # Colorful styles and terminal outputs
+
+  # Dev dependencies: linters / checkers / tests / CI / profilers
+  - pre-commit  # Runs pre commit/push hooks
+  - black  # Code formatter
+  - flake8  # PEP8 linter
+  - autoflake  # Remove unused imports / variables
+  - mypy  # Type checker
+  - pytest  # Python testing framework
+  - cruft # Keep up with cookiecutter updates
+  # Profilers
+  - memray
+  - py-spy
+  # Docs
+  - sphinx  # Documentation framework, uses restructured text (.rst)
+  # Loading and converting jupyter notebooks
   - jupyter
   - jupytext
+
+#  Required for example dataset_splitting notebook only
+# - tqdm
+# - seaborn
+# - statsmodels
+# - useful_rdkit_utils
