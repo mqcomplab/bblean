@@ -2,7 +2,7 @@
 
 ## Overview
 
-If you find this work useful please cite the following articles:
+If you find this software useful please cite the following articles:
 
 - *BitBIRCH: efficient clustering of large molecular libraries*:
     https://doi.org/10.1039/D5DD00030K

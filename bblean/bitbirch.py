@@ -1,6 +1,6 @@
 # BitBIRCH-Lean Python Package: An open-source clustering module based on iSIM.
 #
-# If you find this work useful please cite the following articles:
+# If you find this software useful please cite the following articles:
 # - BitBIRCH: efficient clustering of large molecular libraries:
 #   https://doi.org/10.1039/D5DD00030K
 # - BitBIRCH Clustering Refinement Strategies:
@@ -45,6 +45,7 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 # type: ignore
+import warnings
 import typing as tp
 from collections import defaultdict
 from weakref import WeakSet
@@ -76,23 +77,23 @@ _global_merge_accept: MergeAcceptFunction | None = None
 def set_merge(merge_criterion: str, tolerance: float = 0.05) -> None:
     r"""Sets the global criteria for merging subclusters in any BitBirch tree
 
+    For usage see `BitBirch.set_merge`
+
     ..  warning::
-        The use of this function is discouraged, instead please use either `bb_tree =
-        BitBirch(...); bb_tree.set_merge(merge_criterion=..., tolerance=...)`
-        or directly `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`.
 
-    Parameters:
-    -----------
-    merge_criterion: str
-        radius, diameter or tolerance
-        radius: merge subcluster based on comparison to centroid of the cluster
-        diameter: merge subcluster based on instant Tanimoto similarity of cluster
-        tolerance: applies tolerance threshold to diameter merge criteria, which will
-            merge subcluster with stricter threshold for newly added molecules
-
-    tolerance: float
-        Penalty value for similarity threshold of the 'tolerance' merge criteria
+        Use of this function is highly discouraged, instead use either:
+            bb_tree = BitBirch(...)
+            bb_tree.set_merge(merge_criterion=..., tolerance=...)
+        or directly: `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`."
     """
+    msg = (
+        "Use of the global `set_merge` function is highly discouraged,\n"
+        " instead use either: "
+        "    bb_tree = BitBirch(...)\n"
+        "    bb_tree.set_merge(merge_criterion=..., tolerance=...)\n"
+        " or directly: `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`."
+    )
+    warnings.warn(msg, UserWarning)
     # Set the global merge_accept function
     global _global_merge_accept
     _global_merge_accept = get_merge_accept_fn(merge_criterion, tolerance)
@@ -610,11 +611,10 @@ class BitBirch:
         -----------
         merge_criterion: str
             radius, diameter or tolerance
-            radius: merge subcluster based on comparison to centroid of the cluster
-            diameter: merge subcluster based on instant Tanimoto similarity of cluster
-            tolerance: applies tolerance threshold to diameter merge criteria, which
+            - radius: merge subcluster based on comparison to centroid of the cluster
+            - diameter: merge subcluster based on instant Tanimoto similarity of cluster
+            - tolerance: applies tolerance threshold to diameter merge criteria, which
                 will merge subcluster with stricter threshold for newly added molecules
-
         tolerance: float
             Penalty value for similarity threshold of the 'tolerance' merge criteria
         """

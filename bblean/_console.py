@@ -13,26 +13,24 @@ class BBConsole(Console):
         if os.environ.get("BITBIRCHNOBANNER", ""):
             return
         banner = r"""[bold]
-            ______ _ _  ______ _          _        
-            | ___ (_) | | ___ (_)        | |     [/bold][cyan]   ______                      [/cyan][bold] 
-            | |_/ /_| |_| |_/ /_ _ __ ___| |__   [/bold][cyan]   ___  / ___________ _______  [/cyan][bold] 
-            | ___ \ | __| ___ \ | '__/ __| '_ \  [/bold][cyan]   __  /  _  _ \  __ `/_  __ \ [/cyan][bold] 
-            | |_/ / | |_| |_/ / | | | (__| | | | [/bold][cyan]   _  /___/  __/ /_/ /_  / / / [/cyan][bold] 
-            \____/|_|\__\____/|_|_|  \___|_| |_| [/bold][cyan]   /_____/\___/\__,_/ /_/ /_/  [/cyan][bold] 
-        [/bold]
-        """  # noqa W291
+        ______ _ _  ______ _          _        
+        | ___ (_) | | ___ (_)        | |     [/bold][cyan]  ______                      [/cyan][bold]
+        | |_/ /_| |_| |_/ /_ _ __ ___| |__   [/bold][cyan]  ___  / ___________ _______  [/cyan][bold]
+        | ___ \ | __| ___ \ | '__/ __| '_ \  [/bold][cyan]  __  /  _  _ \  __ `/_  __ \ [/cyan][bold]
+        | |_/ / | |_| |_/ / | | | (__| | | | [/bold][cyan]  _  /___/  __/ /_/ /_  / / / [/cyan][bold]
+        \____/|_|\__\____/|_|_|  \___|_| |_| [/bold][cyan]  /_____/\___/\__,_/ /_/ /_/  [/cyan][bold]"""  # noqa W291
         self.print(banner, highlight=False)
+        self.print()
+        self.print()
         self.print(
-            r"""
-If you find this work useful please cite the following articles:
+            r"""If you find this software useful please cite the following articles:
     - [italic]BitBIRCH: efficient clustering of large molecular libraries[/italic]:
         https://doi.org/10.1039/D5DD00030K
     - [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
         https://doi.org/10.1021/acs.jcim.5c00627
     - [italic]BitBIRCH-Lean[/italic]:
-        (TODO)"""  # noqa
+        TO-BE-ADDED"""  # noqa
         )
-        self.print()
 
     def print_peak_mem(self, num_processes: int) -> None:
         stats = get_peak_memory(num_processes)
@@ -62,13 +60,14 @@ If you find this work useful please cite the following articles:
     def print_config(self, config: dict[str, tp.Any]) -> None:
         num_fps_loaded = np.array(config["num_fps_loaded"])
         with np.printoptions(formatter={"int": "{:,}".format}, threshold=10):
+            num_fps_str = str(num_fps_loaded)[1:-1]
             self.print(
                 f"Running [bold]single-round, serial (1 process)[/bold] clustering\n\n"
                 f"- Branching factor: {config['branching_factor']:,}\n"
                 f"- Merge criterion: [yellow]{config['merge_criterion']}[/yellow]\n"
                 f"- Threshold: {config['threshold']}\n"
                 f"- Num. files loaded: {len(config['input_files']):,}\n"
-                f"- Num. fingerprints loaded per file: [{num_fps_loaded}]\n"
+                f"- Num. fingerprints loaded for each file: {num_fps_str}\n"
                 f"- Use mmap: {config['use_mmap']}\n"
                 f"- Output directory: {config['out_dir']}\n",
                 end="",
@@ -102,6 +101,7 @@ If you find this work useful please cite the following articles:
         desc = f"multi-round, {extra_desc}"
         num_fps_loaded = np.array(config["num_fps_loaded"])
         with np.printoptions(formatter={"int": "{:,}".format}, threshold=10):
+            num_fps_str = str(num_fps_loaded)[1:-1]
             self.print(
                 f"Running [bold]{desc}[/bold] clustering\n\n"
                 f"- Branching factor: {config['branching_factor']:,}\n"
@@ -109,7 +109,7 @@ If you find this work useful please cite the following articles:
                 f"- Threshold: {config['threshold']}\n"
                 f"- Tolerance: {config['tolerance']}\n"
                 f"- Num. files loaded: {len(config['input_files']):,}\n"
-                f"- Num. fingerprints loaded per file: {num_fps_loaded}\n"
+                f"- Num. fingerprints loaded for each file: {num_fps_str}\n"
                 f"- Use mmap: {config['use_mmap']}\n"
                 f"- Output directory: {config['out_dir']}\n",
                 end="",
