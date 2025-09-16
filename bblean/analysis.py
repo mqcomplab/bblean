@@ -46,7 +46,7 @@ def scaffold_analysis(
     scaffolds = [MurckoScaffold.MurckoScaffoldSmilesFromSmiles(smi) for smi in smiles]
     unique_scaffolds = set(scaffolds)
     unique_num = len(unique_scaffolds)
-    scaffolds_fps = fps_from_smiles(unique_scaffolds, kind=fp_kind)
+    scaffolds_fps = fps_from_smiles(unique_scaffolds, kind=fp_kind, pack=False)
     scaffolds_isim = jt_isim(np.sum(scaffolds_fps, axis=0), unique_num)
     return ScaffoldAnalysis(unique_num, scaffolds_isim)
 
