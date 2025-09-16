@@ -575,7 +575,6 @@ class BitBirch:
         self.branching_factor = branching_factor
         self.index_tracker = 0
         self.first_call = True
-
         if _global_merge_accept is not None:
             # Backwards compat
             if tolerance is not None:
@@ -593,7 +592,6 @@ class BitBirch:
             merge_criterion = "diameter" if merge_criterion is None else merge_criterion
             tolerance = 0.05 if tolerance is None else tolerance
             self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
-
         # For backwards compatibility, weak-register in global state This is used to
         # update the merge_accept function if the global set_merge() is called
         _BITBIRCH_INSTANCES.add(self)
@@ -603,7 +601,12 @@ class BitBirch:
         return self._merge_accept_fn.name
 
     def set_merge(
-        self, merge_criterion: str = "diameter", tolerance: float = 0.05
+        self,
+        *,
+        merge_criterion: str = "diameter",
+        tolerance: float = 0.05,
+        threshold: float | None = None,
+        branching_factor: int | None = None,
     ) -> None:
         r"""Sets the criteria for merging subclusters in this BitBirch tree
 
@@ -624,6 +627,10 @@ class BitBirch:
                 "the global set_merge function has *not* been used"
             )
         self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
+        if threshold is not None:
+            self.threshold = threshold
+        if branching_factor is not None:
+            self.branching_factor = branching_factor
 
     def fit(
         self,
@@ -889,6 +896,28 @@ class BitBirch:
         # Check that there are no unassigned molecules
         assert np.all(assignments != -1)
         return assignments
+
+    def refine_inplace(
+        self,
+        X,
+        initial_mol: int = 0,
+        input_is_packed: bool = True,
+    ):
+        # Extract the BitFeatures of the leaves, breaking the largest cluster apart into
+        # singleton subclusters
+        fps_bfs, mols_bfs = self.bf_to_np_refine(
+            X, initial_mol=initial_mol, input_is_packed=input_is_packed
+        )
+
+        # Reset the whole tree
+        del self.root_
+        self.first_call = False
+        self.index_tracker = 0
+
+        # Rebuild the tree again from scratch, reinserting all the subclusters
+        for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
+            self.fit_np(bufs, reinsert_index_sequences=mol_idxs)
+        return self
 
     def __repr__(self) -> str:
         fn = self._merge_accept_fn

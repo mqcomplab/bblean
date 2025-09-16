@@ -40,4 +40,5 @@ dependencies:
   - statsmodels
   - scikit-learn
   - matplotlib
+  - jupytext  # Simple text conversion of notebooks
 # useful_rdkit_utils
