@@ -9,7 +9,6 @@ import time
 import sys
 import pickle
 import uuid
-import re
 import multiprocessing as mp
 from typing import Annotated
 from pathlib import Path
@@ -22,6 +21,7 @@ from bblean.memory import monitor_rss_daemon, get_peak_memory
 from bblean.config import DEFAULTS, collect_system_specs_and_dump_config
 from bblean.packing import pack_fingerprints
 from bblean.utils import _import_bitbirch_variant, batched
+from bblean.fingerprint_io import get_file_num_fps, print_file_info
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -54,32 +54,12 @@ def _validate_output_dir(out_dir: Path, overwrite_outputs: bool = False) -> None
 
 
 # Validate that the naming convention for the input files is correct
-def _validate_input_dir(
-    in_dir: Path | str, filename_idxs_are_slices: bool = True
-) -> None:
+def _validate_input_dir(in_dir: Path | str) -> None:
     in_dir = Path(in_dir)
     if not in_dir.is_dir():
         raise RuntimeError(f"Input dir {in_dir} should be a dir")
     if not any(in_dir.glob("*.npy")):
         raise RuntimeError(f"Input dir {in_dir} should have *.npy fingerprint files")
-
-    # TODO: There is currently no validation regarding fp sizes and stride sizes
-    if filename_idxs_are_slices:
-        return
-
-    _file_idxs = []
-    for f in in_dir.glob("*.npy"):
-        matches = re.match(r".*_(\d+)_(\d+).npy", f.name)
-        if matches is None:
-            raise RuntimeError(f"Input file {str(f)} doesn't match name convention")
-        _file_idxs.append(int(matches[1]))
-
-    # Sort arrays
-    sort_idxs = np.argsort(_file_idxs)
-    file_idxs = np.array(_file_idxs)[sort_idxs]
-
-    if not (file_idxs == np.arange(len(file_idxs))).all():
-        raise RuntimeError(f"Input file indices {file_idxs} must be a seq 0, 1, 2, ...")
 
 
 @app.callback()
@@ -98,15 +78,8 @@ def main(
     pass
 
 
-def get_file_num_fps(path: Path) -> int:
-    with open(path, mode="rb") as f:
-        major, minor = np.lib.format.read_magic(f)
-        shape, _, _ = getattr(np.lib.format, f"read_array_header_{major}_{minor}")(f)
-        return shape[0]
-
-
 @app.command("fps-info")
-def fp_info(
+def _fps_info(
     fp_paths: Annotated[
         list[Path] | None,
         Argument(show_default=False, help="Paths to *.smi files with smiles"),
@@ -119,42 +92,12 @@ def fp_info(
     if fp_paths is None:
         fp_paths = [Path.cwd()]
 
-    def get_file_info(path: Path) -> tuple[tuple[int, int], np.dtype, bool, bool]:
-        with open(path, mode="rb") as f:
-            major, minor = np.lib.format.read_magic(f)
-            shape, _, dtype = getattr(
-                np.lib.format, f"read_array_header_{major}_{minor}"
-            )(f)
-        shape_is_valid = len(shape) == 2
-        dtype_is_valid = np.issubdtype(dtype, np.integer)
-        return shape, dtype, shape_is_valid, dtype_is_valid
-
-    def print_info(
-        path: Path,
-        shape: tuple[int, int],
-        dtype: np.dtype,
-        shape_is_valid: bool,
-        dtype_is_valid: bool,
-    ) -> None:
-        console.print(f"File: {path.resolve()}")
-        if shape_is_valid and dtype_is_valid:
-            console.print("    - [green]Valid fingerprint file[/green]")
-        else:
-            console.print("    - [red]Invalid fingerprint file[/red]")
-        if shape_is_valid:
-            console.print(f"    - Num. fingerprints: {shape[0]:,}")
-            console.print(f"    - Num. features: {shape[1]:,}")
-        else:
-            console.print(f"    - Shape: {shape}")
-        console.print(f"    - DType: [yellow]{dtype.name}[/yellow]")
-        console.print()
-
     for path in fp_paths:
         if path.is_dir():
             for file in path.glob("*.npy"):
-                print_info(file, *get_file_info(file))
+                print_file_info(file, console)
         elif path.suffix == ".npy":
-            print_info(path, *get_file_info(path))
+            print_file_info(file, console)
 
 
 @app.command("fps-from-smiles")
@@ -537,25 +480,19 @@ def _multiround(
     overwrite_outputs: Annotated[
         bool, Option(help="Allow overwriting output files")
     ] = False,
-    filename_idxs_are_slices: Annotated[
-        bool,
-        Option(
-            help="Filename idxs are slices, e.g. *_1000_2000.npy, *_2000_3000.npy, ...",
-        ),
-    ] = False,
-    num_round2_processes: tpx.Annotated[
-        int,
-        Option(
-            "--ps2",
-            "--round2-processes",
-            help="Num. processes to use for the second round (if multiprocessing)."
-            "Second round clustering can be very memory intensive, "
-            "so it may be desirable to use 50%-30% of the first round processes",
-        ),
-    ] = 10,
-    num_processes: Annotated[
+    num_initial_processes: Annotated[
         int, Option("--ps", "--processes", help="Num. processes for first round")
     ] = 10,
+    num_midsection_processes: tpx.Annotated[
+        int | None,
+        Option(
+            "--mid-ps",
+            "--mid-processes",
+            help="Num. processes to use for the middle section (if multiprocessing)."
+            "Middle section clustering can be very memory intensive, "
+            "so it may be desirable to use 50%-30% of the first round processes",
+        ),
+    ] = None,
     branching_factor: Annotated[
         int,
         Option(
@@ -572,7 +509,7 @@ def _multiround(
             " (Used in Round 1 'double-cluster-init', Round 2, and Final clustering)"
         ),
     ] = DEFAULTS.tolerance,
-    merge_criterion: Annotated[
+    initial_merge_criterion: Annotated[
         str,
         Option(
             "--set-merge",
@@ -588,6 +525,12 @@ def _multiround(
         ),
     ] = 2048,
     # Advanced options
+    num_midsection_rounds: tpx.Annotated[
+        int,
+        Option(
+            "--num-midsection-rounds", help="Number of midsection rounds to perform"
+        ),
+    ] = 1,
     double_cluster_init: Annotated[
         bool,
         Option(
@@ -675,7 +618,7 @@ def _multiround(
     # If not passed, input dir is bb_inputs/
     if in_dir is None:
         in_dir = Path.cwd() / "bb_inputs"
-    _validate_input_dir(in_dir, filename_idxs_are_slices)
+    _validate_input_dir(in_dir)
 
     # All files in the input dir with *.npy suffix are considered input files
     input_files = sorted(
@@ -712,15 +655,25 @@ def _multiround(
             daemon=True,
         ).start()
 
+    if num_midsection_processes is None:
+        num_midsection_processes = num_initial_processes
+    else:
+        # Sanity check
+        if num_midsection_processes > num_initial_processes:
+            console.print(
+                "Num. midsection processes must be <= num. initial processes",
+                style="red",
+            )
+            raise Abort()
+
     timings_stats = run_multiround_bitbirch(
         input_files=input_files,
         n_features=n_features,
         out_dir=out_dir,
-        filename_idxs_are_slices=filename_idxs_are_slices,
-        merge_criterion=merge_criterion,
-        num_processes=num_processes,
-        num_round2_processes=num_round2_processes,
-        num_midsection_rounds=1,
+        initial_merge_criterion=initial_merge_criterion,
+        num_initial_processes=num_initial_processes,
+        num_midsection_processes=num_midsection_processes,
+        num_midsection_rounds=num_midsection_rounds,
         branching_factor=branching_factor,
         threshold=threshold,
         tolerance=tolerance,
@@ -732,7 +685,6 @@ def _multiround(
         # Debug
         only_first_round=only_first_round,
         max_fps=max_fps,
-        max_files=max_files,
         verbose=verbose,
     )
     with open(out_dir / "timings.json", mode="wt", encoding="utf-8") as f:
