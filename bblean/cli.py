@@ -421,6 +421,7 @@ def _run(
     ctx.params["out_dir"] = str(out_dir.resolve())
 
     console.print_banner()
+    console.print()
     console.print_config(ctx.params)
 
     # Optinally start a separate process that tracks RAM usage
@@ -437,8 +438,16 @@ def _run(
         ).start()
 
     start_time = time.perf_counter()
-    set_merge(merge_criterion, tolerance)
-    tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
+    if "lean" not in variant:
+        set_merge(merge_criterion, tolerance)
+        tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
+    else:
+        tree = BitBirch(
+            branching_factor=branching_factor,
+            threshold=threshold,
+            merge_criterion=merge_criterion,
+            tolerance=tolerance,
+        )
     for file in input_files:
         fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
         tree.fit(fps, n_features=n_features)
@@ -643,6 +652,7 @@ def _multiround(
     ctx.params["out_dir"] = str(out_dir.resolve())
 
     console.print_banner()
+    console.print()
     console.print_multiround_config(ctx.params)
 
     # Optinally start a separate process that tracks RAM usage
