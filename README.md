@@ -3,10 +3,7 @@
 ## Overview
 
 BitBIRCH-Lean is a high-throughput implementation of the BitBIRCH clustering
-algorithm designed for very large molecular libraries.  The `bb` CLI converts
-SMILES files into compact fingerprint arrays and clusters them with a single
-command, making it straightforward to triage collections with millions of
-molecules.
+algorithm designed for very large molecular libraries.
 
 If you find this software useful please cite the following articles:
 
@@ -29,41 +26,45 @@ bb --help
 
 <img src="bb-demo.gif" width="600" />
 
-## CLI Quick start
+## CLI Quickstart
+
+BitBIRCH-Lean provides a convenient CLI interface, `bb`. The CLI can be used to convert
+SMILES files into compact fingerprint arrays, and cluster them in parallel or serial
+mode with a single command, making it straightforward to triage collections with
+millions of molecules.
 
 1. **Generate fingerprints from SMILES.** The repository ships with a ChEMBL
-   sample that you can use right away:
+   sample that you can use right away for testing:
 
    ```bash
-   bb fps-from-smiles examples/chembl-sample.smi -o output
+   bb fps-from-smiles examples/chembl-sample.smi
    ```
 
-   This command writes a packed fingerprint array to
-   `output/packed-fps-uint8.npy`.  The packed `uint8` format is required by the
-   memory-efficient BitBIRCH implementation, so keep the default `--pack` and
-   `--dtype` values unless you have a specific reason to change them.
+   This command writes a packed fingerprint array to the current working directory (use
+   `--out-dir <dir>` for a different location). The naming convention is
+   `packed-fps-uint8-508e53ef.npy`, where `508e53ef` is a unique identifier. The packed
+   `uint8` format is required for maximum memory-efficient in the BitBIRCH Lean
+   implementation, so keep the default `--pack` and `--dtype` values unless you have a
+   specific reason to change them.
 
-2. **Cluster the fingerprints.** Point `bb run` at the generated array (or a
-   directory with multiple `.npy` files):
+2. **Cluster the fingerprints.** Point `bb run` at the generated array (or a directory
+   with multiple `.npy` files):
 
    ```bash
-   bb run output/packed-fps-uint8.npy
+   bb run ./packed-fps-uint8-508e53ef.npy
    ```
 
-   The run outputs are stored in a timestamped directory such as
-   `bb_run_outputs/504e40ef/`.  Use `--output-dir` if you prefer a fixed
-   location.
+   The outputs are stored in directory such as `bb_run_outputs/504e40ef/`, where
+   `504e40ef` is a unique identifier (use `--out-dir <dir>` for a different location).
 
-3. **Inspect the log.** The CLI prints a run banner with the parameters used,
-   memory usage (when available), and elapsed timings so you can track each job
-   at a glance.
+3. **Inspect the log.** The CLI prints a run banner with the parameters used, memory
+   usage (when available), and elapsed timings so you can track each job at a glance.
 
 ## Exploring clustering results
 
-Every run directory contains a `clusters.pkl` file with the molecule indices for
-each cluster, plus metadata (`config.json`, `timings.json`, `peak-rss.json`) that
-captures the exact settings and performance characteristics.  A quick Python
-session is all you need to get started:
+Every run directory contains a `clusters.pkl` file with the molecule indices for each
+cluster, plus metadata in `*.json` files that captures the exact settings and
+performance characteristics. A quick Python session is all you need to get started:
 
 ```python
 import pickle
@@ -74,9 +75,8 @@ clusters[:2]
 #  [5914, 5915, 5916, 5917, 5918, ..., 9990, 9991, 9992, 9993]]
 ```
 
-The indices refer to the position of each molecule in the order they were read
-from the fingerprint files, making it easy to link back to your original SMILES
-records.
+The indices refer to the position of each molecule in the order they were read from the
+fingerprint files, making it easy to link back to your original SMILES records.
 
 ## Helpful CLI commands
 
@@ -89,7 +89,7 @@ records.
 
 ## Python Quickstart
 
-For example of how to use the main `bblean` classes and functions consult
+For an example of how to use the main `bblean` classes and functions consult
 `examples/bitbirch_quickstart.ipynb`. More examples will be added soon!
 
 A quick summary:
@@ -128,15 +128,15 @@ ca.dump_metrics("./metrics.csv")
 np.save("./fps-packed-2048.npy", fps)
 ```
 
-## API and Documentation
+## Python API and Documentation
 
-By default all functions take *packed* fingerprints of dtype `uint8`.
-Many functions support an `input_is_packed: bool` flag, which you can toggle to `False`
-in case for some reason you want to pass unpacked fingerprints (not recommended).
+By default all functions take *packed* fingerprints of dtype `uint8`. Many functions
+support an `input_is_packed: bool` flag, which you can toggle to `False` in case for
+some reason you want to pass unpacked fingerprints (not recommended).
 
 Documentation is currently a work in progress, for the time being you can consult
 functions and classes `"""docstrings"""` for info on usage, or the Jupyter notebook
-examples under `./examples`.
+examples under `./examples` (More to be added soon!).
 
 - Functions and classes that *end in an underscore* are considered private (such as
   `_private_function(...)`) and should not be used, since they can be removed or
@@ -145,3 +145,7 @@ examples under `./examples`.
   considered private (such as `bblean._private_module.private_function(...)`) and should
   not be used, since they can be removed or modified without warning.
 - All other functions and classes are part of the stable public API and can be safely used.
+
+## Contributing
+
+TODO: Add some info about how to contribute to the repo / open issues

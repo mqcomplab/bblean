@@ -617,10 +617,10 @@ def _fps_from_smiles(
     digits: int | None
     if parts is not None and max_fps_per_file is None:
         num_per_batch = math.ceil(smiles_num / parts)
-        digits = len(str(parts)) + 1
+        digits = len(str(parts))
     elif parts is None and max_fps_per_file is not None:
         num_per_batch = max_fps_per_file
-        digits = len(str(math.ceil(smiles_num / max_fps_per_file))) + 1
+        digits = len(str(math.ceil(smiles_num / max_fps_per_file)))
     elif parts is None and max_fps_per_file is None:
         parts = 1
         num_per_batch = math.ceil(smiles_num / parts)
@@ -632,11 +632,12 @@ def _fps_from_smiles(
         raise Abort()
 
     if out_dir is None:
-        unique_id = str(uuid.uuid4()).split("-")[0]
-        out_dir = Path.cwd() / ("packed-fps" if pack else "fps") / unique_id
-    out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
 
     # Pass 2: build the molecules
+    unique_id = str(uuid.uuid4()).split("-")[0]
     with console.status("[italic]Generating fingerprints...[/italic]", spinner="dots"):
         for file_idx, mol_batch in enumerate(
             batched(iter_mols_from_paths(smiles_paths), num_per_batch)
@@ -647,10 +648,15 @@ def _fps_from_smiles(
             if pack:
                 fps = pack_fingerprints(fps)
             # Save the fingerprints as a NumPy array
-            name = f"{'packed-' if pack else ''}fps-{dtype}"
+            name = f"{'packed-' if pack else ''}fps-{dtype}-{unique_id}"
             if digits is not None:
                 name = f"{name}.{str(file_idx).zfill(digits)}"
             np.save(out_dir / name, fps)
+    if file_idx > 0:
+        stem = name.split(".")[0]
+        console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
+    else:
+        console.print(f"Finished. Outputs written to {str(out_dir / name)}.npy")
 
 
 @app.command("fps-split")
@@ -697,10 +703,10 @@ def _split_fps(
     fps = np.load(input_, mmap_mode="r")
     if parts is not None and max_fps_per_file is None:
         num_per_batch = math.ceil(fps.shape[0] / parts)
-        digits = len(str(parts)) + 1
+        digits = len(str(parts))
     elif parts is None and max_fps_per_file is not None:
         num_per_batch = max_fps_per_file
-        digits = len(str(math.ceil(fps.shape[0] / max_fps_per_file))) + 1
+        digits = len(str(math.ceil(fps.shape[0] / max_fps_per_file)))
     else:
         console.print(
             "One and only one of '--max-fps' and '--num-parts' required", style="red"
@@ -708,9 +714,13 @@ def _split_fps(
         raise Abort()
 
     if out_dir is None:
-        out_dir = input_.parent
+        out_dir = Path.cwd()
     out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    stem = input_.name.split(".")[0]
     with console.status("[italic]Splitting fingerprints...[/italic]", spinner="dots"):
         for i, batch in enumerate(batched(fps, num_per_batch)):
-            name = f"{input_.with_suffix('').name}.{str(i).zfill(digits)}"
+            suffixes = input_.suffixes
+            name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
             np.save(out_dir / name, batch)
+    console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
