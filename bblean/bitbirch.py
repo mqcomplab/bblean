@@ -116,8 +116,10 @@ def _min_safe_uint(nmax: int) -> np.dtype:
 def _validate_n_features(
     X, input_is_packed: bool, n_features: int | None = None
 ) -> int:
+    if len(X) == 0:
+        raise ValueError("Input must have at least 1 fingerprint")
     if input_is_packed:
-        _padded_n_features = len(unpack_fingerprints(X[0]))
+        _padded_n_features = len(X[0]) * 8 if isinstance(X, list) else X.shape[1] * 8
         if n_features is None:
             # Assume multiple of 8
             return _padded_n_features
