@@ -31,8 +31,8 @@ class ScaffoldAnalysis:
 class ClusterAnalysis:
     df: pd.DataFrame
     fps: list[NDArray[np.uint8]]
-    n_features: int
-    fps_are_packed: bool
+    fps_are_packed: bool = True
+    n_features: int | None = None
 
     @property
     def num_clusters(self) -> int:
@@ -61,7 +61,7 @@ def cluster_analysis(
     clusters: list[list[int]],
     smiles: tp.Iterable[str],
     fps: NDArray[np.integer],
-    n_features: int,
+    n_features: int | None = None,
     top: int = 20,
     assume_sorted: bool = True,
     scaffold_fp_kind: str = "rdkit",
@@ -94,5 +94,8 @@ def cluster_analysis(
         info["unique_scaffolds_isim"].append(analysis.isim)
         cluster_fps.append(_fps)  # Lets see if something uses this
     return ClusterAnalysis(
-        pd.DataFrame(info), cluster_fps, n_features, fps_are_packed=input_is_packed
+        pd.DataFrame(info),
+        cluster_fps,
+        fps_are_packed=input_is_packed,
+        n_features=n_features,
     )

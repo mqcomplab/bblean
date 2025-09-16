@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 
 from bblean.bitbirch import BitBirch  # type: ignore
@@ -13,8 +14,9 @@ def test_bb_lean_defaults() -> None:
 
 def test_bb_cluster_empty_input() -> None:
     fp = pack_fingerprints(np.zeros((0, 2048), dtype=np.uint8))
-    ids = BitBirch().fit(fp, n_features=2048).get_cluster_mol_ids()
-    assert ids == []
+    # At least 1 fp should be present
+    with pytest.raises(ValueError):
+        _ = BitBirch().fit(fp, n_features=2048).get_cluster_mol_ids()
 
 
 def test_bb_cluster_simple_repeated_fps() -> None:

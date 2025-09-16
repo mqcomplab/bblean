@@ -103,9 +103,9 @@ import numpy as np
 smiles = bblean.smiles.load_smiles("./examples/chembl-smiles.smi")
 fps = bblean.fingerprints.fps_from_smiles(smiles, pack=True, n_features=2048)
 
-# Fit the figerprints
+# Fit the figerprints (by default all bblean functions take *packed* fingerprints)
 tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion="diameter")
-tree.fit(fps, n_features=2048)
+tree.fit(fps)
 
 # Refine the tree (if needed)
 tree.set_merge(threshold=0.70, merge_criterion="tolerance", tolerance=0.05)
@@ -113,9 +113,7 @@ tree.refine_inplace(fps)
 
 # Visualize the results
 clusters = tree.get_cluster_mol_ids()
-ca = bblean.analysis.cluster_analysis(
-    clusters, smiles, fps, n_features=2048, input_is_packed=True
-)
+ca = bblean.analysis.cluster_analysis(clusters, smiles, fps)
 bblean.plotting.summary_plot(ca, title="ChEMBL Sample")
 plt.show()
 
@@ -127,6 +125,10 @@ with open("./clusters.pkl", "wb") as f:
 ```
 
 ## API and Documentation
+
+By default all functions take *packed* fingerprints of dtype `uint8`.
+Many functions support an `input_is_packed: bool` flag, which you can toggle to `False`
+in case for some reason you want to pass unpacked fingerprints (not recommended).
 
 Documentation is currently a work in progress, for the time being you can consult
 functions and classes `"""docstrings"""` for info on usage, or the Jupyter notebook

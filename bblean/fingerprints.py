@@ -18,13 +18,25 @@ __all__ = [
 
 
 def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
-    """Packs binary uint8 arrays (only 0s and 1s) to uint8 arrays"""
+    r"""Packs binary uint8 arrays (only 0s and 1s) to uint8 arrays"""
     # packbits may pad with zeros if n_features is not a multiple of 8
     return np.packbits(a, axis=-1)
 
 
-def unpack_fingerprints(a: NDArray[np.uint8], n_features: int) -> NDArray[np.uint8]:
-    """Unpacks packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)"""
+def unpack_fingerprints(
+    a: NDArray[np.uint8], n_features: int | None = None
+) -> NDArray[np.uint8]:
+    r"""Unpacks packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)
+
+    .. note::
+
+        If `n_features` is not passed, unpacking will only recover the correct number of
+        features if it is a multiple of 8, otherwise fingerprints will be padded with
+        zeros to the closest multiple of 8. This is generally not an issue since most
+        common fingerprints feature sizes (2048, 1024, etc) are multiples of 8, but if
+        you are using a non-standard number of features you should pass `n_features`
+        explicitly.
+    """
     # n_features is required to discard padded zeros if it is not a multiple of 8
     return np.unpackbits(a, axis=-1, count=n_features)
 
@@ -36,6 +48,8 @@ def make_fake_fingerprints(
     seed: int | None = None,
     dtype: DTypeLike = np.uint8,
 ) -> NDArray[np.uint8]:
+    if n_features < 1 or n_features % 8 != 0:
+        raise ValueError("n_features must be a multiple of 8, and greater than 0")
     # Generate "synthetic" fingerprints with a popcount distribution
     # similar to one in a real smiles database
     # Fps are guaranteed to *not* be all zeros or all ones
@@ -72,6 +86,8 @@ def fps_from_smiles(
     dtype: DTypeLike = np.uint8,
     pack: bool = True,
 ) -> NDArray[np.uint8]:
+    if n_features < 1 or n_features % 8 != 0:
+        raise ValueError("n_features must be a multiple of 8, and greater than 0")
     if isinstance(smiles, str):
         smiles = [smiles]
 
