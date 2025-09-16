@@ -5,6 +5,8 @@ import time
 import os
 import multiprocessing as mp
 
+from rich.console import Console
+
 try:
     import resource
 except Exception:
@@ -30,7 +32,7 @@ def system_mem_gib() -> tuple[int, int] | tuple[None, None]:
 
 
 # Requires psutil
-def monitor_rss_daemon(file: Path | str, interval_s: float, start_time: float) -> None:
+def monitor_rss_process(file: Path | str, interval_s: float, start_time: float) -> None:
     if "psutil" not in sys.modules:
         raise ValueError("psutil is required to monitor RSS")
 
@@ -89,3 +91,19 @@ def get_peak_memory(num_processes: int) -> PeakMemoryStats | None:
     if num_processes == 1:
         return PeakMemoryStats(max_mem_gib_self, None)
     return PeakMemoryStats(max_mem_gib_self, max_mem_gib_child)
+
+
+def launch_monitor_rss_daemon(
+    out_file: Path, interval_s: float, console: Console | None = None
+) -> None:
+    if console is not None:
+        console.print("** Monitoring total RAM usage **\n")
+    mp.Process(
+        target=monitor_rss_process,
+        kwargs=dict(
+            file=out_file,
+            interval_s=interval_s,
+            start_time=time.perf_counter(),
+        ),
+        daemon=True,
+    ).start()
