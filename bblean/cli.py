@@ -441,12 +441,13 @@ def _run(
             merge_criterion=merge_criterion,
             tolerance=tolerance,
         )
-    for file in input_files:
-        fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
-        tree.fit(fps, n_features=n_features)
+    with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
+        for file in input_files:
+            fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
+            tree.fit(fps, n_features=n_features)
 
-    # TODO: Fix peak memory stats
-    cluster_mol_ids = tree.get_cluster_mol_ids()
+        # TODO: Fix peak memory stats
+        cluster_mol_ids = tree.get_cluster_mol_ids()
     timer.end_timing("total", console)
     stats = get_peak_memory(1)
     if stats is None:
