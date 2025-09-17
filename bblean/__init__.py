@@ -6,7 +6,7 @@ libraries (of up to hundreds of milliones of molecules).
 
 from bblean.smiles import load_smiles
 from bblean.fingerprints import fps_from_smiles
-from bblean.bitbirch import BitBirch, set_merge  # type: ignore
+from bblean.bitbirch import BitBirch, set_merge
 from bblean.fingerprints import pack_fingerprints, unpack_fingerprints
 
 __all__ = [

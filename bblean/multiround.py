@@ -60,7 +60,7 @@ from bblean._console import get_console
 from bblean._timer import Timer
 from bblean._config import DEFAULTS
 from bblean.utils import batched
-from bblean.bitbirch import BitBirch  # type: ignore
+from bblean.bitbirch import BitBirch
 from bblean.fingerprints import _get_fps_file_num
 
 __all__ = ["run_multiround_bitbirch"]
@@ -172,7 +172,8 @@ class _InitialRound:
         range_ = range(start_idx, end_idx)
         brc_init.fit(
             fps,
-            reinsert_indices=range_,
+            # mypy bug?
+            reinsert_indices=range_,  # type: ignore
             n_features=self.n_features,
             input_is_packed=self.input_is_packed,
         )
@@ -191,7 +192,11 @@ class _InitialRound:
                 tolerance=self.tolerance,
             )
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                brc_tolerance._fit_np(bufs, reinsert_index_sequences=mol_idxs)
+                # mypy bug?
+                brc_tolerance._fit_np(
+                    bufs,
+                    reinsert_index_sequences=mol_idxs,  # type: ignore
+                )
             fps_bfs, mols_bfs = brc_tolerance._bf_to_np()
             del brc_tolerance
             gc.collect()

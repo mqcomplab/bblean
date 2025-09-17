@@ -5,7 +5,7 @@ from bblean.fingerprints import make_fake_fingerprints
 
 
 def test_jt_isim() -> None:
-    fps = make_fake_fingerprints(100, seed=17408390758220920002)
+    fps = make_fake_fingerprints(100, seed=17408390758220920002, pack=False)
     c_total = fps.sum(0)
     c_objects = len(fps)
     s = jt_isim(c_total, c_objects)
@@ -13,7 +13,7 @@ def test_jt_isim() -> None:
 
 
 def test_jt_isim_disjoint() -> None:
-    fps = make_fake_fingerprints(1, seed=17408390758220920002)
+    fps = make_fake_fingerprints(1, seed=17408390758220920002, pack=False)
     disjoint = (~fps.astype(np.bool)).view(np.uint8)
     fps = np.concatenate((fps, disjoint))
     c_total = fps.sum(0)
@@ -43,7 +43,7 @@ def test_jt_isim_homogeneous() -> None:
 
 
 def test_jt_isim_single() -> None:
-    fps = make_fake_fingerprints(1, seed=17408390758220920002)
+    fps = make_fake_fingerprints(1, seed=17408390758220920002, pack=False)
     c_total = fps.sum(0)
     c_objects = len(fps)
     with pytest.warns(RuntimeWarning):

@@ -46,7 +46,7 @@ def unpack_fingerprints(
 def make_fake_fingerprints(
     num: int,
     n_features: int = DEFAULTS.n_features,
-    pack: bool = False,
+    pack: bool = True,
     seed: int | None = None,
     dtype: DTypeLike = np.uint8,
 ) -> NDArray[np.uint8]:
