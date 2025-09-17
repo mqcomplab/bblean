@@ -10,6 +10,7 @@ import numpy as np
 from numpy.typing import NDArray
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
+from bblean._config import DEFAULTS
 from bblean.similarity import jt_isim
 from bblean.fingerprints import fps_from_smiles, unpack_fingerprints
 
@@ -48,7 +49,7 @@ class ClusterAnalysis:
 
 # Get the number of unique scaffolds and the scaffold isim
 def scaffold_analysis(
-    smiles: tp.Iterable[str], fp_kind: str = "ecfp4"
+    smiles: tp.Iterable[str], fp_kind: str = DEFAULTS.fp_kind
 ) -> ScaffoldAnalysis:
     r"""Perform a scaffold analysis of a sequence of smiles"""
     if isinstance(smiles, str):
@@ -69,7 +70,7 @@ def cluster_analysis(
     n_features: int | None = None,
     top: int = 20,
     assume_sorted: bool = True,
-    scaffold_fp_kind: str = "ecfp4",
+    scaffold_fp_kind: str = DEFAULTS.fp_kind,
     input_is_packed: bool = True,
 ) -> ClusterAnalysis:
     r"""Perform a cluster analysis starting from clusters, smiles, and fingerprints"""

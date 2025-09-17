@@ -96,7 +96,7 @@ def _get_generator(kind: str, n_features: int) -> tp.Any:
 
 def fps_from_smiles(
     smiles: tp.Iterable[str],
-    kind: str = "ecfp4",
+    kind: str = DEFAULTS.fp_kind,
     n_features: int = DEFAULTS.n_features,
     dtype: DTypeLike = np.uint8,
     pack: bool = True,
