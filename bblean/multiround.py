@@ -172,8 +172,7 @@ class _InitialRound:
         range_ = range(start_idx, end_idx)
         brc_init.fit(
             fps,
-            # mypy bug?
-            reinsert_indices=range_,  # type: ignore
+            reinsert_indices=range_,
             n_features=self.n_features,
             input_is_packed=self.input_is_packed,
         )
@@ -192,10 +191,9 @@ class _InitialRound:
                 tolerance=self.tolerance,
             )
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                # mypy bug?
                 brc_tolerance._fit_np(
                     bufs,
-                    reinsert_index_sequences=mol_idxs,  # type: ignore
+                    reinsert_index_sequences=mol_idxs,
                 )
             fps_bfs, mols_bfs = brc_tolerance._bf_to_np()
             del brc_tolerance

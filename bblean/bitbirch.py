@@ -45,10 +45,12 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
+from __future__ import annotations  # Stringize type annotations for no runtime overhead
 import typing_extensions as tpx
 from pathlib import Path
 import warnings
 import typing as tp
+from typing import cast
 from collections import defaultdict
 from weakref import WeakSet
 
@@ -210,9 +212,9 @@ def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
 
     if node.is_leaf:
         # If is_leaf, _prev_leaf is guaranteed to be not None
-        node._prev_leaf = tp.cast("_BFNode", node._prev_leaf)
+        # NOTE: cast seems to have a small overhead here for some reason
         new_node._prev_leaf = node._prev_leaf
-        node._prev_leaf._next_leaf = new_node
+        node._prev_leaf._next_leaf = new_node  # type: ignore
         new_node._next_leaf = node
         node._prev_leaf = new_node
 
@@ -723,7 +725,7 @@ class BitBirch:
     def fit(
         self,
         X: Input,
-        reinsert_indices: tp.Iterator[int] | None = None,
+        reinsert_indices: tp.Iterable[int] | None = None,
         input_is_packed: bool = True,
         n_features: int | None = None,
     ) -> tpx.Self:
@@ -757,12 +759,12 @@ class BitBirch:
         # Start a new tree the first time this function is called
         if not self.is_init:
             self._initialize_tree(n_features)
-        self._root = tp.cast("_BFNode", self._root)  # After init, this is not None
+        self._root = cast("_BFNode", self._root)  # After init, this is not None
 
         # The array iterator either copies, un-sparsifies, or does nothing
         # with the array rows, depending on the kind of X passed
         arr_iterable = _get_array_iterable(X, input_is_packed, n_features)
-        arr_iterable = tp.cast(tp.Iterable[NDArray[np.uint8]], arr_iterable)
+        arr_iterable = cast(tp.Iterable[NDArray[np.uint8]], arr_iterable)
         iterable: tp.Iterable[tuple[int, NDArray[np.uint8]]]
         if reinsert_indices is None:
             iterable = enumerate(arr_iterable, self.num_fitted_fps)
@@ -791,7 +793,7 @@ class BitBirch:
     def _fit_np(
         self,
         X: Input,
-        reinsert_index_sequences: tp.Iterator[tp.Sequence[int]] | None = None,
+        reinsert_index_sequences: tp.Iterable[tp.Sequence[int]] | None = None,
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
@@ -818,21 +820,20 @@ class BitBirch:
         # Start a new tree the first time this function is called
         if not self.is_init:
             self._initialize_tree(n_features)
-        self._root = tp.cast("_BFNode", self._root)  # After init, this is not None
+        self._root = cast("_BFNode", self._root)  # After init, this is not None
 
         # The array iterator either copies, un-sparsifies, or does nothing with the
         # array rows, depending on the kind of X passed
-        arr_iterator = _get_array_iterable(X, input_is_packed=False, dtype=X[0].dtype)
+        arr_iterable = _get_array_iterable(X, input_is_packed=False, dtype=X[0].dtype)
         merge_accept_fn = self._merge_accept_fn
         threshold = self._threshold
         branching_factor = self._branching_factor
-        idx_provider: tp.Iterator[tp.Sequence[int]]
+        idx_provider: tp.Iterable[tp.Sequence[int]]
         if reinsert_index_sequences is None:
-            # mypy bug?
-            idx_provider = map(list, range(self.num_fitted_fps))  # type: ignore
+            idx_provider = ([idx] for idx in range(self.num_fitted_fps))
         else:
             idx_provider = reinsert_index_sequences
-        for idxs, buf in zip(idx_provider, arr_iterator):
+        for idxs, buf in zip(idx_provider, arr_iterable):
             subcluster = _BFSubcluster(
                 buffer=buf, mol_indices=idxs, n_features=n_features
             )
@@ -851,7 +852,7 @@ class BitBirch:
     def fit_reinsert(
         self,
         X: Input,
-        reinsert_indices: tp.Iterator[int],
+        reinsert_indices: tp.Iterable[int],
         input_is_packed: bool = True,
         n_features: int | None = None,
     ) -> tpx.Self:
@@ -970,8 +971,7 @@ class BitBirch:
 
         # Rebuild the tree again from scratch, reinserting all the subclusters
         for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-            # mypy bug?
-            self._fit_np(bufs, reinsert_index_sequences=mol_idxs)  # type: ignore
+            self._fit_np(bufs, reinsert_index_sequences=mol_idxs)
         return self
 
     def _get_BFs(self, sort: bool = True) -> list[_BFSubcluster]:
@@ -1007,12 +1007,15 @@ class BitBirch:
         n_features = big.n_features
         dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_buffer_dicts(rest)
         # Add X and mol indices of the "big" cluster
+        if input_is_packed:
+            unpack_or_copy = lambda x: unpack_fingerprints(
+                cast(NDArray[np.uint8], x), n_features
+            )
+        else:
+            unpack_or_copy = lambda x: x.copy()
         for mol_idx in big.mol_indices:
-            fp = X[mol_idx - initial_mol]
-            if input_is_packed:
-                fp = unpack_fingerprints(tp.cast(NDArray[np.uint8], fp), n_features)
-            else:
-                fp = fp.copy()
+            # NOTE: cast seems to have a very small overhead here for some reason
+            fp = unpack_or_copy(X[mol_idx - initial_mol])
             buffer = np.empty(fp.shape[0] + 1, dtype=np.uint8)
             buffer[:-1] = fp
             buffer[-1] = 1
@@ -1069,12 +1072,10 @@ def _get_array_iterable(
     n_features: int | None = None,
     dtype: DTypeLike = np.uint8,
 ) -> tp.Iterable[NDArray[np.integer]]:
-
     if input_is_packed:
         # Unpacking copies the fingerprints, so no extra copy required
-        return (
-            unpack_fingerprints(tp.cast(NDArray[np.uint8], a), n_features) for a in X
-        )
+        # NOTE: cast seems to have a very small overhead in this loop for some reason
+        return (unpack_fingerprints(a, n_features) for a in X)  # type: ignore
     if isinstance(X, list):
         # No copy is required here unless the dtype is not uint8
         return (a.astype(dtype, copy=False) for a in X)
@@ -1084,6 +1085,7 @@ def _get_array_iterable(
     return _iter_sparse(X)
 
 
+# NOTE: In practice this branch is never used, it could probably safely be deleted
 def _iter_sparse(X: tp.Any) -> tp.Iterator[NDArray[np.uint8]]:
     import scipy.sparse  # Hide this import since scipy is heavy
 
