@@ -1,6 +1,6 @@
 # BitBIRCH-Lean
 
-[![Zenodo DOI](https://zenodo.org/badge/1051268662.svg)](https://doi.org/10.5281/zenodo.17139445)
+[![DOI](https://zenodo.org/badge/1051268662.svg)](https://doi.org/10.5281/zenodo.17139445)
 
 ## Overview
 
