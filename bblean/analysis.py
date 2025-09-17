@@ -48,7 +48,7 @@ class ClusterAnalysis:
 
 # Get the number of unique scaffolds and the scaffold isim
 def scaffold_analysis(
-    smiles: tp.Iterable[str], fp_kind: str = "rdkit"
+    smiles: tp.Iterable[str], fp_kind: str = "ecfp4"
 ) -> ScaffoldAnalysis:
     r"""Perform a scaffold analysis of a sequence of smiles"""
     if isinstance(smiles, str):
@@ -69,7 +69,7 @@ def cluster_analysis(
     n_features: int | None = None,
     top: int = 20,
     assume_sorted: bool = True,
-    scaffold_fp_kind: str = "rdkit",
+    scaffold_fp_kind: str = "ecfp4",
     input_is_packed: bool = True,
 ) -> ClusterAnalysis:
     r"""Perform a cluster analysis starting from clusters, smiles, and fingerprints"""

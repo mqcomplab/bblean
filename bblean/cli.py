@@ -98,7 +98,7 @@ def _summary_plot(
     scaffold_fp_kind: Annotated[
         str,
         Option("--scaffold-fp-kind"),
-    ] = "rdkit",
+    ] = "ecfp4",
     n_features: Annotated[
         int | None,
         Option(
@@ -594,7 +594,7 @@ def _fps_from_smiles(
     kind: Annotated[
         str,
         Option("-k", "--kind"),
-    ] = "rdkit",
+    ] = "ecfp4",
     fp_size: Annotated[
         int,
         Option("--n-features", help="Num. features of the generated fingerprints"),
