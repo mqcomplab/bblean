@@ -1,5 +1,6 @@
 r"""Utilites for manipulating fingerprints and fingerprint files"""
 
+import dataclasses
 from pathlib import Path
 from numpy.typing import NDArray, DTypeLike
 import numpy as np
@@ -83,6 +84,16 @@ def make_fake_fingerprints(
     return fps_fake.astype(dtype, copy=False)
 
 
+def _get_generator(kind: str, n_features: int) -> tp.Any:
+    if kind == "rdkit":
+        return rdFingerprintGenerator.GetRDKitFPGenerator(fpSize=n_features)
+    elif kind == "ecfp4":
+        return rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=n_features)
+    elif kind == "ecfp6":
+        return rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=n_features)
+    raise ValueError(f"Unknonw kind {kind}. Should be one of 'rdkit|ecfp4|ecfp6'")
+
+
 def fps_from_smiles(
     smiles: tp.Iterable[str],
     kind: str = "rdkit",
@@ -99,16 +110,7 @@ def fps_from_smiles(
     if pack and not (np.dtype(dtype) == np.dtype(np.uint8)):
         raise ValueError("Packing only supported for uint8 dtype")
 
-    if kind == "rdkit":
-        fpg = rdFingerprintGenerator.GetRDKitFPGenerator(fpSize=n_features)
-    elif kind == "ecfp4":
-        fpg = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=n_features)
-    elif kind == "ecfp6":
-        fpg = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=n_features)
-    else:
-        raise ValueError(
-            f"Unknown fingerprint kind {kind}. Valid kinds are 'rdkit|ecfp4|ecfp6'"
-        )
+    fpg = _get_generator(kind, n_features)
 
     mols = []
     for smi in smiles:
@@ -164,3 +166,31 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
         console.print(f"    - Shape: {shape}")
     console.print(f"    - DType: [yellow]{dtype.name}[/yellow]")
     console.print()
+
+
+# NOTE: Mostly convenient for usage in multiprocessing workflows
+@dataclasses.dataclass
+class _FingerprintFileCreator:
+    dtype: str
+    out_dir: Path
+    out_name: str
+    digits: int | None
+    pack: bool
+    kind: str
+    n_features: int
+
+    def __call__(self, input_: tuple[int, tp.Sequence[str]]) -> None:
+        fpg = _get_generator(self.kind, self.n_features)
+        file_idx, batch = input_
+        fps = np.empty((len(batch), self.n_features), dtype=self.dtype)
+        out_name = self.out_name
+        for i, smi in enumerate(batch):
+            mol = MolFromSmiles(smi)
+            if mol is None:
+                raise ValueError(f"Could not parse smile {smi}")
+            fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
+        if self.pack:
+            fps = pack_fingerprints(fps)
+        if self.digits is not None:
+            out_name = f"{out_name}.{str(file_idx).zfill(self.digits)}"
+        np.save(self.out_dir / out_name, fps)
