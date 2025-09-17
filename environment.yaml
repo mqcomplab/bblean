@@ -14,7 +14,7 @@ dependencies:
   # Core dependencies
   - scipy 
   - rdkit
-  - numpy
+  - numpy>=2.0
   - pandas
   - psutil
   - matplotlib
