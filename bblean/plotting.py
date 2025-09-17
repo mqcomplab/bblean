@@ -73,6 +73,7 @@ def tsne_plot(
     for fps, label in zip(c.fps, df["label"]):
         if c.fps_are_packed:
             # fps is 2D so this is guaranteed to be a list of u8 arrays
+            # Too complicated for mypy to parse, but correct
             cluster_fps = [
                 fp for fp in unpack_fingerprints(fps, n_features=c.n_features)  # type: ignore # noqa:E501
             ]
