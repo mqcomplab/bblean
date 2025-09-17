@@ -644,7 +644,7 @@ def _fps_from_smiles(
     """
     import numpy as np
     from rdkit import Chem
-    from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
+    from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles
 
     from bblean._console import get_console
     from bblean.fingerprints import pack_fingerprints
@@ -723,8 +723,10 @@ def _fps_from_smiles(
             batched(iter_mols_from_paths(smiles_paths), num_per_batch)
         ):
             fps = np.empty((len(mol_batch), fp_size), dtype=dtype)
-            for i, fp in enumerate(fpg.GetFingerprints(mol_batch)):
-                DataStructs.ConvertToNumpyArray(fp, fps[i, :])
+            # This is significantly faster than getting the fps in a batch with
+            # GetFingerprints(mol_batch) and then using ConvertToNumpyArray.
+            for i, mol in enumerate(mol_batch):
+                fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
             if pack:
                 fps = pack_fingerprints(fps)
             if digits is not None:
