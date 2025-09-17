@@ -6,7 +6,7 @@ import numpy as np
 import typing as tp
 
 from rich.console import Console
-from rdkit.Chem import rdFingerprintGenerator, DataStructs, MolFromSmiles
+from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles
 
 from bblean._config import DEFAULTS
 
@@ -118,8 +118,10 @@ def fps_from_smiles(
         mols.append(mol)
 
     fps = np.empty((len(mols), n_features), dtype=dtype)
-    for i, fp in enumerate(fpg.GetFingerprints(mols)):
-        DataStructs.ConvertToNumpyArray(fp, fps[i, :])
+    # This is significantly faster than getting the fps in a batch with
+    # GetFingerprints(mols) and then using ConvertToNumpyArray.
+    for i, mol in enumerate(mols):
+        fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
     if pack:
         return pack_fingerprints(fps)
     return fps
