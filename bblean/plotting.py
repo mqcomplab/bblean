@@ -69,10 +69,12 @@ def tsne_plot(
     df = c.df
     fps_list: list[NDArray[np.uint8]] = []
     label_list: list[int] = []
+    cluster_fps: list[NDArray[np.uint8]]
     for fps, label in zip(c.fps, df["label"]):
         if c.fps_are_packed:
+            # fps is 2D so this is guaranteed to be a list of u8 arrays
             cluster_fps = [
-                fp for fp in unpack_fingerprints(fps, n_features=c.n_features)
+                fp for fp in unpack_fingerprints(fps, n_features=c.n_features)  # type: ignore # noqa:E501
             ]
         else:
             cluster_fps = list(fps)
