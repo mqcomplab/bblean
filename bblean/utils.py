@@ -8,6 +8,7 @@ import subprocess
 import platform
 import importlib
 
+import psutil
 from numpy.typing import NDArray
 
 __all__ = ["batched", "calc_centroid"]
@@ -47,6 +48,10 @@ def batched(iterable: tp.Iterable[_T], n: int) -> tp.Iterator[tuple[_T, ...]]:
     it = iter(iterable)
     while batch := tuple(itertools.islice(it, n)):
         yield batch
+
+
+def _num_avail_cpus() -> int:
+    return len(psutil.Process().cpu_affinity())
 
 
 def _cpu_name() -> str:

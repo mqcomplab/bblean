@@ -636,30 +636,42 @@ def _fps_from_smiles(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    num_ps: Annotated[
+        int | None,
+        Option(
+            "--processes",
+            help="Num. processes for multprocess generation"
+            " (Currently only implemented when generating multiple files)",
+        ),
+    ] = None,
 ) -> None:
     r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
-    In order to use the memory efficient BitBIRCH u8 algorithm you *must* use the
+    In order to use the memory efficient BitBIRCH u8 algorithm you should keep the
     defaults: --dtype=uint8 and --pack
     """
-    import numpy as np
     from rdkit import Chem
-    from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles
+    from rdkit.Chem import MolFromSmiles
 
     from bblean._console import get_console
-    from bblean.fingerprints import pack_fingerprints
+    from bblean.utils import _num_avail_cpus
+    from bblean.fingerprints import _FingerprintFileCreator
+    from bblean.smiles import iter_smiles_from_paths
 
-    def iter_mols_from_paths(smiles_paths: tp.Iterable[Path]) -> tp.Iterator[Chem.Mol]:
-        for smi_path in smiles_paths:
-            with open(smi_path, mode="rt", encoding="utf-8") as f:
-                for i, smi in enumerate(f):
-                    mol = MolFromSmiles(smi)
-                    if mol is None:
-                        console.print(
-                            f"Invalid smiles {smi} from {str(smi_path)} (line {i + 1})"
-                        )
-                        raise Abort()
-                    yield mol
+    if sys.platform == "linux":
+        # Force forkserver since rdkit may use threads, and fork is unsafe with threads
+        mp.set_start_method("forkserver")
+
+    def iter_mols_from_paths(
+        smiles_paths: tp.Iterable[Path], skip_bad_smiles: bool = False
+    ) -> tp.Iterator[Chem.Mol]:
+        for smi in iter_smiles_from_paths(smiles_paths):
+            mol = MolFromSmiles(smi)
+            if mol is None:
+                if not skip_bad_smiles:
+                    console.print(f"Could not parse smiles {smi}")
+                    raise Abort()
+            yield mol
 
     console = get_console(silent=not verbose)
 
@@ -668,17 +680,6 @@ def _fps_from_smiles(
     if not smiles_paths:
         console.print("No *.smi files found", style="red")
         raise Abort()
-
-    if kind not in ["rdkit", "ecfp4", "ecfp6"]:
-        console.print("Kind must be one of 'rdkit|ecfp4|ecfp6'", style="red")
-        raise Abort()
-
-    if kind == "rdkit":
-        fpg = rdFingerprintGenerator.GetRDKitFPGenerator(fpSize=fp_size)
-    elif kind == "ecfp4":
-        fpg = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=fp_size)
-    elif kind == "ecfp6":
-        fpg = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=fp_size)
 
     # Pass 1: check the total number of smiles
     smiles_num = 0
@@ -693,7 +694,8 @@ def _fps_from_smiles(
         digits = len(str(parts))
     elif parts is None and max_fps_per_file is not None:
         num_per_batch = max_fps_per_file
-        digits = len(str(math.ceil(smiles_num / max_fps_per_file)))
+        parts = math.ceil(smiles_num / max_fps_per_file)
+        digits = len(str(parts))
     elif parts is None and max_fps_per_file is None:
         parts = 1
         num_per_batch = math.ceil(smiles_num / parts)
@@ -718,21 +720,37 @@ def _fps_from_smiles(
         # Strip suffix
         if out_name.endswith(".npy"):
             out_name = out_name[:-4]
-    with console.status("[italic]Generating fingerprints...[/italic]", spinner="dots"):
-        for file_idx, mol_batch in enumerate(
-            batched(iter_mols_from_paths(smiles_paths), num_per_batch)
+
+    if parts > 1 and num_ps is None:
+        # Get the number of cores *available for use for this process*
+        # bound by the number of parts to avoid spawning useless processes
+        num_ps = min(_num_avail_cpus(), parts)
+    create_fp_file = _FingerprintFileCreator(
+        dtype, out_dir, out_name, digits, pack, kind, fp_size
+    )
+    if parts > 1 and num_ps is not None and num_ps > 1:
+        # Multiprocessing version
+        # TODO: Currently only implemented for split files (parts > 1), it could be
+        # implemented for single-files using shmem
+        with console.status(
+            f"[italic]Generating fingerprints (parallel, {num_ps} procs.) ...[/italic]",
+            spinner="dots",
         ):
-            fps = np.empty((len(mol_batch), fp_size), dtype=dtype)
-            # This is significantly faster than getting the fps in a batch with
-            # GetFingerprints(mol_batch) and then using ConvertToNumpyArray.
-            for i, mol in enumerate(mol_batch):
-                fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
-            if pack:
-                fps = pack_fingerprints(fps)
-            if digits is not None:
-                out_name = f"{out_name}.{str(file_idx).zfill(digits)}"
-            np.save(out_dir / out_name, fps)
-    if file_idx > 0:
+            idxs_batches = list(
+                enumerate(batched(iter_smiles_from_paths(smiles_paths), num_per_batch))
+            )
+            with mp.Pool(processes=num_ps) as pool:
+                pool.map(create_fp_file, idxs_batches)
+    else:
+        # Serial version
+        with console.status(
+            "[italic]Generating fingerprints (serial) ...[/italic]", spinner="dots"
+        ):
+            for idx_batch in enumerate(
+                batched(iter_smiles_from_paths(smiles_paths), num_per_batch)
+            ):
+                create_fp_file(idx_batch)
+    if parts > 1:
         stem = out_name.split(".")[0]
         console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
     else:
