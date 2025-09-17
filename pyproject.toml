@@ -15,7 +15,7 @@ dynamic = ["version", "readme"]
 dependencies = [
     "scipy",
     "rdkit",
-    "numpy>=2.2",
+    "numpy>=2.0",
     "pandas",
     "psutil",
     "matplotlib",
