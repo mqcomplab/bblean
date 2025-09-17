@@ -1,6 +1,8 @@
 # BitBIRCH-Lean
 
 [![DOI](https://zenodo.org/badge/1051268662.svg)](https://doi.org/10.5281/zenodo.17139445)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![CI](https://github.com/mqcomplab/bblean/actions/workflows/ci.yaml/badge.svg)](https://github.com/mqcomplab/bblean/actions/workflows/ci.yaml)
 
 ## Overview
 
