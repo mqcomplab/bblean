@@ -30,6 +30,7 @@ dependencies:
   - autoflake  # Remove unused imports / variables
   - mypy  # Type checker
   - pytest  # Python testing framework
+  - pytest-subtests
   - cruft # Keep up with cookiecutter updates
   # Profilers
   - memray
