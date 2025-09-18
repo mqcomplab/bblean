@@ -58,9 +58,9 @@ import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
 from bblean._merges import get_merge_accept_fn, MergeAcceptFunction
-from bblean.utils import calc_centroid, _popcount
-from bblean.fingerprints import pack_fingerprints, unpack_fingerprints
-from bblean.similarity import jt_sim_packed
+from bblean.utils import min_safe_uint
+from bblean.fingerprints import pack_fingerprints, unpack_fingerprints, calc_centroid
+from bblean.similarity import jt_sim_packed, jt_most_dissimilar_packed
 
 __all__ = ["BitBirch"]
 
@@ -73,7 +73,7 @@ _BITBIRCH_INSTANCES: WeakSet["BitBirch"] = WeakSet()
 # For backwards compatibility: global function used to accept merges
 _global_merge_accept: MergeAcceptFunction | None = None
 
-Input = tp.Union[NDArray[np.integer], list[NDArray[np.integer]]]
+_Input = tp.Union[NDArray[np.integer], list[NDArray[np.integer]]]
 
 
 # For backwards compatibility: set the global merge_accept function
@@ -104,19 +104,9 @@ def set_merge(merge_criterion: str, tolerance: float = 0.05) -> None:
         bbirch._merge_accept_fn = _global_merge_accept
 
 
-# Returns the minimum uint dtype that safely holds a (positive) python int
-# Input must be a positive python integer
-def _min_safe_uint(nmax: int) -> np.dtype:
-    out = np.min_scalar_type(nmax)
-    # Check if the dtype is a pointer to a python bigint
-    if out.hasobject:
-        raise ValueError(f"n_samples: {nmax} is too large to hold in a uint64 array")
-    return out
-
-
 # Utility function to validate the n_features argument for packed inputs
 def _validate_n_features(
-    X: Input, input_is_packed: bool, n_features: int | None = None
+    X: _Input, input_is_packed: bool, n_features: int | None = None
 ) -> int:
     if len(X) == 0:
         raise ValueError("Input must have at least 1 fingerprint")
@@ -144,53 +134,6 @@ def _validate_n_features(
     return x_n_features
 
 
-def _max_separation(
-    Y: NDArray[np.uint8], n_features: int | None = None
-) -> tuple[tuple[np.integer, np.integer], NDArray[np.float64], NDArray[np.float64]]:
-    """Finds two objects in Y that are very separated
-    This is not guaranteed to find
-    the two absolutely most separated objects, but it is
-    a very robust O(N) approximation. Quality of clustering
-    does not diminish in the end.
-
-    Algorithm:
-    a) Find centroid of Y
-    b) mol1 is the molecule most distant from the centroid
-    c) mol2 is the molecule most distant from mol1
-
-    Returns
-    -------
-    (mol1, mol2) : (int, int)
-                   indices of mol1 and mol2
-    1 - sims_mol1 : np.ndarray
-                   Similarities to mol1
-    1 - sims_mol2: np.ndarray
-                   Similarities to mol2
-
-    These are needed for node1_sim and node2_sim in _split_node
-    """
-    # Get the centroid of the set
-    Y_unpacked = unpack_fingerprints(Y, n_features)
-    n_samples = len(Y_unpacked)
-    # np.sum() automatically promotes to uint64 unless forced to a smaller dtype
-    linear_sum = np.sum(Y_unpacked, axis=0, dtype=_min_safe_uint(n_samples))
-    packed_centroid = calc_centroid(linear_sum, n_samples, pack=True)
-
-    cardinalities = _popcount(Y)
-
-    # Get the similarity of each molecule to the centroid, and the least similar idx
-    sims_med = jt_sim_packed(Y, packed_centroid, cardinalities)
-    mol1 = np.argmin(sims_med)
-
-    # Get the similarity of each molecule to mol1, and the least similar idx
-    sims_mol1 = jt_sim_packed(Y, Y[mol1], cardinalities)
-    mol2 = np.argmin(sims_mol1)
-
-    # Get the similarity of each molecule to mol2
-    sims_mol2 = jt_sim_packed(Y, Y[mol2], cardinalities)
-    return (mol1, mol2), sims_mol1, sims_mol2
-
-
 def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
     """The node has to be split if there is no place for a new subcluster
     in the node.
@@ -206,39 +149,39 @@ def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
     new_subcluster1 = _BFSubcluster(n_features=n_features)
     new_subcluster2 = _BFSubcluster(n_features=n_features)
 
-    new_node = _BFNode(branching_factor, n_features)
-    new_subcluster1.child = new_node
-    new_subcluster2.child = node
+    node1 = _BFNode(branching_factor, n_features)
+    node2 = node  # Rename for clarity
+    new_subcluster1.child = node1
+    new_subcluster2.child = node2
 
-    if node.is_leaf:
+    if node2.is_leaf:
         # If is_leaf, _prev_leaf is guaranteed to be not None
         # NOTE: cast seems to have a small overhead here for some reason
-        new_node._prev_leaf = node._prev_leaf
-        node._prev_leaf._next_leaf = new_node  # type: ignore
-        new_node._next_leaf = node
-        node._prev_leaf = new_node
+        node1._prev_leaf = node2._prev_leaf
+        node2._prev_leaf._next_leaf = node1  # type: ignore
+        node1._next_leaf = node2
+        node2._prev_leaf = node1
 
-    # O(N) implementation of max separation
-    separated_idxs, node1_sim, node2_sim = _max_separation(
-        node.packed_centroids, n_features
+    # O(N) approximation to obtain "most dissimilar fingerprints" within an array
+    node1_idx, _, node1_sim, node2_sim = jt_most_dissimilar_packed(
+        node2.packed_centroids, n_features
     )
-    # _max_separation returns similarities, not distances
     node1_closer = node1_sim > node2_sim
     # Make sure node1 and node2 are closest to themselves, even if all sims are equal.
     # This can only happen when all node.packed_centroids are duplicates leading to all
     # distances between centroids being zero.
 
-    # TODO: Currently this behavior is buggy, seems like in some cases one of the
+    # TODO: Currently this behavior is buggy (?), seems like in some cases one of the
     # subclusters may *never* get updated, double check this logic
-    node1_closer[separated_idxs[0]] = True
-    subclusters = node._subclusters.copy()  # Shallow copy
-    node._subclusters = []  # Reset the node
+    node1_closer[node1_idx] = True
+    subclusters = node2._subclusters.copy()  # Shallow copy
+    node2._subclusters = []  # Reset the node
     for idx, subcluster in enumerate(subclusters):
         if node1_closer[idx]:
-            new_node.append_subcluster(subcluster)
+            node1.append_subcluster(subcluster)
             new_subcluster1.update(subcluster)
         else:
-            node.append_subcluster(subcluster)
+            node2.append_subcluster(subcluster)
             new_subcluster2.update(subcluster)
     return new_subcluster1, new_subcluster2
 
@@ -524,7 +467,7 @@ class _BFSubcluster:
         self, n_samples: int, linear_sum: NDArray[np.integer]
     ) -> None:
         # Cast to the minimum uint that can hold the inputs
-        self._buffer = self._buffer.astype(_min_safe_uint(n_samples), copy=False)
+        self._buffer = self._buffer.astype(min_safe_uint(n_samples), copy=False)
         # NOTE: Assignments are safe and do not recast the buffer
         self._buffer[:-1] = linear_sum
         self._buffer[-1] = n_samples
@@ -537,7 +480,7 @@ class _BFSubcluster:
     ) -> None:
         # Cast to the minimum uint that can hold the inputs
         new_n_samples = self.n_samples + n_samples
-        self._buffer = self._buffer.astype(_min_safe_uint(new_n_samples), copy=False)
+        self._buffer = self._buffer.astype(min_safe_uint(new_n_samples), copy=False)
         # NOTE: Assignment and inplace add are safe and do not recast the buffer
         self._buffer[:-1] += linear_sum
         self._buffer[-1] = new_n_samples
@@ -565,7 +508,7 @@ class _BFSubcluster:
         nom_ls = nominee_cluster.linear_sum
         # np.add with explicit dtype is safe from overflows, e.g. :
         # np.add(np.uint8(255), np.uint8(255), dtype=np.uint16) = np.uint16(510)
-        new_ls = np.add(old_ls, nom_ls, dtype=_min_safe_uint(new_n))
+        new_ls = np.add(old_ls, nom_ls, dtype=min_safe_uint(new_n))
         if merge_accept_fn(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
             self.replace_n_samples_and_linear_sum(new_n, new_ls)
             self.mol_indices.extend(nominee_cluster.mol_indices)
@@ -726,7 +669,7 @@ class BitBirch:
 
     def fit(
         self,
-        X: Input,
+        X: _Input,
         reinsert_indices: tp.Iterable[int] | None = None,
         input_is_packed: bool = True,
         n_features: int | None = None,
@@ -794,7 +737,7 @@ class BitBirch:
 
     def _fit_np(
         self,
-        X: Input,
+        X: _Input,
         reinsert_index_sequences: tp.Iterable[tp.Sequence[int]] | None = None,
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
@@ -853,7 +796,7 @@ class BitBirch:
     # Provided for backwards compatibility
     def fit_reinsert(
         self,
-        X: Input,
+        X: _Input,
         reinsert_indices: tp.Iterable[int],
         input_is_packed: bool = True,
         n_features: int | None = None,
@@ -958,7 +901,7 @@ class BitBirch:
 
     def refine_inplace(
         self,
-        X: Input,
+        X: _Input,
         initial_mol: int = 0,
         input_is_packed: bool = True,
     ) -> tpx.Self:
@@ -988,7 +931,7 @@ class BitBirch:
 
     def _bf_to_np_refine(
         self,
-        X: Input,
+        X: _Input,
         initial_mol: int = 0,
         input_is_packed: bool = True,
     ) -> tuple[dict[str, list[NDArray[np.integer]]], dict[str, list[list[int]]]]:
@@ -1069,7 +1012,7 @@ class BitBirch:
 # Output is *always* of dtype uint8, but input (if unpacked) can be of arbitrary dtype
 # It is most efficient for input to be uint8 to prevent copies
 def _get_array_iterable(
-    X: Input,
+    X: _Input,
     input_is_packed: bool = True,
     n_features: int | None = None,
     dtype: DTypeLike = np.uint8,

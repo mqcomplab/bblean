@@ -16,7 +16,39 @@ __all__ = [
     "fps_from_smiles",
     "pack_fingerprints",
     "unpack_fingerprints",
+    "calc_centroid",
 ]
+
+
+def calc_centroid(
+    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
+) -> NDArray[np.uint8]:
+    """Calculates centroid
+
+    Parameters
+    ----------
+
+    linear_sum : np.ndarray
+                 Sum of the elements column-wise
+    n_samples : int
+                Number of samples
+    pack : bool
+        Whether to pack the resulting fingerprints
+
+    Returns
+    -------
+    centroid : np.ndarray[np.uint8]
+               Centroid fingerprints of the given set
+    """
+    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
+    # so this view is fully safe
+    if n_samples <= 1:
+        centroid = linear_sum.astype(np.uint8, copy=False)
+    else:
+        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
+    if pack:
+        return np.packbits(centroid, axis=-1)
+    return centroid
 
 
 def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:

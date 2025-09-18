@@ -3,7 +3,7 @@ r"""Merging criteria for BitBIRCH clustering"""
 from numpy.typing import NDArray
 import numpy as np
 
-from bblean.utils import calc_centroid
+from bblean.fingerprints import calc_centroid
 from bblean.similarity import jt_isim
 
 

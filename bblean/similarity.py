@@ -5,7 +5,71 @@ import warnings
 from numpy.typing import NDArray
 import numpy as np
 
-from bblean.utils import _popcount
+from bblean.utils import min_safe_uint
+from bblean.fingerprints import unpack_fingerprints, calc_centroid
+
+__all__ = ["jt_isim", "jt_sim_packed", "jt_most_dissimilar_packed"]
+
+
+# Requires numpy >= 2.0
+def _popcount(a: NDArray[np.uint8]) -> NDArray[np.uint32]:
+    # a is packed uint8 array with last axis = bytes
+    # Sum bit-counts across bytes to get per-object totals
+
+    # If the array has columns that are a multiple of 8, doing a bitwise count
+    # over the buffer reinterpreted as uint64 is slightly faster.
+    # This is zero cost if the exception is not triggered. Not having a be a multiple of
+    # 8 is a very unlikely scenario, since fps are typically 1024 or 2048
+    b: NDArray[np.integer]
+    try:
+        b = a.view(np.uint64)
+    except ValueError:
+        b = a
+    return np.bitwise_count(b).sum(axis=-1, dtype=np.uint32)
+
+
+# O(N) approximation to obtain "most dissimilar fingerprints" within an array
+def jt_most_dissimilar_packed(
+    Y: NDArray[np.uint8], n_features: int | None = None
+) -> tuple[np.integer, np.integer, NDArray[np.float64], NDArray[np.float64]]:
+    """Finds two fps in a packed fp array that are the most Tanimoto-dissimilar
+
+    This is not guaranteed to find the most dissimilar fps, it is
+    a robust O(N) approximation that doesn't affect final cluster quality.
+    First find centroid of Y, then find fp_1, the most dissimilar molecule
+    to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1
+
+    Returns
+    -------
+    fp_1 : int
+        index of the first fingerprint
+    fp_2 : int
+        index of the second fingerprint
+    sims_fp_1 : np.ndarray
+        Tanimoto similarities of Y to fp_1
+    sims_fp_2: np.ndarray
+        Tanimoto similarities of Y to fp_2
+    """
+    # Get the centroid of the fps
+    n_samples = len(Y)
+    Y_unpacked = unpack_fingerprints(Y, n_features)
+    # np.sum() automatically promotes to uint64 unless forced to a smaller dtype
+    linear_sum = np.sum(Y_unpacked, axis=0, dtype=min_safe_uint(n_samples))
+    packed_centroid = calc_centroid(linear_sum, n_samples, pack=True)
+
+    cardinalities = _popcount(Y)
+
+    # Get similarity of each fp to the centroid, and the least similar fp idx (fp_1)
+    sims_cent = jt_sim_packed(Y, packed_centroid, cardinalities)
+    fp_1 = np.argmin(sims_cent)
+
+    # Get similarity of each fp to fp_1, and the least similar fp idx (fp_2)
+    sims_fp_1 = jt_sim_packed(Y, Y[fp_1], cardinalities)
+    fp_2 = np.argmin(sims_fp_1)
+
+    # Get similarity of each fp to fp_2
+    sims_fp_2 = jt_sim_packed(Y, Y[fp_2], cardinalities)
+    return fp_1, fp_2, sims_fp_1, sims_fp_2
 
 
 def jt_sim_packed(
