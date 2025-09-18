@@ -60,7 +60,11 @@ from numpy.typing import NDArray, DTypeLike
 from bblean._merges import get_merge_accept_fn, MergeAcceptFunction
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import pack_fingerprints, unpack_fingerprints, calc_centroid
-from bblean.similarity import jt_sim_packed, jt_most_dissimilar_packed
+try:
+    from bblean.cpp_similarity import jt_sim_packed, jt_most_dissimilar_packed
+except ImportError:
+    warnings.warn("Optimized similarity calculations not available")
+    from bblean.similarity import jt_sim_packed, jt_most_dissimilar_packed
 
 __all__ = ["BitBirch"]
 

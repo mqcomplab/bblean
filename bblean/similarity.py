@@ -5,10 +5,71 @@ import warnings
 from numpy.typing import NDArray
 import numpy as np
 
-from bblean.utils import min_safe_uint
-from bblean.fingerprints import unpack_fingerprints, calc_centroid
+# from bblean.utils import min_safe_uint
+# from bblean.fingerprints import unpack_fingerprints, calc_centroid
 
 __all__ = ["jt_isim", "jt_sim_packed", "jt_most_dissimilar_packed"]
+
+
+def min_safe_uint(nmax: int) -> np.dtype:
+    r"""Returns the min uint dtype that holds a (positive) py int, excluding "object".
+
+    Input must be a positive python integer.
+    """
+    out = np.min_scalar_type(nmax)
+    # Check if the dtype is a pointer to a python bigint
+    if out.hasobject:
+        raise ValueError(f"n_samples: {nmax} is too large to hold in a uint64 array")
+    return out
+
+
+def unpack_fingerprints(
+    a: NDArray[np.uint8], n_features: int | None = None
+) -> NDArray[np.uint8]:
+    r"""Unpack packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)
+
+    .. note::
+
+        If `n_features` is not passed, unpacking will only recover the correct number of
+        features if it is a multiple of 8, otherwise fingerprints will be padded with
+        zeros to the closest multiple of 8. This is generally not an issue since most
+        common fingerprints feature sizes (2048, 1024, etc) are multiples of 8, but if
+        you are using a non-standard number of features you should pass `n_features`
+        explicitly.
+    """
+    # n_features is required to discard padded zeros if it is not a multiple of 8
+    return np.unpackbits(a, axis=-1, count=n_features)
+
+
+def calc_centroid(
+    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
+) -> NDArray[np.uint8]:
+    """Calculates centroid
+
+    Parameters
+    ----------
+
+    linear_sum : np.ndarray
+                 Sum of the elements column-wise
+    n_samples : int
+                Number of samples
+    pack : bool
+        Whether to pack the resulting fingerprints
+
+    Returns
+    -------
+    centroid : np.ndarray[np.uint8]
+               Centroid fingerprints of the given set
+    """
+    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
+    # so this view is fully safe
+    if n_samples <= 1:
+        centroid = linear_sum.astype(np.uint8, copy=False)
+    else:
+        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
+    if pack:
+        return np.packbits(centroid, axis=-1)
+    return centroid
 
 
 # Requires numpy >= 2.0
