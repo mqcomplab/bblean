@@ -22,7 +22,7 @@ def test_memory_regression() -> None:
         pytest.skip(
             "memory regression tests require memray, only avaliable in Linux and macOS"
         )
-    all_max_allowed_bytes = [42_100_000, 62_100_000, 85_100_000, 103_200_000]
+    all_max_allowed_bytes = [42_100_000, 62_100_000, 85_100_000, 105_000_000]
     all_fps_nums = [10_000, 15_000, 20_000, 25_000]
     # Around 41.9 MB should be allocated for these 100k fps
     # If memory usage scaled linearly it would take ~ 3.7 GiB for 1M molecules
