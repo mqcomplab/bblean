@@ -227,8 +227,10 @@ def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
     # Make sure node1 and node2 are closest to themselves, even if all sims are equal.
     # This can only happen when all node.packed_centroids are duplicates leading to all
     # distances between centroids being zero.
+
+    # TODO: Currently this behavior is buggy, seems like in some cases one of the
+    # subclusters may *never* get updated, double check this logic
     node1_closer[separated_idxs[0]] = True
-    node1_closer[separated_idxs[1]] = False
     subclusters = node._subclusters.copy()  # Shallow copy
     node._subclusters = []  # Reset the node
     for idx, subcluster in enumerate(subclusters):

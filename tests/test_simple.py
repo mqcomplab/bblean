@@ -4,6 +4,8 @@ import numpy as np
 from bblean.bitbirch import BitBirch  # type: ignore
 from bblean.fingerprints import pack_fingerprints
 
+# NOTE: Results on this file don't depend on branching factor / threshold
+
 
 def test_bb_lean_defaults() -> None:
     tree = BitBirch()
