@@ -56,7 +56,6 @@ def test_memory_regression(subtests) -> None:
 
 # NOTE: This test is pretty fragile and may fail if CI machines change
 def test_speed_regression(subtests) -> None:
-    all_max_allowed_ns = [1_200_000_000, 1_900_000_000, 2_500_000_000]
     all_fps_nums = [10_000, 15_000, 20_000]
     # Fitting 15_000 fps should take ~ 1.15-1.00s or less:
     # - py3.11
@@ -64,6 +63,10 @@ def test_speed_regression(subtests) -> None:
     # - ubuntu-24.04
     # - GLIBC 2.39
     # - AMD Ryzen 5 7535HS
+    # For this system the following values are sufficient:
+    # all_max_allowed_ns = [1_200_000_000, 1_900_000_000, 2_500_000_000]
+    # For the ubuntu-24.04 in gh CI the following are required:
+    all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_600_000_000]
     for fps_num, max_allowed_ns in zip(all_fps_nums, all_max_allowed_ns):
         with subtests.test(fps_num=fps_num):
             fps = make_fake_fingerprints(fps_num, seed=4068791011890883085)
