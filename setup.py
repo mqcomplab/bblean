@@ -19,6 +19,7 @@ ext_modules = [
         include_dirs=[pybind11.get_include()],
         language="c++",
         # TODO: Check how to optimize flags
+        # NOTE: Compile with -DDEBUG_LOGS=1 to get some debug info from the extensions
         extra_compile_args=[
             "-O3",
             "-std=c++17",
