@@ -14,10 +14,11 @@ name = pyproject["project"]["name"]
 ext_sources = [str((Path(name) / "csrc" / "similarity.cpp"))]
 ext_modules = [
     setuptools.Extension(
-        ".".join((name, "cpp_similarity")),
+        ".".join((name, "_cpp_similarity")),
         ext_sources,
         include_dirs=[pybind11.get_include()],
         language="c++",
+        # TODO: Check how to optimize flags
         extra_compile_args=[
             "-O3",
             "-std=c++17",
