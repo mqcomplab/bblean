@@ -57,6 +57,7 @@ from weakref import WeakSet
 import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
+from bblean._memory import _mmap_file_and_madvise_sequential, _ArrayMemPagesManager
 from bblean._merges import get_merge_accept_fn, MergeAcceptFunction
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import pack_fingerprints, unpack_fingerprints, calc_centroid
@@ -700,6 +701,32 @@ class BitBirch:
         self
             Fitted estimator.
         """
+        return self._fit(X, reinsert_indices, input_is_packed, n_features)
+
+    def fit_file(
+        self,
+        path: Path | str,
+        reinsert_indices: tp.Iterable[int] | None = None,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+        max_fps: int | None = None,
+    ) -> tpx.Self:
+        return self._fit(
+            _mmap_file_and_madvise_sequential(Path(path), max_fps=max_fps),
+            reinsert_indices,
+            input_is_packed,
+            n_features,
+            _try_release_array_mem_after_iteration=True,
+        )
+
+    def _fit(
+        self,
+        X: _Input,
+        reinsert_indices: tp.Iterable[int] | None = None,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+        _try_release_array_mem_after_iteration: bool = False,
+    ) -> tpx.Self:
         n_features = _validate_n_features(X, input_is_packed, n_features)
         # Start a new tree the first time this function is called
         if not self.is_init:
@@ -719,6 +746,9 @@ class BitBirch:
         threshold = self._threshold
         branching_factor = self._branching_factor
         merge_accept_fn = self._merge_accept_fn
+
+        mmanager = _ArrayMemPagesManager.from_array(X)
+        arr_idx = 0
         for idx, fp in iterable:
             subcluster = _BFSubcluster(
                 linear_sum=fp, mol_indices=[idx], n_features=n_features
@@ -732,7 +762,11 @@ class BitBirch:
                 self._root = _BFNode(branching_factor, n_features)
                 self._root.append_subcluster(new_subcluster1)
                 self._root.append_subcluster(new_subcluster2)
+
             self._num_fitted_fps += 1
+            arr_idx += 1
+            if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
+                mmanager.release_curr_page_and_update_addr()
         return self
 
     def _fit_np(

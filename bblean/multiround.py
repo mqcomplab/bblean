@@ -169,6 +169,13 @@ class _InitialRound:
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
         )
+        # TODO: It is possible to use madvise here, similarly to fit_file() It is
+        # *not easy* though. Maybe best would be to invalidate the mmap completely and
+        # re-map the biggest cluster to memory in order to refine
+        # Unfortunately if the cluster is *very scattered*, then most of the file
+        # may end up being loaded into memory anyways (1 pg = 4096 b, 1 fp = 256 b)
+        # so if the cluster is ~ 6.25 % of the data, assuming it is distributed randomly
+        # in id-space, most of the array will be loaded again.
         range_ = range(start_idx, end_idx)
         brc_init.fit(
             fps,
@@ -229,6 +236,7 @@ class _TreeMergingRound:
             merge_criterion="tolerance",
             tolerance=self.tolerance,
         )
+        # TODO: It is possible to use madvise here, similarly to fit_file()
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
         for buf_path, idx_path in batch_path_pairs:
             bufs, mol_idxs = _load_bufs_and_mol_idxs(buf_path, idx_path, self.use_mmap)

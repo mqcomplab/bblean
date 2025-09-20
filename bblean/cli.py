@@ -306,8 +306,20 @@ def _run(
         )
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         for file in input_files:
-            fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
-            tree.fit(fps, n_features=n_features, input_is_packed=input_is_packed)
+            if use_mmap:
+                # fit_file uses mmap internally, and releases memory in a smart way
+                tree.fit_file(
+                    file,
+                    n_features=n_features,
+                    input_is_packed=input_is_packed,
+                    max_fps=max_fps,
+                )
+            else:
+                tree.fit(
+                    np.load(file)[:max_fps],
+                    n_features=n_features,
+                    input_is_packed=input_is_packed,
+                )
 
         # TODO: Fix peak memory stats
         cluster_mol_ids = tree.get_cluster_mol_ids()
