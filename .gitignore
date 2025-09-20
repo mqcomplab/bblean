@@ -60,6 +60,7 @@ nohup.out
 
 # py-spy profile files
 profile.svg
+profile_output.*
 
 # Outputs / inputs
 *.npy
