@@ -171,7 +171,7 @@ class _InitialRound:
         if self.double_cluster_init:
             # Rebuild the tree again, reinserting the fps from the largest cluster
             tree.reset()
-            tree.set_merge(merge_criterion="tolernace", tolerance=self.tolerance)
+            tree.set_merge(merge_criterion="tolerance", tolerance=self.tolerance)
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
                 tree._fit_np(bufs, reinsert_index_seqs=mol_idxs)
             fps_bfs, mols_bfs = tree._bf_to_np()
