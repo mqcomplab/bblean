@@ -83,8 +83,12 @@ class BBConsole(Console):
         bb_variant = config.get("bitbirch_variant", "lean")
         max_files = config.get("max_files", None)
         max_fps = config.get("max_fps", None)
+        if config["refine_num"] > 0:
+            self.print(
+                f"- Will Refine largest {config['refine_num']} clusters\n", end=""
+            )
         if "tolerance" in config["merge_criterion"]:
-            self.print(f"- Tolerance: {config['tolerance']}\n")
+            self.print(f"- Tolerance: {config['tolerance']}\n", end="")
         if bb_variant != "lean":
             self.print(
                 "- [bold]DEBUG:[/bold] Using bitbirch version: {variant}\n", end=""

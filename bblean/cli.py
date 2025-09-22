@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import typing_extensions as tpx
 import typing as tp
 import math
 import shutil
@@ -183,6 +184,17 @@ def _run(
             help="BitBIRCH tolerance, only for --set-merge tolerance|tolerance_tough"
         ),
     ] = DEFAULTS.tolerance,
+    refine_num: tpx.Annotated[
+        int,
+        Option(
+            "-r",
+            "--refine-num",
+            help=(
+                "Num. of largest clusters to refine."
+                " '-r' 1 for standard refinement, '-r' 0 is the default (no refinement)"
+            ),
+        ),
+    ] = 0,
     use_mmap: Annotated[
         bool,
         Option(
@@ -321,6 +333,10 @@ def _run(
                     input_is_packed=input_is_packed,
                 )
 
+        if refine_num > 0:
+            tree.refine_inplace(
+                fps, input_is_packed=input_is_packed, n_largest=refine_num
+            )
         # TODO: Fix peak memory stats
         cluster_mol_ids = tree.get_cluster_mol_ids()
     timer.end_timing("total", console, indent=False)
