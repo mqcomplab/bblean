@@ -96,14 +96,28 @@ def _get_prev_round_buf_and_mol_idxs_files(
     return list(zip(buf_files, idx_files))
 
 
+def _sort_batch(b: tp.Sequence[tuple[Path, Path]]) -> tuple[tuple[Path, Path], ...]:
+    return tuple(
+        sorted(
+            b,
+            key=lambda b: int(b[0].name.split("uint")[-1].split(".")[0]),
+            reverse=True,
+        )
+    )
+
+
 def _chunk_file_pairs_in_batches(
     file_pairs: tp.Sequence[tuple[Path, Path]],
     bin_size: int,
     console: Console | None = None,
 ) -> list[tuple[str, tuple[tuple[Path, Path], ...]]]:
     z = len(str(math.ceil(len(file_pairs) / bin_size)))
+    # Within each batch, sort the files by starting with the uint16 files, followed by
+    # uint8 files, this helps that (approximately) the largest clusters are fitted first
+    # which may improve final cluster quality
     batches = [
-        (str(i).zfill(z), b) for i, b in enumerate(batched(file_pairs, bin_size))
+        (str(i).zfill(z), _sort_batch(b))
+        for i, b in enumerate(batched(file_pairs, bin_size))
     ]
     if console is not None:
         console.print(f"    - Chunked files into {len(batches)} batches")
