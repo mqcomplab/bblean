@@ -670,10 +670,12 @@ class BitBirch:
 
     def fit(
         self,
-        X: _Input,
+        X: _Input | Path | str,
+        /,
         reinsert_indices: tp.Iterable[int] | None = None,
         input_is_packed: bool = True,
         n_features: int | None = None,
+        max_fps: int | None = None,
     ) -> tpx.Self:
         r"""Build a BF Tree for the input data.
 
@@ -701,32 +703,13 @@ class BitBirch:
         self
             Fitted estimator.
         """
-        return self._fit(X, reinsert_indices, input_is_packed, n_features)
+        if isinstance(X, (Path, str)):
+            X = _mmap_file_and_madvise_sequential(Path(X), max_fps=max_fps)
+            mmanager = _ArrayMemPagesManager.from_bb_input(X)
+        else:
+            X = X[:max_fps]
+            mmanager = _ArrayMemPagesManager.from_bb_input(X, can_release=False)
 
-    def fit_file(
-        self,
-        path: Path | str,
-        reinsert_indices: tp.Iterable[int] | None = None,
-        input_is_packed: bool = True,
-        n_features: int | None = None,
-        max_fps: int | None = None,
-    ) -> tpx.Self:
-        return self._fit(
-            _mmap_file_and_madvise_sequential(Path(path), max_fps=max_fps),
-            reinsert_indices,
-            input_is_packed,
-            n_features,
-            _try_release_array_mem_after_iteration=True,
-        )
-
-    def _fit(
-        self,
-        X: _Input,
-        reinsert_indices: tp.Iterable[int] | None = None,
-        input_is_packed: bool = True,
-        n_features: int | None = None,
-        _try_release_array_mem_after_iteration: bool = False,
-    ) -> tpx.Self:
         n_features = _validate_n_features(X, input_is_packed, n_features)
         # Start a new tree the first time this function is called
         if not self.is_init:
@@ -747,7 +730,6 @@ class BitBirch:
         branching_factor = self._branching_factor
         merge_accept_fn = self._merge_accept_fn
 
-        mmanager = _ArrayMemPagesManager.from_array(X)
         arr_idx = 0
         for idx, fp in iterable:
             subcluster = _BFSubcluster(
@@ -771,8 +753,8 @@ class BitBirch:
 
     def _fit_np(
         self,
-        X: _Input,
-        reinsert_index_sequences: tp.Iterable[tp.Sequence[int]] | None = None,
+        X: _Input | Path | str,
+        reinsert_index_seqs: tp.Iterable[tp.Sequence[int]] | None = None,
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
@@ -781,8 +763,8 @@ class BitBirch:
             - buffer[-1] = n_samples
         And X is either an array or a list of such buffers
 
-        if `reinsert_index_sequences` is passed, X corresponds only to the buffers to be
-        reinserted into the tree, and `reinsert_index_sequences` are the sequences
+        if `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
+        reinserted into the tree, and `reinsert_index_seqs` are the sequences
         of indices associated with such buffers.
 
         Parameters
@@ -795,6 +777,12 @@ class BitBirch:
         self
             Fitted estimator.
         """
+        if isinstance(X, (Path, str)):
+            X = _mmap_file_and_madvise_sequential(Path(X))
+            mmanager = _ArrayMemPagesManager.from_bb_input(X)
+        else:
+            mmanager = _ArrayMemPagesManager.from_bb_input(X, can_release=False)
+
         n_features = _validate_n_features(X, input_is_packed=False) - 1
         # Start a new tree the first time this function is called
         if not self.is_init:
@@ -808,10 +796,11 @@ class BitBirch:
         threshold = self._threshold
         branching_factor = self._branching_factor
         idx_provider: tp.Iterable[tp.Sequence[int]]
-        if reinsert_index_sequences is None:
+        arr_idx = 0
+        if reinsert_index_seqs is None:
             idx_provider = ([idx] for idx in range(self.num_fitted_fps))
         else:
-            idx_provider = reinsert_index_sequences
+            idx_provider = reinsert_index_seqs
         for idxs, buf in zip(idx_provider, arr_iterable):
             subcluster = _BFSubcluster(
                 buffer=buf, mol_indices=idxs, n_features=n_features
@@ -825,18 +814,22 @@ class BitBirch:
                 self._root.append_subcluster(new_subcluster1)
                 self._root.append_subcluster(new_subcluster2)
             self._num_fitted_fps += len(idxs)
+            arr_idx += 1
+            if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
+                mmanager.release_curr_page_and_update_addr()
         return self
 
     # Provided for backwards compatibility
     def fit_reinsert(
         self,
-        X: _Input,
+        X: _Input | Path | str,
         reinsert_indices: tp.Iterable[int],
         input_is_packed: bool = True,
         n_features: int | None = None,
+        max_fps: int | None = None,
     ) -> tpx.Self:
         r""":meta private:"""
-        return self.fit(X, reinsert_indices, input_is_packed, n_features)
+        return self.fit(X, reinsert_indices, input_is_packed, n_features, max_fps)
 
     def _initialize_tree(self, n_features: int) -> None:
         # Initialize the root (and a dummy node to get back the subclusters
@@ -935,7 +928,7 @@ class BitBirch:
 
     def refine_inplace(
         self,
-        X: _Input,
+        X: _Input | Path | str,
         initial_mol: int = 0,
         input_is_packed: bool = True,
         n_largest: int = 1,
@@ -954,7 +947,7 @@ class BitBirch:
 
         # Rebuild the tree again from scratch, reinserting all the subclusters
         for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-            self._fit_np(bufs, reinsert_index_sequences=mol_idxs)
+            self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
         return self
 
     def _get_bfs(self, sort: bool = True) -> list[_BFSubcluster]:
@@ -969,7 +962,7 @@ class BitBirch:
 
     def _bf_to_np_refine(
         self,
-        X: _Input,
+        X: _Input | Path | str,
         initial_mol: int = 0,
         input_is_packed: bool = True,
         n_largest: int = 1,
@@ -1001,10 +994,21 @@ class BitBirch:
             )
         else:
             unpack_or_copy = lambda x: x.copy()
+
         for big_bf in largest:
-            for mol_idx in big_bf.mol_indices:
-                # NOTE: cast seems to have a very small overhead here for some reason
-                fp = unpack_or_copy(X[mol_idx - initial_mol])
+            mol_idxs = [(idx - initial_mol) for idx in big_bf.mol_indices]
+            _X: _Input
+            if isinstance(X, (Path, str)):
+                # Only load the specific required mol idxs
+                _X = cast(NDArray[np.integer], np.load(X, mmap_mode="r"))[mol_idxs]
+                arr_idxs = list(range(len(_X)))
+            else:
+                # Index the full array / list
+                _X = X
+                arr_idxs = mol_idxs
+
+            for mol_idx, arr_idx in zip(mol_idxs, arr_idxs):
+                fp = unpack_or_copy(_X[arr_idx])
                 buffer = np.empty(fp.shape[0] + 1, dtype=np.uint8)
                 buffer[:-1] = fp
                 buffer[-1] = 1

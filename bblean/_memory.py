@@ -85,7 +85,7 @@ class _ArrayMemPagesManager:
     _curr_page_start_addr: int
 
     @classmethod
-    def from_array(cls, X: _Input) -> tpx.Self:
+    def from_bb_input(cls, X: _Input, can_release: bool | None = None) -> tpx.Self:
         pagesizex = mmap.PAGESIZE * 512
         if (
             isinstance(X, np.memmap)
@@ -97,12 +97,14 @@ class _ArrayMemPagesManager:
             # Every n_iters, release the prev page and add pagesizex to start_addr
             iters_per_pagex = int(pagesizex / X.shape[1])  # ~ 8192 iterations
             curr_page_start_addr = X.ctypes.data - X.offset
-            can_release = True
+            _can_release = True
         else:
             iters_per_pagex = 0
             curr_page_start_addr = 0
-            can_release = False
-        return cls(can_release, pagesizex, iters_per_pagex, curr_page_start_addr)
+            _can_release = False
+        if can_release is not None:
+            _can_release = can_release
+        return cls(_can_release, pagesizex, iters_per_pagex, curr_page_start_addr)
 
     def should_release_curr_page(self, row_idx: int) -> bool:
         return row_idx % self._iters_per_pagex == 0
