@@ -828,7 +828,7 @@ class BitBirch:
         centroids = []
         mol_ids = []
         attr = "packed_centroid" if packed else "unpacked_centroid"
-        for subcluster in self._get_BFs(sort=sort):
+        for subcluster in self._get_bfs(sort=sort):
             centroids.append(getattr(subcluster, attr))
             mol_ids.append(subcluster.mol_indices)
         return {"centroids": centroids, "mol_ids": mol_ids}
@@ -842,13 +842,13 @@ class BitBirch:
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         attr = "packed_centroid" if packed else "unpacked_centroid"
-        return [getattr(s, attr) for s in self._get_BFs(sort=sort)]
+        return [getattr(s, attr) for s in self._get_bfs(sort=sort)]
 
     def get_cluster_mol_ids(self, sort: bool = True) -> list[list[int]]:
         r"""Get the indices of the molecules in each cluster"""
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
-        return [s.mol_indices for s in self._get_BFs(sort=sort)]
+        return [s.mol_indices for s in self._get_bfs(sort=sort)]
 
     def get_assignments(self, n_mols: int | None = None) -> NDArray[np.uint64]:
         r"""Get an array with the cluster labels associated with each fingerprint idx"""
@@ -904,12 +904,16 @@ class BitBirch:
         X: _Input,
         initial_mol: int = 0,
         input_is_packed: bool = True,
+        n_largest: int = 1,
     ) -> tpx.Self:
-        r"""Refine the tree: break the largest cluster in singletons and re-fit"""
+        r"""Refine the tree: break the largest clusters in singletons and re-fit"""
         # Extract the BitFeatures of the leaves, breaking the largest cluster apart into
         # singleton subclusters
         fps_bfs, mols_bfs = self._bf_to_np_refine(
-            X, initial_mol=initial_mol, input_is_packed=input_is_packed
+            X,
+            initial_mol=initial_mol,
+            input_is_packed=input_is_packed,
+            n_largest=n_largest,
         )
         # Reset the tree
         self.reset()
@@ -919,7 +923,7 @@ class BitBirch:
             self._fit_np(bufs, reinsert_index_sequences=mol_idxs)
         return self
 
-    def _get_BFs(self, sort: bool = True) -> list[_BFSubcluster]:
+    def _get_bfs(self, sort: bool = True) -> list[_BFSubcluster]:
         r"""Get the BitFeatures of the leaves"""
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
@@ -934,22 +938,27 @@ class BitBirch:
         X: _Input,
         initial_mol: int = 0,
         input_is_packed: bool = True,
+        n_largest: int = 1,
     ) -> tuple[dict[str, list[NDArray[np.integer]]], dict[str, list[list[int]]]]:
-        """Prepare numpy buffers ('np') for BitFeatures, splitting the biggest cluster
+        """Prepare numpy bufs ('np') for BitFeatures, splitting the biggest n clusters
 
-        The largest cluster is split into singletons. In order to perform this split,
-        the original fingerprint array used to fit the tree (X) has to be provided,
+        The largest clusters are split into singletons. In order to perform this split,
+        the *original* fingerprint array used to fit the tree (X) has to be provided,
         together with the index associated with the first fingerprint.
 
-        The split is only performed for the returned 'np' buffers, the cluster in the
-        tree itself is not modified
+        The split is only performed for the returned 'np' buffers, the clusters in the
+        tree itself are not modified
         """
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
+        if n_largest < 1:
+            raise ValueError("n_largest must be >= 1")
 
-        BFs = self._get_BFs()
-        big, rest = BFs[0], BFs[1:]
-        n_features = big.n_features
+        bfs = self._get_bfs()
+        largest = bfs[:n_largest]
+        rest = bfs[n_largest:]
+        n_features = largest[0].n_features
+
         dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_buffer_dicts(rest)
         # Add X and mol indices of the "big" cluster
         if input_is_packed:
@@ -958,14 +967,15 @@ class BitBirch:
             )
         else:
             unpack_or_copy = lambda x: x.copy()
-        for mol_idx in big.mol_indices:
-            # NOTE: cast seems to have a very small overhead here for some reason
-            fp = unpack_or_copy(X[mol_idx - initial_mol])
-            buffer = np.empty(fp.shape[0] + 1, dtype=np.uint8)
-            buffer[:-1] = fp
-            buffer[-1] = 1
-            dtypes_to_fp["uint8"].append(buffer)
-            dtypes_to_mols["uint8"].append([mol_idx])
+        for big_bf in largest:
+            for mol_idx in big_bf.mol_indices:
+                # NOTE: cast seems to have a very small overhead here for some reason
+                fp = unpack_or_copy(X[mol_idx - initial_mol])
+                buffer = np.empty(fp.shape[0] + 1, dtype=np.uint8)
+                buffer[:-1] = fp
+                buffer[-1] = 1
+                dtypes_to_fp["uint8"].append(buffer)
+                dtypes_to_mols["uint8"].append([mol_idx])
         return dtypes_to_fp, dtypes_to_mols
 
     def _bf_to_np(
@@ -974,7 +984,7 @@ class BitBirch:
         """Prepare numpy buffers ('np') for BitFeatures of all clusters"""
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
-        return self._prepare_bf_to_buffer_dicts(self._get_BFs())
+        return self._prepare_bf_to_buffer_dicts(self._get_bfs())
 
     @staticmethod
     def _prepare_bf_to_buffer_dicts(
