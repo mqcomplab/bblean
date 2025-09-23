@@ -838,3 +838,55 @@ def _split_fps(
             name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
             np.save(out_dir / name, batch)
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
+
+
+@app.command("clone-dir")
+def _clone_dir(
+    source_dir: Annotated[
+        Path,
+        Argument(help="Source directory to clone"),
+    ],
+    dest_dir: Annotated[
+        Path,
+        Argument(help="Destination directory path for the clone"),
+    ],
+    overwrite: Annotated[bool, Option(help="Allow overwriting destination directory")] = False,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+) -> None:
+    """Clone a directory and its contents to a new location"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    
+    # Validate source directory
+    if not source_dir.exists():
+        console.print(f"Source directory {source_dir} does not exist", style="red")
+        raise Abort()
+    
+    if not source_dir.is_dir():
+        console.print(f"Source path {source_dir} is not a directory", style="red")
+        raise Abort()
+    
+    # Validate destination
+    if dest_dir.exists():
+        if not overwrite:
+            console.print(f"Destination directory {dest_dir} already exists. Use --overwrite to replace it", style="red")
+            raise Abort()
+        elif dest_dir.is_file():
+            console.print(f"Destination path {dest_dir} exists and is a file, not a directory", style="red")
+            raise Abort()
+        else:
+            # Remove existing directory if overwrite is enabled
+            shutil.rmtree(dest_dir)
+    
+    # Create parent directories if needed
+    dest_dir.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Clone the directory
+    with console.status(f"[italic]Cloning {source_dir} to {dest_dir}...[/italic]", spinner="dots"):
+        shutil.copytree(source_dir, dest_dir)
+    
+    console.print(f"Successfully cloned directory from {source_dir} to {dest_dir}", style="green")
