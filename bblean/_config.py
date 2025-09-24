@@ -22,7 +22,6 @@ class BitBirchConfig:
     merge_criterion: str = "diameter"
     tolerance: float = 0.05
     n_features: int = 2048
-    use_mmap: bool = True
     fp_kind: str = "ecfp4"
 
 

@@ -1,6 +1,7 @@
 r"""Optimized molecular similarity calculators"""
 
 import warnings
+
 # NOTE: The most expensive calculation is *jt_sim_packed*, followed by _popcount_2d,
 # calc_centroid, packing and unpacking
 # TODO: Packing and unpacking *should be done in C++ using a lookup table*

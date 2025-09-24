@@ -76,7 +76,6 @@ class BBConsole(Console):
                 f"- Threshold: {config['threshold']}\n"
                 f"- Num. files loaded: {len(config['input_files']):,}\n"
                 f"- Num. fingerprints loaded for each file: {num_fps_str}\n"
-                f"- Use mmap: {config['use_mmap']}\n"
                 f"- Output directory: {config['out_dir']}\n",
                 end="",
             )
@@ -122,7 +121,6 @@ class BBConsole(Console):
                 f"- Tolerance: {config['tolerance']}\n"
                 f"- Num. files loaded: {len(config['input_files']):,}\n"
                 f"- Num. fingerprints loaded for each file: {num_fps_str}\n"
-                f"- Use mmap: {config['use_mmap']}\n"
                 f"- Output directory: {config['out_dir']}\n",
                 end="",
             )

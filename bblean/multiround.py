@@ -124,15 +124,6 @@ def _chunk_file_pairs_in_batches(
     return batches
 
 
-def _load_bufs_and_mol_idxs(
-    buf_path: Path, idx_path: Path, use_mmap: bool = True
-) -> tuple[NDArray[tp.Any], tp.Any]:
-    bufs = np.load(buf_path, mmap_mode="r" if use_mmap else None)
-    with open(idx_path, "rb") as f:
-        mol_idxs = pickle.load(f)
-    return bufs, mol_idxs
-
-
 def _save_bufs_and_mol_idxs(
     out_dir: Path,
     fps_bfs: dict[str, tp.Any],
@@ -157,7 +148,6 @@ class _InitialRound:
         out_dir: Path | str,
         n_features: int | None = None,
         max_fps: int | None = None,
-        use_mmap: bool = True,
         merge_criterion: str = "diameter",
         input_is_packed: bool = True,
     ) -> None:
@@ -168,51 +158,39 @@ class _InitialRound:
         self.tolerance = tolerance
         self.out_dir = Path(out_dir)
         self.max_fps = max_fps
-        self.use_mmap = use_mmap
         self.merge_criterion = merge_criterion
         self.input_is_packed = input_is_packed
 
     def __call__(self, file_info: tuple[str, Path, int, int]) -> None:
         file_label, fp_file, start_idx, end_idx = file_info
-        fps = np.load(fp_file, mmap_mode="r" if self.use_mmap else None)[: self.max_fps]
 
         # First fit the fps in each process, in parallel.
         # `reinsert_indices` required to keep track of mol idxs in different processes.
-        brc_init = BitBirch(
+        tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
         )
         range_ = range(start_idx, end_idx)
-        brc_init.fit(
-            fps,
+        tree.fit(
+            fp_file,
             reinsert_indices=range_,
             n_features=self.n_features,
             input_is_packed=self.input_is_packed,
+            max_fps=self.max_fps,
         )
-        # Extract the BitFeatures of the leaves, breaking the largest cluster apart
-        fps_bfs, mols_bfs = brc_init._bf_to_np_refine(fps, initial_mol=start_idx)
-        del fps
-        del brc_init
-        gc.collect()
+        # Extract the BitFeatures of the leaves, breaking the largest cluster(s) apart
+        fps_bfs, mols_bfs = tree._bf_to_np_refine(fp_file, initial_mol=start_idx)
 
         if self.double_cluster_init:
             # Rebuild the tree again, reinserting the fps from the largest cluster
-            brc_tolerance = BitBirch(
-                branching_factor=self.branching_factor,
-                threshold=self.threshold,
-                merge_criterion="tolerance",
-                tolerance=self.tolerance,
-            )
+            tree.reset()
+            tree.set_merge(merge_criterion="tolerance", tolerance=self.tolerance)
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                brc_tolerance._fit_np(
-                    bufs,
-                    reinsert_index_sequences=mol_idxs,
-                )
-            fps_bfs, mols_bfs = brc_tolerance._bf_to_np()
-            del brc_tolerance
-            gc.collect()
-
+                tree._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+            fps_bfs, mols_bfs = tree._bf_to_np()
+        del tree
+        gc.collect()
         _save_bufs_and_mol_idxs(self.out_dir, fps_bfs, mols_bfs, file_label, 1)
 
 
@@ -224,7 +202,6 @@ class _TreeMergingRound:
         tolerance: float,
         round_idx: int,
         out_dir: Path | str,
-        use_mmap: bool = True,
         is_final: bool = False,
     ) -> None:
         self.branching_factor = branching_factor
@@ -232,12 +209,11 @@ class _TreeMergingRound:
         self.tolerance = tolerance
         self.round_idx = round_idx
         self.out_dir = Path(out_dir)
-        self.use_mmap = use_mmap
         self.is_final = is_final
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_label, batch_path_pairs = batch_info
-        brc_merger = BitBirch(
+        tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
             merge_criterion="tolerance",
@@ -245,27 +221,27 @@ class _TreeMergingRound:
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
         for buf_path, idx_path in batch_path_pairs:
-            bufs, mol_idxs = _load_bufs_and_mol_idxs(buf_path, idx_path, self.use_mmap)
-            brc_merger._fit_np(bufs, reinsert_index_sequences=mol_idxs)
+            with open(idx_path, "rb") as f:
+                mol_idxs = pickle.load(f)
+            tree._fit_np(buf_path, reinsert_index_seqs=mol_idxs)
             del mol_idxs
-            del bufs
             gc.collect()
 
         # If this this is the final round save the clusters and exit
         # In this case self.round_idx and batch_label are unused
         if self.is_final:
-            cluster_mol_ids = brc_merger.get_cluster_mol_ids()
-            del brc_merger
+            cluster_mol_ids = tree.get_cluster_mol_ids()
+            del tree
             gc.collect()
             with open(self.out_dir / "clusters.pkl", mode="wb") as f:
                 pickle.dump(cluster_mol_ids, f)
             return
 
+        # TODO: A refinement step here would be a good idea
         # Otherwise fetch and save the bufs and idxs for the next round
-        fps_bfs, mols_bfs = brc_merger._bf_to_np()
-        del brc_merger
+        fps_bfs, mols_bfs = tree._bf_to_np()
+        del tree
         gc.collect()
-
         _save_bufs_and_mol_idxs(
             self.out_dir, fps_bfs, mols_bfs, batch_label, self.round_idx
         )
@@ -308,7 +284,6 @@ def run_multiround_bitbirch(
     # Advanced
     num_midsection_rounds: int = 1,
     bin_size: int = 10,
-    use_mmap: bool = DEFAULTS.use_mmap,
     max_tasks_per_process: int = 1,
     double_cluster_init: bool = True,
     # Debug
@@ -339,7 +314,6 @@ def run_multiround_bitbirch(
         branching_factor=branching_factor,
         threshold=threshold,
         tolerance=tolerance,
-        use_mmap=use_mmap,
         out_dir=out_dir,
     )
     timer = Timer()

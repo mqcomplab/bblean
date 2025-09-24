@@ -12,7 +12,6 @@ import multiprocessing as mp
 from typing import Annotated
 from pathlib import Path
 
-import numpy as np
 from typer import Typer, Argument, Option, Abort, Context, Exit
 
 from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
@@ -80,10 +79,6 @@ def _summary_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
     smiles_path: Annotated[Path, Option("-s", "--smiles-path", show_default=False)],
-    use_mmap: Annotated[
-        bool,
-        Option("--use-mmap/--no-use-mmap"),
-    ] = True,
     title: Annotated[
         str | None,
         Option("--title"),
@@ -122,6 +117,7 @@ def _summary_plot(
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
         import matplotlib.pyplot as plt
+        import numpy as np
 
         from bblean.smiles import load_smiles
         from bblean.analysis import cluster_analysis
@@ -131,7 +127,7 @@ def _summary_plot(
             clusters_path = clusters_path / "clusters.pkl"
         with open(clusters_path, mode="rb") as f:
             clusters = pickle.load(f)
-        fps = np.load(fps_path, mmap_mode="r" if use_mmap else None)
+        fps = np.load(fps_path, mmap_mode="r")
         smiles = load_smiles(smiles_path)
         ca = cluster_analysis(
             clusters,
@@ -195,13 +191,6 @@ def _run(
             ),
         ),
     ] = 0,
-    use_mmap: Annotated[
-        bool,
-        Option(
-            help="Toggle mmap of the fingerprint files (True recommended)",
-            rich_help_panel="Advanced",
-        ),
-    ] = DEFAULTS.use_mmap,
     n_features: Annotated[
         int | None,
         Option(
@@ -259,7 +248,6 @@ def _run(
 ) -> None:
     r"""Run standard, serial BitBIRCH clustering over `*.npy` fingerprint files"""
     # TODO: Remove code duplication with multiround
-    import numpy as np
     from bblean._console import get_console
     from bblean.fingerprints import _get_fps_file_num
 
@@ -316,14 +304,17 @@ def _run(
             merge_criterion=merge_criterion,
             tolerance=tolerance,
         )
+    if len(input_files) > 0 and refine_num > 0:
+        console.print("Refine currently only supported for single files", style="red")
+        raise Abort()
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         for file in input_files:
-            fps = np.load(file, mmap_mode="r" if use_mmap else None)[:max_fps]
-            tree.fit(fps, n_features=n_features, input_is_packed=input_is_packed)
+            # Fitting a file uses mmap internally, and releases memory in a smart way
+            tree.fit(file, n_features, input_is_packed=input_is_packed, max_fps=max_fps)
 
         if refine_num > 0:
             tree.refine_inplace(
-                fps, input_is_packed=input_is_packed, n_largest=refine_num
+                file, input_is_packed=input_is_packed, n_largest=refine_num
             )
         # TODO: Fix peak memory stats
         cluster_mol_ids = tree.get_cluster_mol_ids()
@@ -434,13 +425,6 @@ def _multiround(
     max_tasks_per_process: Annotated[
         int, Option(help="Max tasks per process", rich_help_panel="Advanced")
     ] = 1,
-    use_mmap: Annotated[
-        bool,
-        Option(
-            help="Toggle mmap of the fingerprint files (True recommended)",
-            rich_help_panel="Advanced",
-        ),
-    ] = DEFAULTS.use_mmap,
     fork: Annotated[
         bool,
         Option(
@@ -557,7 +541,6 @@ def _multiround(
         tolerance=tolerance,
         # Advanced
         bin_size=bin_size,
-        use_mmap=use_mmap,
         max_tasks_per_process=max_tasks_per_process,
         double_cluster_init=double_cluster_init,
         # Debug
@@ -809,6 +792,7 @@ def _split_fps(
     number of parts (e.g. 10) `bb split-fps --num-parts 10 ./fps.npy --out-dir ./split`.
     """
     from bblean._console import get_console
+    import numpy as np
 
     console = get_console()
     if parts is not None and parts < 2:
