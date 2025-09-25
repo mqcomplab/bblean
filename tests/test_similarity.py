@@ -1,4 +1,3 @@
-from numpy.typing import NDArray
 import numpy as np
 import pytest
 
@@ -11,16 +10,6 @@ from bblean.fingerprints import (
     calc_centroid,
     unpack_fingerprints,
 )
-
-
-def csim_jt_most_dissimilar_packed(
-    Y: NDArray[np.uint8], n_features: int | None = None
-) -> tuple[np.integer, np.integer, NDArray[np.float64], NDArray[np.float64]]:
-    # Unpacking is done in python since Numpy's implementation is good enough,
-    # and its not worth it to redo it in C++
-    return csim.jt_most_dissimilar_packed_also_requiring_unpacked(
-        Y, unpack_fingerprints(Y, n_features)
-    )
 
 
 def test_jt_most_dissimilar_packed() -> None:
@@ -71,7 +60,7 @@ def test_jt_most_dissimilar_packed() -> None:
         idx2,
         sims1,
         sims2,
-    ) = csim_jt_most_dissimilar_packed(fps)
+    ) = csim.jt_most_dissimilar_packed(fps)
     assert idx1 == expect_idx1
     assert idx2 == expect_idx2
     assert np.isclose(sims1, expect_sims1).all()
@@ -102,12 +91,18 @@ def test_cpp_centroid() -> None:
 
 
 def test_cpp_unpacking() -> None:
-    fps = make_fake_fingerprints(
-        10, seed=17408390758220920002, pack=True, n_features=32, dtype=np.uint8
-    )
-    expect_unpacked = unpack_fingerprints(fps)
-    unpacked = csim._unpack_fingerprints_2d(fps)
-    assert (expect_unpacked == unpacked).all()
+    for seed in [
+        17493821988544178123,
+        4478748046060904849,
+        4727712347772598054,
+        15490537310413187550,
+    ]:
+        fps = make_fake_fingerprints(
+            10, seed=17408390758220920002, pack=True, n_features=2024, dtype=np.uint8
+        )
+        expect_unpacked = unpack_fingerprints(fps)
+        unpacked = csim._unpack_fingerprints_2d(fps)
+        assert (expect_unpacked == unpacked).all()
 
 
 def test_jt_sim_packed() -> None:

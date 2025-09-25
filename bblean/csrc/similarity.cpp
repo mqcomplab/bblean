@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <numeric>
@@ -40,7 +41,8 @@
 #error "Popcount not supported in target architecture"
 #endif
 
-// TODO: See if worth it to use vector popcount intrinsics (AVX-512, only some CPU)
+// TODO: See if worth it to use vector popcount intrinsics (AVX-512, only some
+// CPU)
 // TODO: Refactor this code to use a templated function with uint8_t / uint64_t
 // like jt_sim_packed
 namespace py = pybind11;
@@ -68,7 +70,8 @@ uint32_t _popcount_1d(const py::array_t<uint8_t>& arr) {
                      alignof(uint64_t)
               << std::endl;
 #endif
-    // Conversion between const void* and const std::uintptr_t requires reinterpret
+    // Conversion between const void* and const std::uintptr_t requires
+    // reinterpret
     if (reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) % alignof(uint64_t) ==
         0) {
 #ifdef DEBUG_LOGS
@@ -126,7 +129,8 @@ py::array_t<uint32_t> _popcount_2d(
                      alignof(uint64_t)
               << std::endl;
 #endif
-    // Conversion between const void* and const std::uintptr_t requires reinterpret
+    // Conversion between const void* and const std::uintptr_t requires
+    // reinterpret
     if (reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) % alignof(uint64_t) ==
         0) {
 #ifdef DEBUG_LOGS
@@ -161,41 +165,51 @@ py::array_t<uint32_t> _popcount_2d(
     }
     return out;
 }
-// TODO: This works but it is *extremely slow* so for now it is completely
-// avoided in the code and done in python instead
-// TODO: This *should be done using a lookup table*, which would be significantly faster
-py::array_t<uint8_t> _unpack_fingerprints_2d(
-    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>& a,
-    std::optional<py::ssize_t> n_features_opt) {
-    py::buffer_info a_buf = a.request();
-    if (a_buf.ndim != 2) {
-        throw std::runtime_error("Input array must be 2-dimensional");
-    }
-    py::ssize_t n_samples = a_buf.shape[0];
-    py::ssize_t n_bytes = a_buf.shape[1];
 
-    py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
-
-    auto result = py::array_t<uint8_t>({n_samples, n_features});
-    py::buffer_info res_buf = result.request();
-
-    auto a_ptr = static_cast<const uint8_t*>(a_buf.ptr);
-    auto res_ptr = static_cast<uint8_t*>(res_buf.ptr);
-
-    for (py::ssize_t i = 0; i < n_samples; ++i) {
-        const uint8_t* row_ptr = a_ptr + i * a_buf.strides[0];
-        for (py::ssize_t j = 0; j < n_bytes; ++j) {
-            uint8_t byte = row_ptr[j];
-            for (py::ssize_t k = 0; k < 8; ++k) {
-                py::ssize_t feature_idx = j * 8 + k;
-                if (feature_idx < n_features) {
-                    res_ptr[i * res_buf.strides[0] + feature_idx] =
-                        (byte >> (7 - k)) & 1;
-                }
-            }
+// The BitToByte table has shape (256, 8), and holds, for each
+// value in the range 0-255, a row with the 8 associated bits as uint8_t values
+constexpr std::array<std::array<uint8_t, 8>, 256> makeByteToBitsLookupTable() {
+    std::array<std::array<uint8_t, 8>, 256> byteToBits{};
+    for (int i{0}; i != 256; ++i) {
+        for (int b{0}; b != 8; ++b) {
+            // Shift right by b and, and fetch the least-significant-bit by
+            // and'ng with 1 = 000...1
+            byteToBits[i][7 - b] = (i >> b) & 1;
         }
     }
-    return result;
+    return byteToBits;
+}
+
+constexpr auto BYTE_TO_BITS = makeByteToBitsLookupTable();
+
+py::array_t<uint8_t> _unpack_fingerprints_2d(
+    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
+        packed_fps,
+    std::optional<py::ssize_t> n_features_opt) {
+    py::buffer_info in_bufinfo = packed_fps.request();
+    if (in_bufinfo.ndim != 2) {
+        throw std::runtime_error("Input array must be 2-dimensional");
+    }
+    py::ssize_t n_samples = in_bufinfo.shape[0];
+    py::ssize_t n_bytes = in_bufinfo.shape[1];
+    py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
+    if (n_features % 8 != 0) {
+        throw std::runtime_error("Only features divisible by 8 is supported");
+    }
+    auto out = py::array_t<uint8_t>({n_samples, n_features});
+    // Unchecked accessors (benchmarked and there is no real advantage to using
+    // ptrs)
+    auto acc_in = packed_fps.unchecked<2>();
+    auto acc_out = out.mutable_unchecked<2>();
+
+    for (py::ssize_t i = 0; i < n_samples; ++i) {
+        for (py::ssize_t j = 0; j < n_features; j += 8) {
+            // Copy the next 8 uint8 values in one go
+            std::memcpy(&acc_out(i, j), BYTE_TO_BITS[acc_in(i, j / 8)].data(),
+                        8);
+        }
+    }
+    return out;
 }
 
 py::array_t<uint8_t> _calc_centroid_packed_u8_from_u64(
@@ -361,19 +375,17 @@ py::array_t<double> jt_sim_packed(
     return out;
 }
 
-py::tuple jt_most_dissimilar_packed_also_requiring_unpacked(
+py::tuple jt_most_dissimilar_packed(
     py::array_t<uint8_t, py::array::c_style | py::array::forcecast> Y,
-    py::array_t<uint8_t, py::array::c_style | py::array::forcecast>
-        Y_unpacked) {
+    std::optional<py::ssize_t> n_features_opt) {
     py::buffer_info Y_buf = Y.request();
-    if (Y_buf.ndim != 2) {
-        throw std::runtime_error("Y must be a 2D array");
-    }
+    // No need to check for 2D array, this is checked by _unpack_fingerprints_2d
+    // already
+    auto Y_unpacked_buf = _unpack_fingerprints_2d(Y, n_features_opt).request();
+
     py::ssize_t n_samples = Y_buf.shape[0];
     py::ssize_t n_features_packed = Y_buf.shape[1];
     auto Y_ptr = static_cast<const uint8_t*>(Y_buf.ptr);
-
-    py::buffer_info Y_unpacked_buf = Y_unpacked.request();
     py::ssize_t n_features = Y_unpacked_buf.shape[1];
     auto Y_unpacked_ptr = static_cast<const uint8_t*>(Y_unpacked_buf.ptr);
 
@@ -442,9 +454,8 @@ PYBIND11_MODULE(_cpp_similarity, m) {
           py::arg("arr"), py::arg("vec"),
           py::arg("_cardinalities") = std::nullopt);
 
-    m.def("jt_most_dissimilar_packed_also_requiring_unpacked",
-          &jt_most_dissimilar_packed_also_requiring_unpacked,
+    m.def("jt_most_dissimilar_packed", &jt_most_dissimilar_packed,
           "Finds two fps in a packed fp array that are the most "
           "Tanimoto-dissimilar",
-          py::arg("Y"), py::arg("Y_unpacked"));
+          py::arg("Y"), py::arg("n_features") = std::nullopt);
 }
