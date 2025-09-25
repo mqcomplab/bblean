@@ -877,8 +877,12 @@ class BitBirch:
             raise ValueError("The model has not been fitted yet.")
         return [s.mol_indices for s in self._get_bfs(sort=sort)]
 
-    def get_assignments(self, n_mols: int | None = None) -> NDArray[np.uint64]:
+    def get_assignments(
+        self, n_mols: int | None = None, sort: bool = True, check_valid: bool = True
+    ) -> NDArray[np.uint64]:
         r"""Get an array with the cluster labels associated with each fingerprint idx"""
+        if not self.is_init:
+            raise ValueError("The model has not been fitted yet.")
         if n_mols is not None:
             warnings.warn("The n_mols argument is redundant", DeprecationWarning)
         if n_mols is not None and n_mols != self.num_fitted_fps:
@@ -886,16 +890,34 @@ class BitBirch:
                 f"Provided n_mols {n_mols} is different"
                 f" from the number of fitted fingerprints {self.num_fitted_fps}"
             )
-        clustered_ids = self.get_cluster_mol_ids()
-        assignments = np.full(self.num_fitted_fps, 0, dtype=np.uint64)
-        for i, cluster in enumerate(clustered_ids, 1):
-            assignments[cluster] = i
+
+        if check_valid:
+            assignments = np.full(self.num_fitted_fps, 0, dtype=np.uint64)
+        else:
+            assignments = np.empty(self.num_fitted_fps, dtype=np.uint64)
+
+        iterator: tp.Iterable[list[int]]
+        if sort:
+            iterator = self.get_cluster_mol_ids(sort=True)
+        else:
+            iterator = (
+                s.mol_indices for leaf in self._get_leaves() for s in leaf._subclusters
+            )
+        for i, mol_ids in enumerate(iterator, 1):
+            assignments[mol_ids] = i
+
         # Check that there are no unassigned molecules
-        if (assignments == 0).any():
+        if check_valid and (assignments == 0).any():
             raise ValueError("There are unasigned molecules")
         return assignments
 
-    def dump_assignments(self, path: Path | str, smiles: tp.Iterable[str] = ()) -> None:
+    def dump_assignments(
+        self,
+        path: Path | str,
+        smiles: tp.Iterable[str] = (),
+        sort: bool = True,
+        check_valid: bool = True,
+    ) -> None:
         r"""Dump the cluster assignments to a *.csv file"""
         import pandas as pd  # Hide pandas import since it is heavy
 
@@ -904,7 +926,7 @@ class BitBirch:
             smiles = [smiles]
         smiles = np.asarray(smiles, dtype=np.str_)
         # Dump cluster assignments to *.csv
-        assignments = self.get_assignments()
+        assignments = self.get_assignments(sort=sort, check_valid=check_valid)
         if smiles.size and (len(assignments) != len(smiles)):
             raise ValueError(
                 f"Len of the provided smiles {len(smiles)}"
@@ -917,7 +939,10 @@ class BitBirch:
         df.to_csv(path, index=False)
 
     def reset(self) -> None:
-        r"""Reset the tree state (does not reset the merge criterion)"""
+        r"""Reset the tree state
+
+        Delete all internal nodes and leafs, does not reset the merge criterion
+        """
         # Reset the whole tree
         if self._root is not None:
             self._root._prev_leaf = None
