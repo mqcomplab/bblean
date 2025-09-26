@@ -2,9 +2,13 @@ import numpy as np
 import pytest
 
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
-# _cpp_similarity are tested
+# _cpp_similarity are tested independently
 import bblean._py_similarity as pysim
-import bblean._cpp_similarity as csim
+
+try:
+    import bblean._cpp_similarity as csim
+except ImportError:
+    CSIM_AVAIL = False
 from bblean.fingerprints import (
     make_fake_fingerprints,
     calc_centroid,
@@ -54,19 +58,20 @@ def test_jt_most_dissimilar_packed() -> None:
     assert idx2 == expect_idx2
     assert np.isclose(sims1, expect_sims1).all()
     assert np.isclose(sims2, expect_sims2).all()
+    if CSIM_AVAIL:
+        (
+            idx1,
+            idx2,
+            sims1,
+            sims2,
+        ) = csim.jt_most_dissimilar_packed(fps)
+        assert idx1 == expect_idx1
+        assert idx2 == expect_idx2
+        assert np.isclose(sims1, expect_sims1).all()
+        assert np.isclose(sims2, expect_sims2).all()
 
-    (
-        idx1,
-        idx2,
-        sims1,
-        sims2,
-    ) = csim.jt_most_dissimilar_packed(fps)
-    assert idx1 == expect_idx1
-    assert idx2 == expect_idx2
-    assert np.isclose(sims1, expect_sims1).all()
-    assert np.isclose(sims2, expect_sims2).all()
 
-
+@pytest.mark.skipif(not CSIM_AVAIL, reason="Requires C++ extensions")
 def test_popcount_1d() -> None:
     fps_1d = make_fake_fingerprints(1, seed=17408390758220920002).reshape(-1)
     expect_1d = 1137
@@ -75,6 +80,7 @@ def test_popcount_1d() -> None:
     assert out == expect_1d
 
 
+@pytest.mark.skipif(not CSIM_AVAIL, reason="Requires C++ extensions")
 def test_popcount_2d() -> None:
     fps_2d = make_fake_fingerprints(10, seed=17408390758220920002)
     expect_2d = [1137, 124, 558, 1159, 281, 323, 1264, 1252, 879, 631]
@@ -83,6 +89,7 @@ def test_popcount_2d() -> None:
     assert out.tolist() == expect_2d
 
 
+@pytest.mark.skipif(not CSIM_AVAIL, reason="Requires C++ extensions")
 def test_cpp_centroid() -> None:
     fps = make_fake_fingerprints(10, seed=17408390758220920002, pack=False)
     centroid = csim._calc_centroid_packed_u8_from_u64(fps.sum(0), len(fps))
@@ -90,6 +97,7 @@ def test_cpp_centroid() -> None:
     assert (centroid == expect_centroid).all()
 
 
+@pytest.mark.skipif(not CSIM_AVAIL, reason="Requires C++ extensions")
 def test_cpp_unpacking() -> None:
     for seed in [
         17493821988544178123,
@@ -108,7 +116,6 @@ def test_cpp_unpacking() -> None:
 def test_jt_sim_packed() -> None:
     fps = make_fake_fingerprints(10, seed=17408390758220920002)
     first = fps[0]
-    out = csim.jt_sim_packed(fps, first)
     expect = np.array(
         [
             1.0,
@@ -124,15 +131,22 @@ def test_jt_sim_packed() -> None:
         ],
         dtype=np.float64,
     )
+    out = pysim.jt_sim_packed(fps, first)
     assert np.isclose(out, expect).all()
+    if CSIM_AVAIL:
+        out = csim.jt_sim_packed(fps, first)
+        assert np.isclose(out, expect).all()
 
 
 def test_jt_isim() -> None:
     fps = make_fake_fingerprints(100, seed=17408390758220920002, pack=False)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    s = csim.jt_isim(c_total, c_objects)
+    s = pysim.jt_isim(c_total, c_objects)
     assert s == 0.21824334501491158
+    if CSIM_AVAIL:
+        s = csim.jt_isim(c_total, c_objects)
+        assert s == 0.21824334501491158
 
 
 def test_jt_isim_disjoint() -> None:
@@ -141,28 +155,32 @@ def test_jt_isim_disjoint() -> None:
     fps = np.concatenate((fps, disjoint))
     c_total = fps.sum(0)
     c_objects = len(fps)
-    s = csim.jt_isim(c_total, c_objects)
-    assert s == 0.0
+    assert pysim.jt_isim(c_total, c_objects) == 0
+    if CSIM_AVAIL:
+        assert csim.jt_isim(c_total, c_objects) == 0
 
     fps = np.eye(2048, 2048, dtype=np.uint8)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    s = csim.jt_isim(c_total, c_objects)
-    assert s == 0.0
+    assert pysim.jt_isim(c_total, c_objects) == 0
+    if CSIM_AVAIL:
+        assert csim.jt_isim(c_total, c_objects) == 0
 
 
 def test_jt_isim_homogeneous() -> None:
     fps = np.zeros((100, 2048), dtype=np.uint8)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    s = csim.jt_isim(c_total, c_objects)
-    assert s == 1.0
+    assert pysim.jt_isim(c_total, c_objects) == 1.0
+    if CSIM_AVAIL:
+        assert csim.jt_isim(c_total, c_objects) == 1.0
 
     fps = np.ones((100, 2048), dtype=np.uint8)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    s = csim.jt_isim(c_total, c_objects)
-    assert s == 1.0
+    assert pysim.jt_isim(c_total, c_objects) == 1.0
+    if CSIM_AVAIL:
+        assert csim.jt_isim(c_total, c_objects) == 1.0
 
 
 def test_jt_isim_single() -> None:
@@ -170,4 +188,7 @@ def test_jt_isim_single() -> None:
     c_total = fps.sum(0)
     c_objects = len(fps)
     with pytest.warns(RuntimeWarning):
-        _ = csim.jt_isim(c_total, c_objects)
+        _ = pysim.jt_isim(c_total, c_objects)
+    if CSIM_AVAIL:
+        with pytest.warns(RuntimeWarning):
+            _ = csim.jt_isim(c_total, c_objects)
