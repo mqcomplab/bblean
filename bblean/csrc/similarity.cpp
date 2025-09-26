@@ -182,14 +182,35 @@ constexpr std::array<std::array<uint8_t, 8>, 256> makeByteToBitsLookupTable() {
 
 constexpr auto BYTE_TO_BITS = makeByteToBitsLookupTable();
 
-py::array_t<uint8_t> _unpack_fingerprints_2d(
+// TODO: Remove code duplication
+py::array_t<uint8_t> _nochecks_unpack_fingerprints_1d(
     const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
         packed_fps,
     std::optional<py::ssize_t> n_features_opt) {
     py::buffer_info in_bufinfo = packed_fps.request();
-    if (in_bufinfo.ndim != 2) {
-        throw std::runtime_error("Input array must be 2-dimensional");
+    py::ssize_t n_bytes = in_bufinfo.shape[1];
+    py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
+    if (n_features % 8 != 0) {
+        throw std::runtime_error("Only n_features divisible by 8 is supported");
     }
+    auto out = py::array_t<uint8_t>(n_features);
+    // Unchecked accessors (benchmarked and there is no real advantage to using
+    // ptrs)
+    auto acc_in = packed_fps.unchecked<1>();
+    auto acc_out = out.mutable_unchecked<1>();
+
+    for (py::ssize_t j = 0; j < n_features; j += 8) {
+        // Copy the next 8 uint8 values in one go
+        std::memcpy(&acc_out(j), BYTE_TO_BITS[acc_in(j / 8)].data(), 8);
+    }
+    return out;
+}
+
+py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
+    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
+        packed_fps,
+    std::optional<py::ssize_t> n_features_opt) {
+    py::buffer_info in_bufinfo = packed_fps.request();
     py::ssize_t n_samples = in_bufinfo.shape[0];
     py::ssize_t n_bytes = in_bufinfo.shape[1];
     py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
@@ -212,6 +233,25 @@ py::array_t<uint8_t> _unpack_fingerprints_2d(
     return out;
 }
 
+// Wrapper over the unchecked _unpack_fingerprints that performs dimension
+// checks
+py::array_t<uint8_t> unpack_fingerprints(
+    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
+        packed_fps,
+    std::optional<py::ssize_t> n_features_opt) {
+    py::buffer_info in_bufinfo = packed_fps.request();
+    if (in_bufinfo.ndim == 1) {
+        return _nochecks_unpack_fingerprints_1d(packed_fps, n_features_opt);
+    }
+    if (in_bufinfo.ndim == 2) {
+        return _nochecks_unpack_fingerprints_2d(packed_fps, n_features_opt);
+    }
+    throw std::runtime_error("Input array must be 1- or 2-dimensional");
+}
+
+// TODO: Allow multiple dtypes as input, and code the "pack" function (Should be
+// simple to use py::array with no <template>, and cast to double if a sum is
+// needed, and to uint8 if it is not needed)
 py::array_t<uint8_t> _calc_centroid_packed_u8_from_u64(
     const py::array_t<uint64_t, py::array::c_style | py::array::forcecast>&
         linear_sum,
@@ -379,9 +419,11 @@ py::tuple jt_most_dissimilar_packed(
     py::array_t<uint8_t, py::array::c_style | py::array::forcecast> Y,
     std::optional<py::ssize_t> n_features_opt) {
     py::buffer_info Y_buf = Y.request();
-    // No need to check for 2D array, this is checked by _unpack_fingerprints_2d
-    // already
-    auto Y_unpacked_buf = _unpack_fingerprints_2d(Y, n_features_opt).request();
+    if (Y_buf.ndim != 2) {
+        throw std::runtime_error("Input array must be 2-dimensional");
+    }
+    auto Y_unpacked_buf =
+        _nochecks_unpack_fingerprints_2d(Y, n_features_opt).request();
 
     py::ssize_t n_samples = Y_buf.shape[0];
     py::ssize_t n_features_packed = Y_buf.shape[1];
@@ -434,26 +476,27 @@ py::tuple jt_most_dissimilar_packed(
 PYBIND11_MODULE(_cpp_similarity, m) {
     m.doc() = "Optimized molecular similarity calculators (C++ extensions)";
 
-    m.def("_unpack_fingerprints_2d", &_unpack_fingerprints_2d,
+    // Only bound for debugging purposes
+    m.def("_nochecks_unpack_fingerprints_2d", &_nochecks_unpack_fingerprints_2d,
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
-
+    m.def("_nochecks_unpack_fingerprints_1d", &_nochecks_unpack_fingerprints_1d,
+          "Unpack packed fingerprints", py::arg("a"),
+          py::arg("n_features") = std::nullopt);
     m.def("_calc_centroid_packed_u8_from_u64",
           &_calc_centroid_packed_u8_from_u64, "Packed centroid calculation",
           py::arg("linear_sum"), py::arg("n_samples"));
-
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
 
+    // API
     m.def("jt_isim", &jt_isim, "iSIM Tanimoto calculation", py::arg("c_total"),
           py::arg("n_objects"));
-
     m.def("jt_sim_packed", &jt_sim_packed,
           "Tanimoto similarity between a matrix of packed fps and a single "
           "packed fp",
           py::arg("arr"), py::arg("vec"),
           py::arg("_cardinalities") = std::nullopt);
-
     m.def("jt_most_dissimilar_packed", &jt_most_dissimilar_packed,
           "Finds two fps in a packed fp array that are the most "
           "Tanimoto-dissimilar",
