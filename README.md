@@ -24,9 +24,16 @@ From source, editable mode, using a conda environment:
 ```bash
 conda env create --file ./environment.yaml
 conda activate bblean
+
+# To build the C++ extensions (recommended, much faster) 
+BITBIRCH_BUILD_CPP=1 pip install -e .
+
+# To install without the extensions (still very fast)
 pip install -e .
+
 bb --help
 ```
+
 
 <img src="bb-demo.gif" width="600" />
 
@@ -156,6 +163,8 @@ examples under `./examples` (More to be added soon!).
   considered private (such as `bblean._private_module.private_function(...)`) and should
   not be used, since they can be removed or modified without warning.
 - All other functions and classes are part of the stable public API and can be safely used.
+
+## Building C++ extensions
 
 ## Contributing
 
