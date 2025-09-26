@@ -7,6 +7,8 @@ import bblean._py_similarity as pysim
 
 try:
     import bblean._cpp_similarity as csim
+
+    CSIM_AVAIL = True
 except ImportError:
     CSIM_AVAIL = False
 from bblean.fingerprints import (
