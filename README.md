@@ -25,14 +25,22 @@ From source, editable mode, using a conda environment:
 conda env create --file ./environment.yaml
 conda activate bblean
 
-# To build the C++ extensions (recommended, much faster) 
-BITBIRCH_BUILD_CPP=1 pip install -e .
-
-# To install without the extensions (still very fast)
 pip install -e .
 
 bb --help
 ```
+
+BitBirch-Lean currently has optional experimental C++ extensions. These have been tested
+on Linux x86 only. We are currently working on improving the efficiency of the
+extensions, but you should expect a speedup of ~1.8-2.0x on Linux. To install the
+extensions from source run the following command:
+
+```bash
+BITBIRCH_BUILD_CPP=1 pip install -e .
+```
+
+If you run into any issues when installing the extensions, please open a GitHub issue
+and tag it with `C++`.
 
 
 <img src="bb-demo.gif" width="600" />
