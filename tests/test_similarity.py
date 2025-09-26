@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pytest
 
@@ -10,6 +11,8 @@ try:
 
     CSIM_AVAIL = True
 except ImportError:
+    if os.getenv("BITBIRCH_CANT_SKIP_CPP_TESTS"):
+        raise
     CSIM_AVAIL = False
 from bblean.fingerprints import (
     make_fake_fingerprints,

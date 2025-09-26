@@ -1,0 +1,32 @@
+name: ci-cpp
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  cpp-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout-repo
+        uses: actions/checkout@v5
+
+      - name: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: install-repo
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-subtests
+          BITBIRCH_BUILD_CPP=1 pip install --verbose .
+
+      - name: run-pytest
+        run: BITBIRCH_CANT_SKIP_CPP_TESTS=1 pytest -s ./tests/test_similarity.py
