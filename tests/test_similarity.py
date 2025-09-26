@@ -101,7 +101,7 @@ def test_cpp_unpacking() -> None:
             10, seed=17408390758220920002, pack=True, n_features=2024, dtype=np.uint8
         )
         expect_unpacked = unpack_fingerprints(fps)
-        unpacked = csim._unpack_fingerprints_2d(fps)
+        unpacked = csim._nochecks_unpack_fingerprints_2d(fps)
         assert (expect_unpacked == unpacked).all()
 
 

@@ -16,7 +16,7 @@ ext_modules = [
     setuptools.Extension(
         ".".join((name, "_cpp_similarity")),
         ext_sources,
-        include_dirs=[pybind11.get_include()],
+        include_dirs=[pybind11.get_include(), root / "bblean" / "csrc" / "boost"],
         language="c++",
         # TODO: Check how to optimize flags
         # NOTE: Compile with -DDEBUG_LOGS=1 to get some debug info from the extensions
@@ -27,6 +27,7 @@ ext_modules = [
             "-march=nocona",
             "-mtune=haswell",
             "-fopenmp",
+            "-mssse3",
             "-mpopcnt",
         ],
     ),

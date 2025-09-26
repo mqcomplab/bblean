@@ -1,3 +1,4 @@
+#include <immintrin.h>  // SSE2
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -182,14 +183,91 @@ constexpr std::array<std::array<uint8_t, 8>, 256> makeByteToBitsLookupTable() {
 
 constexpr auto BYTE_TO_BITS = makeByteToBitsLookupTable();
 
-py::array_t<uint8_t> _unpack_fingerprints_2d(
+// TODO: Remove code duplication
+py::array_t<uint8_t> _nochecks_unpack_fingerprints_1d(
     const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
         packed_fps,
     std::optional<py::ssize_t> n_features_opt) {
     py::buffer_info in_bufinfo = packed_fps.request();
-    if (in_bufinfo.ndim != 2) {
-        throw std::runtime_error("Input array must be 2-dimensional");
+    py::ssize_t n_bytes = in_bufinfo.shape[1];
+    py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
+    if (n_features % 8 != 0) {
+        throw std::runtime_error("Only n_features divisible by 8 is supported");
     }
+    auto out = py::array_t<uint8_t>(n_features);
+    // Unchecked accessors (benchmarked and there is no real advantage to using
+    // ptrs)
+    auto acc_in = packed_fps.unchecked<1>();
+    auto acc_out = out.mutable_unchecked<1>();
+
+    for (py::ssize_t j = 0; j < n_features; j += 8) {
+        // Copy the next 8 uint8 values in one go
+        std::memcpy(&acc_out(j), BYTE_TO_BITS[acc_in(j / 8)].data(), 8);
+    }
+    return out;
+}
+
+// Numpy is around 2x faster if not using SIMD
+// nocona does *not* have sse3, required for _mm_shuffle_epi8, but most modern
+// CPU do, so turn SSE3 *on*
+//
+// AVX2 implementation would be *significantly* faster (2x)
+// TODO this will *not* compile on a mac if using AVX2
+// TODO this will *not* compile on a mac if using SSE2
+// Probably the best thing to do is to have the sse functions in a different
+// fingerprints.cpp file, and raise when that module is imported on a mac, so the
+// functions are not even attempted in that case (they would be super slow and I'm
+// lazy to code for them)
+
+// Double reverse mask
+const __m128i DOUBLE_REVERSE_MASK =
+    _mm_set_epi8(8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7);
+void pack_bits_simd_sse(const uint8_t* ptr_in, uint8_t* ptr_out,
+                        size_t n2_bytes) {
+    for (size_t i = 0; i != n2_bytes; i += 16) {
+        // load 16 0|1-bytes from ptr_in into an SSE register
+        __m128i input = _mm_loadu_si128((__m128i*)(ptr_in + i));
+
+        // Convert to LSB:
+        // Flip the loaded bytes using the DOUBLE_REVERSE_MASK
+        __m128i reversed_input = _mm_shuffle_epi8(input, DOUBLE_REVERSE_MASK);
+        // Compare each byte to zero -> 0xFF if nonzero, 0x00 if zero
+        __m128i mask = _mm_cmpgt_epi8(reversed_input, _mm_setzero_si128());
+
+        // Pack the 16 bits into a single byte, extracting the MSB of each
+        uint16_t bytes2 = (uint16_t)_mm_movemask_epi8(mask);
+
+        // LSB magic invocation can be used here instead of _mm_shuffle_epi8,
+        // but it is way slower ptr_out[i] = ((byte * 0x0202020202ULL &
+        // 0x010884422010ULL) % 1023) & 0xFF;
+        *(uint16_t*)(ptr_out + i / 8) = bytes2;
+    }
+}
+
+py::array_t<uint8_t> _pack_fingerprints_1d(
+    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
+        arr) {
+    py::buffer_info in_bufinfo = arr.request();
+    if (in_bufinfo.ndim != 1) {
+        throw std::runtime_error("Input array must be 1-dimensional");
+    }
+    const int n_features = in_bufinfo.shape[0];
+    if (n_features % 8 != 0) {
+        throw std::runtime_error("Only n_features divisible by 8 is supported");
+    }
+    const int n_bytes = n_features / 8;
+    auto ptr_in = arr.data();
+    py::array_t<uint8_t> out(n_bytes);  // Init to zeros
+    auto ptr_out = out.mutable_data();
+    pack_bits_simd_sse(ptr_in, ptr_out, n_bytes * 2);
+    return out;
+}
+
+py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
+    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
+        packed_fps,
+    std::optional<py::ssize_t> n_features_opt) {
+    py::buffer_info in_bufinfo = packed_fps.request();
     py::ssize_t n_samples = in_bufinfo.shape[0];
     py::ssize_t n_bytes = in_bufinfo.shape[1];
     py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
@@ -212,6 +290,25 @@ py::array_t<uint8_t> _unpack_fingerprints_2d(
     return out;
 }
 
+// Wrapper over the unchecked _unpack_fingerprints that performs dimension
+// checks
+py::array_t<uint8_t> unpack_fingerprints(
+    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
+        packed_fps,
+    std::optional<py::ssize_t> n_features_opt) {
+    py::buffer_info in_bufinfo = packed_fps.request();
+    if (in_bufinfo.ndim == 1) {
+        return _nochecks_unpack_fingerprints_1d(packed_fps, n_features_opt);
+    }
+    if (in_bufinfo.ndim == 2) {
+        return _nochecks_unpack_fingerprints_2d(packed_fps, n_features_opt);
+    }
+    throw std::runtime_error("Input array must be 1- or 2-dimensional");
+}
+
+// TODO: Allow multiple dtypes as input, and code the "pack" function (Should be
+// simple to use py::array with no <template>, and cast to double if a sum is
+// needed, and to uint8 if it is not needed)
 py::array_t<uint8_t> _calc_centroid_packed_u8_from_u64(
     const py::array_t<uint64_t, py::array::c_style | py::array::forcecast>&
         linear_sum,
@@ -379,9 +476,11 @@ py::tuple jt_most_dissimilar_packed(
     py::array_t<uint8_t, py::array::c_style | py::array::forcecast> Y,
     std::optional<py::ssize_t> n_features_opt) {
     py::buffer_info Y_buf = Y.request();
-    // No need to check for 2D array, this is checked by _unpack_fingerprints_2d
-    // already
-    auto Y_unpacked_buf = _unpack_fingerprints_2d(Y, n_features_opt).request();
+    if (Y_buf.ndim != 2) {
+        throw std::runtime_error("Input array must be 2-dimensional");
+    }
+    auto Y_unpacked_buf =
+        _nochecks_unpack_fingerprints_2d(Y, n_features_opt).request();
 
     py::ssize_t n_samples = Y_buf.shape[0];
     py::ssize_t n_features_packed = Y_buf.shape[1];
@@ -434,7 +533,7 @@ py::tuple jt_most_dissimilar_packed(
 PYBIND11_MODULE(_cpp_similarity, m) {
     m.doc() = "Optimized molecular similarity calculators (C++ extensions)";
 
-    m.def("_unpack_fingerprints_2d", &_unpack_fingerprints_2d,
+    m.def("_nochecks_unpack_fingerprints_2d", &_nochecks_unpack_fingerprints_2d,
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
 
@@ -442,6 +541,8 @@ PYBIND11_MODULE(_cpp_similarity, m) {
           &_calc_centroid_packed_u8_from_u64, "Packed centroid calculation",
           py::arg("linear_sum"), py::arg("n_samples"));
 
+    m.def("_pack_fingerprints_1d", &_pack_fingerprints_1d, "2D popcount",
+          py::arg("arr"));
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
 
