@@ -173,8 +173,6 @@ examples under `./examples` (More to be added soon!).
   not be used, since they can be removed or modified without warning.
 - All other functions and classes are part of the stable public API and can be safely used.
 
-## Building C++ extensions
-
 ## Contributing
 
 TODO: Add some info about how to contribute to the repo / open issues
