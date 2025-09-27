@@ -30,6 +30,7 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+coverage.json
 .hypothesis
 .pytest_cache/
 
