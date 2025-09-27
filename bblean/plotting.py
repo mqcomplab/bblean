@@ -21,7 +21,10 @@ __all__ = ["summary_plot", "tsne_plot", "dump_mol_images"]
 
 # Similar to "init_plot" in the original bitbirch
 def summary_plot(
-    c: ClusterAnalysis, /, title: str | None = None
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+    scaffolds: bool = True,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Obtain a summary plot from a cluster analysis"""
     df = c.df
@@ -34,10 +37,13 @@ def summary_plot(
     for i, mol in enumerate(df["mol_num"]):
         plt.text(i, mol, f"{mol}", ha="center", va="bottom", fontsize=10, color="black")
 
-    # Plot and annotate the number of unique scaffolds
-    plt.bar(label_strs, df["unique_scaffolds_num"], color="orange", label="Scaffolds")
-    for i, s in enumerate(df["unique_scaffolds_num"]):
-        plt.text(i, s, f"{s}", ha="center", va="bottom", fontsize=8, color="white")
+    if scaffolds:
+        # Plot and annotate the number of unique scaffolds
+        plt.bar(
+            label_strs, df["unique_scaffolds_num"], color="orange", label="Scaffolds"
+        )
+        for i, s in enumerate(df["unique_scaffolds_num"]):
+            plt.text(i, s, f"{s}", ha="center", va="bottom", fontsize=8, color="white")
 
     # Labels
     ax.set_xlabel("Cluster ID", fontsize=12)
