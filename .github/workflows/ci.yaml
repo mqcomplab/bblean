@@ -59,6 +59,8 @@ jobs:
   upload-coverage-badge:
     runs-on: ubuntu-latest
     needs: tests
+    premissions:
+      contents: write
     steps:
       - name: create-site-dir
         run: mkdir -p site/coverage
