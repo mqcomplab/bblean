@@ -31,8 +31,8 @@ dependencies:
   - mypy  # Type checker
   - pytest  # Python testing framework
   - pytest-subtests
+  - pytest-cov  # code coverage
   - cruft # Keep up with cookiecutter updates
-  - coverage
   # Profilers
   - memray
   - py-spy
