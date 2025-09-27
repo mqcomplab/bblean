@@ -78,7 +78,15 @@ def _main(
 def _summary_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
-    smiles_path: Annotated[Path, Option("-s", "--smiles-path", show_default=False)],
+    smiles_path: Annotated[
+        Path | None,
+        Option(
+            "-s",
+            "--smiles-path",
+            show_default=False,
+            help="Optional smiles path, if passed a scaffold analysis is performed",
+        ),
+    ] = None,
     title: Annotated[
         str | None,
         Option("--title"),
@@ -95,6 +103,13 @@ def _summary_plot(
         str,
         Option("--scaffold-fp-kind"),
     ] = DEFAULTS.fp_kind,
+    annotate: tpx.Annotated[
+        bool,
+        Option(
+            "--annotate/--no-annotate",
+            help="Display scaffold and fingerprint number in each cluster",
+        ),
+    ] = True,
     n_features: Annotated[
         int | None,
         Option(
@@ -128,17 +143,21 @@ def _summary_plot(
         with open(clusters_path, mode="rb") as f:
             clusters = pickle.load(f)
         fps = np.load(fps_path, mmap_mode="r")
-        smiles = load_smiles(smiles_path)
+        smiles: tp.Iterable[str]
+        if smiles_path is not None:
+            smiles = load_smiles(smiles_path)
+        else:
+            smiles = ()
         ca = cluster_analysis(
             clusters,
-            smiles,
             fps,
+            smiles,
             top=top,
             n_features=n_features,
             input_is_packed=input_is_packed,
             scaffold_fp_kind=scaffold_fp_kind,
         )
-        summary_plot(ca, title)
+        summary_plot(ca, title, annotate=annotate)
     plt.show()
 
 
@@ -304,7 +323,7 @@ def _run(
             merge_criterion=merge_criterion,
             tolerance=tolerance,
         )
-    if len(input_files) > 0 and refine_num > 0:
+    if len(input_files) > 1 and refine_num > 0:
         console.print("Refine currently only supported for single files", style="red")
         raise Abort()
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):

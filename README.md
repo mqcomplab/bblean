@@ -18,6 +18,9 @@ If you find this software useful please cite the following articles:
     https://doi.org/10.1021/acs.jcim.5c00627
 - *BitBIRCH-Lean*: TO-BE-ADDED
 
+**NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
+we hit version 1.0
+
 ## Installation
 
 From source, editable mode, using a conda environment:
@@ -145,7 +148,7 @@ tree.refine_inplace(fps)
 
 # Visualize the results
 clusters = tree.get_cluster_mol_ids()
-ca = analysis.cluster_analysis(clusters, smiles, fps)
+ca = analysis.cluster_analysis(clusters, fps, smiles)
 plotting.summary_plot(ca, title="ChEMBL Sample")
 plt.show()
 
@@ -172,7 +175,8 @@ examples under `./examples` (More to be added soon!).
 - All functions and classes that are in *modules that end with an underscore* are also
   considered private (such as `bblean._private_module.private_function(...)`) and should
   not be used, since they can be removed or modified without warning.
-- All other functions and classes are part of the stable public API and can be safely used.
+- All other functions and classes are part of the stable public API and can be used.
+    However, expect minor breaking changes before we hit version 1.0
 
 ## Contributing
 

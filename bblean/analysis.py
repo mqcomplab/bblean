@@ -40,6 +40,10 @@ class ClusterAnalysis:
     n_features: int | None = None
 
     @property
+    def has_scaffolds(self) -> bool:
+        return "unique_scaffolds_num" in self.df.columns
+
+    @property
     def num_clusters(self) -> int:
         return len(self.df)
 
@@ -65,8 +69,8 @@ def scaffold_analysis(
 
 def cluster_analysis(
     clusters: list[list[int]],
-    smiles: tp.Iterable[str],
     fps: NDArray[np.integer],
+    smiles: tp.Iterable[str] = (),
     n_features: int | None = None,
     top: int = 20,
     assume_sorted: bool = True,
@@ -77,7 +81,6 @@ def cluster_analysis(
     if isinstance(smiles, str):
         smiles = [smiles]
     smiles = np.asarray(smiles)
-    fps_u8 = fps.astype(np.uint8, copy=False)
 
     if not assume_sorted:
         # Largest first
@@ -86,8 +89,8 @@ def cluster_analysis(
 
     info: dict[str, list[tp.Any]] = defaultdict(list)
     cluster_fps: list[NDArray[np.uint8]] = []
+    fps_u8 = fps.astype(np.uint8, copy=False)
     for i, c in enumerate(clusters):
-        analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
         size = len(c)
         _fps = fps_u8[c]
         if input_is_packed:
@@ -97,8 +100,11 @@ def cluster_analysis(
         info["label"].append(i)
         info["mol_num"].append(size)
         info["isim"].append(jt_isim(np.sum(_fps_unpacked, axis=0), size))
-        info["unique_scaffolds_num"].append(analysis.unique_num)
-        info["unique_scaffolds_isim"].append(analysis.isim)
+
+        if smiles.size:
+            analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
+            info["unique_scaffolds_num"].append(analysis.unique_num)
+            info["unique_scaffolds_isim"].append(analysis.isim)
         cluster_fps.append(_fps)  # Lets see if something uses this
     return ClusterAnalysis(
         pd.DataFrame(info),
