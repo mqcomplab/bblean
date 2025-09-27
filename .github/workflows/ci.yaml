@@ -73,7 +73,7 @@ jobs:
 
       - name: generate-coverage-badge
         run: |
-          COVERAGE=$(jq '.totals.percent_covered_display' site/coverage/coverage.json)
+          COVERAGE=$(jq -r '.totals.percent_covered_display' site/coverage/coverage.json)
           echo "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"${COVERAGE}%\",\"color\":\"green\"}" > site/coverage/coverage-badge.json
 
       - name: deploy-badge
