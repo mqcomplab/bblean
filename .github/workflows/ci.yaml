@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -37,20 +37,29 @@ jobs:
         uses: actions/checkout@v5
 
       - name: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: install-repo
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-subtests
+          pip install pytest pytest-subtests coverage
           pip install --verbose .
 
       - name: run-pytest
-        run: pytest -s -k 'not regression' ./tests
+        run: |
+          coverage run -m pytest -s -k 'not regression' ./tests
+          coverage xml
+
+      - name: upload-coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
 
   # Ubuntu 24.04 for reproducibility in regression tests only
+  # coverage makes tests slightly slower, so regression tests should not run with
+  # coverage
   regression-tests:
     runs-on: ubuntu-24.04
     steps:
@@ -58,7 +67,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 

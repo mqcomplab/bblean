@@ -32,6 +32,7 @@ dependencies:
   - pytest  # Python testing framework
   - pytest-subtests
   - cruft # Keep up with cookiecutter updates
+  - coverage
   # Profilers
   - memray
   - py-spy
