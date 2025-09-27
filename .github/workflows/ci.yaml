@@ -89,8 +89,10 @@ jobs:
   # Ubuntu 24.04 for reproducibility in regression tests only
   # coverage makes tests slightly slower, so regression tests should not run with
   # coverage
+  # skip these for pushes to main since they are slower
   regression-tests:
     runs-on: ubuntu-24.04
+    if: github.ref != 'refs/heads/main'
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
