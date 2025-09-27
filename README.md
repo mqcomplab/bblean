@@ -24,9 +24,24 @@ From source, editable mode, using a conda environment:
 ```bash
 conda env create --file ./environment.yaml
 conda activate bblean
+
 pip install -e .
+
 bb --help
 ```
+
+BitBirch-Lean currently has optional experimental C++ extensions. These have been tested
+on Linux x86 only. We are currently working on improving the efficiency of the
+extensions, but you should expect a speedup of ~1.8-2.0x on Linux. To install the
+extensions from source run the following command:
+
+```bash
+BITBIRCH_BUILD_CPP=1 pip install -e .
+```
+
+If you run into any issues when installing the extensions, please open a GitHub issue
+and tag it with `C++`.
+
 
 <img src="bb-demo.gif" width="600" />
 
@@ -156,6 +171,8 @@ examples under `./examples` (More to be added soon!).
   considered private (such as `bblean._private_module.private_function(...)`) and should
   not be used, since they can be removed or modified without warning.
 - All other functions and classes are part of the stable public API and can be safely used.
+
+## Building C++ extensions
 
 ## Contributing
 

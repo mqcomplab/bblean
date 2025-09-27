@@ -3,10 +3,20 @@ import gc
 import math
 import time
 import sys
+import os
 from pathlib import Path
 import tempfile
 import pytest
 import bblean
+
+try:
+    import bblean._cpp_similarity as csim  # noqa
+
+    CSIM_AVAIL = True
+except ImportError:
+    if os.getenv("BITBIRCH_CANT_SKIP_CPP_TESTS"):
+        raise
+    CSIM_AVAIL = False
 
 try:
     from memray import Tracker, FileReader
@@ -66,7 +76,10 @@ def test_speed_regression(subtests) -> None:
     # For this system the following values are sufficient:
     # all_max_allowed_ns = [1_200_000_000, 1_900_000_000, 2_500_000_000]
     # For the ubuntu-24.04 in gh CI the following are required:
-    all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_600_000_000]
+    if CSIM_AVAIL:
+        all_max_allowed_ns = [900_000_000, 1_400_000_000, 2_000_000_000]
+    else:
+        all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_600_000_000]
     for fps_num, max_allowed_ns in zip(all_fps_nums, all_max_allowed_ns):
         with subtests.test(fps_num=fps_num):
             fps = make_fake_fingerprints(fps_num, seed=4068791011890883085)

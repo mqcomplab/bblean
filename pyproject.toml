@@ -46,7 +46,7 @@ classifiers=[
 readme = {file = ["README.md"]}
 
 [build-system]
-requires = ["setuptools>=75.6", "setuptools-scm>=9"]
+requires = ["setuptools>=75.6", "setuptools-scm>=9", "pybind11"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
@@ -77,3 +77,6 @@ disallow_incomplete_defs = true
 disallow_untyped_defs = true
 disallow_any_generics = true
 python_version = "3.11"
+
+[tool.coverage.run]
+omit = ["*/_legacy/*"]

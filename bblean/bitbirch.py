@@ -60,8 +60,15 @@ from numpy.typing import NDArray, DTypeLike
 from bblean._memory import _mmap_file_and_madvise_sequential, _ArrayMemPagesManager
 from bblean._merges import get_merge_accept_fn, MergeAcceptFunction
 from bblean.utils import min_safe_uint
-from bblean.fingerprints import pack_fingerprints, unpack_fingerprints, calc_centroid
+from bblean.fingerprints import pack_fingerprints, calc_centroid
 from bblean.similarity import jt_sim_packed, jt_most_dissimilar_packed
+
+try:
+    # NOTE: There are small gains from using this fn but only ~3%, so don't warn for now
+    # if this fails, and don't expose it
+    from bblean._cpp_similarity import unpack_fingerprints as _unpack_fingerprints
+except ImportError:
+    from bblean.fingerprints import unpack_fingerprints as _unpack_fingerprints
 
 __all__ = ["BitBirch"]
 
@@ -440,7 +447,7 @@ class _BFSubcluster:
 
     @property
     def unpacked_centroid(self) -> NDArray[np.uint8]:
-        return unpack_fingerprints(self.packed_centroid, self.n_features)
+        return _unpack_fingerprints(self.packed_centroid, self.n_features)
 
     @property
     def n_features(self) -> int:
@@ -1014,7 +1021,7 @@ class BitBirch:
         dtypes_to_fp, dtypes_to_mols = self._prepare_bf_to_buffer_dicts(rest)
         # Add X and mol indices of the "big" cluster
         if input_is_packed:
-            unpack_or_copy = lambda x: unpack_fingerprints(
+            unpack_or_copy = lambda x: _unpack_fingerprints(
                 cast(NDArray[np.uint8], x), n_features
             )
         else:
@@ -1093,7 +1100,7 @@ def _get_array_iterable(
     if input_is_packed:
         # Unpacking copies the fingerprints, so no extra copy required
         # NOTE: cast seems to have a very small overhead in this loop for some reason
-        return (unpack_fingerprints(a, n_features) for a in X)  # type: ignore
+        return (_unpack_fingerprints(a, n_features) for a in X)  # type: ignore
     if isinstance(X, list):
         # No copy is required here unless the dtype is not uint8
         return (a.astype(dtype, copy=False) for a in X)
