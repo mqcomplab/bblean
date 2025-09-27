@@ -252,44 +252,49 @@ py::array_t<uint8_t> unpack_fingerprints(
 // TODO: Allow multiple dtypes as input, and code the "pack" function (Should be
 // simple to use py::array with no <template>, and cast to double if a sum is
 // needed, and to uint8 if it is not needed)
-py::array_t<uint8_t> _calc_centroid_packed_u8_from_u64(
+py::array_t<uint8_t> calc_centroid(
     const py::array_t<uint64_t, py::array::c_style | py::array::forcecast>&
         linear_sum,
-    int64_t n_samples) {
-    py::buffer_info sum_buf = linear_sum.request();
-    if (sum_buf.ndim != 1) {
+    int64_t n_samples, bool pack = true) {
+    std::cout << linear_sum.ndim() << '\n';
+    if (linear_sum.ndim() != 1) {
         throw std::runtime_error("linear_sum must be 1-dimensional");
     }
 
-    py::ssize_t n_features = sum_buf.shape[0];
-    auto sum_ptr = static_cast<const uint64_t*>(sum_buf.ptr);
+    py::ssize_t n_features = linear_sum.shape(0);
+    auto ptr_linear_sum = static_cast<const uint64_t*>(linear_sum.data());
 
-    std::vector<uint8_t> centroid_unpacked(n_features);
+    // std::vector<uint8_t> centroid_unpacked(n_features);
+    py::array_t<uint8_t> centroid_unpacked(n_features);
+    auto ptr_centroid_unpacked = centroid_unpacked.mutable_data();
 
     if (n_samples <= 1) {
-        for (py::ssize_t i = 0; i < n_features; ++i) {
-            centroid_unpacked[i] = static_cast<uint8_t>(sum_ptr[i]);
+        for (int i{0}; i < n_features; ++i) {
+            ptr_centroid_unpacked[i] = static_cast<uint8_t>(ptr_linear_sum[i]);
         }
     } else {
         auto threshold = static_cast<double>(n_samples) * 0.5;
-        for (py::ssize_t i = 0; i < n_features; ++i) {
-            centroid_unpacked[i] =
-                (static_cast<double>(sum_ptr[i]) >= threshold) ? 1 : 0;
+        for (int i{0}; i < n_features; ++i) {
+            ptr_centroid_unpacked[i] =
+                (static_cast<double>(ptr_linear_sum[i]) >= threshold) ? 1 : 0;
         }
     }
 
-    py::ssize_t n_bytes = (n_features + 7) / 8;
-    auto centroid_packed = py::array_t<uint8_t>(n_bytes);
-    py::buffer_info cent_packed_buf = centroid_packed.request();
-    auto cent_packed_ptr = static_cast<uint8_t*>(cent_packed_buf.ptr);
-    std::memset(cent_packed_ptr, 0, n_bytes);
-
-    for (py::ssize_t i = 0; i < n_features; ++i) {
-        if (centroid_unpacked[i] == 1) {
-            cent_packed_ptr[i / 8] |= (1 << (7 - (i % 8)));
-        }
+    if (not pack) {
+        return centroid_unpacked;
     }
 
+    auto const_ptr_centroid_unpacked = static_cast<const uint8_t*>(centroid_unpacked.data());
+    int n_bytes = (n_features + 7) / 8;
+    auto centroid_packed = py::array_t<uint8_t>(n_bytes);  // Init to 0
+    auto ptr_centroid_packed = static_cast<uint8_t*>(centroid_packed.mutable_data());
+    std::memset(ptr_centroid_packed, 0, n_bytes);
+    // This is significantly slower than the numpy counterpart, due to no simd
+    for (int i{0}; i < n_features; ++i) {
+        if (const_ptr_centroid_unpacked[i]) {
+            ptr_centroid_packed[i / 8] |= (1 << (7 - (i % 8)));
+        }
+    }
     return centroid_packed;
 }
 
@@ -443,8 +448,7 @@ py::tuple jt_most_dissimilar_packed(
         }
     }
 
-    auto packed_centroid =
-        _calc_centroid_packed_u8_from_u64(linear_sum, n_samples);
+    auto packed_centroid = calc_centroid(linear_sum, n_samples, true);
     auto cardinalities = _popcount_2d(Y);
 
     auto sims_cent = jt_sim_packed(Y, packed_centroid, cardinalities);
@@ -483,9 +487,9 @@ PYBIND11_MODULE(_cpp_similarity, m) {
     m.def("_nochecks_unpack_fingerprints_1d", &_nochecks_unpack_fingerprints_1d,
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
-    m.def("_calc_centroid_packed_u8_from_u64",
-          &_calc_centroid_packed_u8_from_u64, "Packed centroid calculation",
-          py::arg("linear_sum"), py::arg("n_samples"));
+    m.def("calc_centroid",
+          &calc_centroid, "centroid calculation",
+          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
 

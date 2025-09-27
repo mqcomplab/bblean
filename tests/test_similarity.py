@@ -97,8 +97,13 @@ def test_popcount_2d() -> None:
 @pytest.mark.skipif(not CSIM_AVAIL, reason="Requires C++ extensions")
 def test_cpp_centroid() -> None:
     fps = make_fake_fingerprints(10, seed=17408390758220920002, pack=False)
-    centroid = csim._calc_centroid_packed_u8_from_u64(fps.sum(0), len(fps))
-    expect_centroid = calc_centroid(fps.sum(0), len(fps), pack=True)
+    _sum = fps.sum(0)
+    num = len(fps)
+    centroid = csim.calc_centroid(_sum, num, pack=False)
+    expect_centroid = calc_centroid(_sum, num, pack=False)
+    assert (centroid == expect_centroid).all()
+    centroid = csim.calc_centroid(_sum, num, pack=True)
+    expect_centroid = calc_centroid(_sum, num, pack=True)
     assert (centroid == expect_centroid).all()
 
 
