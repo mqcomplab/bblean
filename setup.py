@@ -34,7 +34,8 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
 
     # NOTE: Compile with -DDEBUG_LOGS=1 to get some debug info from the extensions
     if os.getenv("BITBIRCH_DEBUG_EXT"):
-        extra_compile_args.extend(["-DDEBUG_LOGS=1"])
+        extra_compile_args.append("-fopt-info-vec-all")  # print loop vectorization info
+        extra_compile_args.append("-DDEBUG_LOGS=1")
     _setup_kwargs["ext_modules"] = [
         Pybind11Extension(
             ".".join((name, "_cpp_similarity")),
