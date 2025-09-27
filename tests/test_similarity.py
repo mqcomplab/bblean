@@ -107,6 +107,7 @@ def test_cpp_centroid() -> None:
     assert (centroid == expect_centroid).all()
 
 
+# TODO: Move this test
 @pytest.mark.skipif(not CSIM_AVAIL, reason="Requires C++ extensions")
 def test_cpp_unpacking() -> None:
     for seed in [
@@ -121,6 +122,14 @@ def test_cpp_unpacking() -> None:
         expect_unpacked = unpack_fingerprints(fps)
         unpacked = csim._nochecks_unpack_fingerprints_2d(fps)
         assert (expect_unpacked == unpacked).all()
+        unpacked = csim.unpack_fingerprints(fps)
+        assert (expect_unpacked == unpacked).all()
+        for fp in fps:
+            expect_unpacked = unpack_fingerprints(fp)  # type: ignore
+            unpacked = csim._nochecks_unpack_fingerprints_1d(fp)  # type: ignore
+            assert (expect_unpacked == unpacked).all()
+            unpacked = csim.unpack_fingerprints(fp)  # type: ignore
+            assert (expect_unpacked == unpacked).all()
 
 
 def test_jt_sim_packed() -> None:
