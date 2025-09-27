@@ -158,7 +158,7 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_1d(
     const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
         packed_fps,
     std::optional<py::ssize_t> n_features_opt) {
-    py::ssize_t n_bytes = packed_fps.shape(1);
+    py::ssize_t n_bytes = packed_fps.shape(0);
     py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
     if (n_features % 8 != 0) {
         throw std::runtime_error("Only n_features divisible by 8 is supported");
@@ -447,6 +447,12 @@ PYBIND11_MODULE(_cpp_similarity, m) {
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
     m.def("_nochecks_unpack_fingerprints_1d", &_nochecks_unpack_fingerprints_1d,
+          "Unpack packed fingerprints", py::arg("a"),
+          py::arg("n_features") = std::nullopt);
+
+    // NOTE: There are some gains from using this fn but only ~3%, so don't warn for now
+    // if this fails, and don't expose it
+    m.def("unpack_fingerprints", &unpack_fingerprints,
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
 
