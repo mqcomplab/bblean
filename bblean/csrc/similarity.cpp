@@ -214,7 +214,9 @@ py::array_t<uint8_t> unpack_fingerprints(
     throw std::runtime_error("Input array must be 1- or 2-dimensional");
 }
 
-// TODO: Allow multiple dtypes as input?
+// TODO: I believe pybind11's dynamic dispatch is *significantly* more
+// expensive than just casting to uint64_t always, and it defeats the purpose
+// of having this function in python, must benchmark
 template <typename T>
 py::array_t<uint8_t> calc_centroid(
     const py::array_t<T, py::array::c_style>& linear_sum, int64_t n_samples,
