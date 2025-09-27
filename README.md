@@ -37,6 +37,8 @@ extensions from source run the following command:
 ```bash
 BITBIRCH_BUILD_CPP=1 pip install -e .
 ```
+If the extensions install successfully, they will be automatically used each time BitBirch-Lean or
+its classes are used. No need to do anything else.
 
 If you run into any issues when installing the extensions, please open a GitHub issue
 and tag it with `C++`.
