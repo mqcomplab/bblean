@@ -214,12 +214,9 @@ py::array_t<uint8_t> unpack_fingerprints(
     throw std::runtime_error("Input array must be 1- or 2-dimensional");
 }
 
-// TODO: I believe pybind11's dynamic dispatch is *significantly* more
-// expensive than just casting to uint64_t always, and it defeats the purpose
-// of having this function in python, must benchmark
 template <typename T>
 py::array_t<uint8_t> calc_centroid(
-    const py::array_t<T, py::array::c_style>& linear_sum, int64_t n_samples,
+    const py::array_t<T, py::array::c_style | py::array::forcecast>& linear_sum, int64_t n_samples,
     bool pack = true) {
     if (linear_sum.ndim() != 1) {
         throw std::runtime_error("linear_sum must be 1-dimensional");
@@ -445,13 +442,11 @@ PYBIND11_MODULE(_cpp_similarity, m) {
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
 
-    // Overloads so the correct function is dispatched with the correct input
-    m.def("calc_centroid", &calc_centroid<uint8_t>, "centroid calculation",
-          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
-    m.def("calc_centroid", &calc_centroid<uint16_t>, "centroid calculation",
-          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
-    m.def("calc_centroid", &calc_centroid<uint32_t>, "centroid calculation",
-          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
+    // NOTE: pybind11's dynamic dispatch is *significantly* more
+    // expensive than casting to uint64_t always
+    // still this function is *barely* faster than python for pack=False,
+    // and *slightly slower* for pack=True so it is not exposed in any module
+    // (only for internal use and debugging)
     m.def("calc_centroid", &calc_centroid<uint64_t>, "centroid calculation",
           py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
 
