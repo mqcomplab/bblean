@@ -47,54 +47,45 @@
 // like jt_sim_packed
 namespace py = pybind11;
 
+auto print_8byte_alignment_check(const py::array_t<uint8_t>& arr) -> void {
+    py::print("arr buf addr: ", reinterpret_cast<std::uintptr_t>(arr.data()));
+    py::print("uint64_t alignment requirement: ", alignof(uint64_t));
+    py::print("Alignment check (coorect if 0): ", reinterpret_cast<std::uintptr_t>(arr.data()) % alignof(uint64_t));
+}
+
 // TODO: we can should be able to assume the input array size is always a
 // multiple of 64, otherwise the hand-coded C++ code-path should not be
 // triggered (?)
 uint32_t _popcount_1d(const py::array_t<uint8_t>& arr) {
-    // Input buffer set-up
-    const py::buffer_info in_bufinfo = arr.request();
-    if (in_bufinfo.ndim != 1) {
+    if (arr.ndim() != 1) {
         throw std::runtime_error("Input array must be 1-dimensional");
     }
-
-    // Output scalar set-up
-    uint32_t count{0};
-
 #ifdef DEBUG_LOGS
-    std::cout << "in_buf_ptr addr: "
-              << reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) << std::endl;
-    std::cout << "uint64_t alignment requirement: " << alignof(uint64_t)
-              << std::endl;
-    std::cout << "Allignment check (coorect if 0): "
-              << reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) %
-                     alignof(uint64_t)
-              << std::endl;
+    print_8byte_alignment_check(arr);
 #endif
-    // Conversion between const void* and const std::uintptr_t requires
-    // reinterpret
-    if (reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) % alignof(uint64_t) ==
-        0) {
+    uint32_t count{0};  // Output scalar
+    // Convert between ptr and integer requires reinterpret
+    bool is_8byte_aligned =
+        reinterpret_cast<std::uintptr_t>(arr.data()) % alignof(uint64_t) == 0;
+    py::ssize_t steps = arr.shape(0);
+    if (is_8byte_aligned) {
 #ifdef DEBUG_LOGS
-        std::cout << "DEBUG: _popcount_1d triggered uint64 + popcount 64 branch"
-                  << std::endl;
+        py::print("DEBUG: _popcount_1d fn triggered uint64 + popcount 64");
 #endif
         // Aligned to 64-bit boundary, interpret as uint64_t
-        const py::ssize_t steps = in_bufinfo.shape[0] / 8;
-        auto in_ptr = static_cast<const uint64_t*>(in_bufinfo.ptr);
-        for (py::ssize_t i = 0; i < steps; ++i) {
-            count += POPCOUNT_64(in_ptr[i]);
+        steps /= sizeof(uint64_t);
+        auto ptr_in = static_cast<const uint64_t*>(arr.request().ptr);
+        for (py::ssize_t i = 0; i != steps; ++i) {
+            count += POPCOUNT_64(ptr_in[i]);
         }
     } else {
 #ifdef DEBUG_LOGS
-        std::cout << "DEBUG: _popcount_1d triggered uint8 + popcount 32 branch"
-                  << std::endl;
+        py::print("DEBUG: _popcount_1d fn triggered uint8 + popcount 32");
 #endif
         // Misaligned, loop over bytes
-        const py::ssize_t steps = in_bufinfo.shape[0];
-        auto in_ptr = static_cast<const uint8_t*>(in_bufinfo.ptr);
-        for (py::ssize_t i = 0; i < steps; ++i) {
-            // uint8 is promoted to uint32
-            count += POPCOUNT_32(in_ptr[i]);
+        auto ptr_in = arr.data();
+        for (py::ssize_t i = 0; i != steps; ++i) {
+            count += POPCOUNT_32(ptr_in[i]);  // uint8 promoted to uint32
         }
     }
     return count;
@@ -107,58 +98,46 @@ uint32_t _popcount_1d(const py::array_t<uint8_t>& arr) {
 py::array_t<uint32_t> _popcount_2d(
     const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
         arr) {
-    // Input buffer set-up
-    py::buffer_info in_bufinfo = arr.request();
-    if (in_bufinfo.ndim != 2) {
+    if (arr.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
-    const py::ssize_t n_samples = in_bufinfo.shape[0];
+    const py::ssize_t n_samples = arr.shape(0);
 
-    // Input buffer set-up
     auto out = py::array_t<uint32_t>(n_samples);
-    auto out_ptr = static_cast<uint32_t*>(out.request().ptr);
-    std::fill(out_ptr, out_ptr + n_samples, 0);
+    auto out_ptr = out.mutable_data();
+    std::memset(out_ptr, 0, out.nbytes());
 
 #ifdef DEBUG_LOGS
-    std::cout << "in_buf_ptr addr: "
-              << reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) << std::endl;
-    std::cout << "uint64_t alignment requirement: " << alignof(uint64_t)
-              << std::endl;
-    std::cout << "Allignment check (coorect if 0): "
-              << reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) %
-                     alignof(uint64_t)
-              << std::endl;
+    print_8byte_alignment_check(arr);
 #endif
-    // Conversion between const void* and const std::uintptr_t requires
-    // reinterpret
-    if (reinterpret_cast<std::uintptr_t>(in_bufinfo.ptr) % alignof(uint64_t) ==
-        0) {
+    py::ssize_t stride = arr.strides(0);
+    py::ssize_t steps = arr.shape(1);
+    // Convert between ptr and integer requires reinterpret
+    bool is_8byte_aligned =
+        reinterpret_cast<std::uintptr_t>(arr.data()) % alignof(uint64_t) == 0;
+    if (is_8byte_aligned) {
 #ifdef DEBUG_LOGS
-        std::cout << "DEBUG: _popcount_2d triggered uint64 + popcount 64 branch"
-                  << std::endl;
+        py::print("DEBUG: _popcount_2d fn triggered uint64 + popcount 64");
 #endif
         // Aligned to 64-bit boundary, interpret as uint64_t
-        const py::ssize_t steps = in_bufinfo.shape[1] / sizeof(uint64_t);
-        const py::ssize_t stride = in_bufinfo.strides[0] / sizeof(uint64_t);
-        auto in_ptr = static_cast<const uint64_t*>(in_bufinfo.ptr);
-        for (py::ssize_t i = 0; i < n_samples; ++i) {
-            const uint64_t* row_ptr = in_ptr + i * stride;
-            for (py::ssize_t j = 0; j < steps; ++j) {
+        stride /= sizeof(uint64_t);
+        steps /= sizeof(uint64_t);
+        auto ptr_in = static_cast<const uint64_t*>(arr.request().ptr);
+        for (py::ssize_t i = 0; i != n_samples; ++i) {
+            const uint64_t* row_ptr = ptr_in + i * stride;
+            for (py::ssize_t j = 0; j != steps; ++j) {
                 out_ptr[i] += POPCOUNT_64(row_ptr[j]);
             }
         }
     } else {
 #ifdef DEBUG_LOGS
-        std::cout << "DEBUG: _popcount_2d triggered uint8 + popcount 32 branch"
-                  << std::endl;
+        py::print("DEBUG: _popcount_2d fn triggered uint8 + popcount 32");
 #endif
         // Misaligned, loop over bytes
-        const py::ssize_t steps = in_bufinfo.shape[1];
-        const py::ssize_t stride = in_bufinfo.strides[0];
-        auto in_ptr = static_cast<const uint8_t*>(in_bufinfo.ptr);
-        for (py::ssize_t i = 0; i < n_samples; ++i) {
+        auto in_ptr = arr.data();
+        for (py::ssize_t i = 0; i != n_samples; ++i) {
             const uint8_t* row_ptr = in_ptr + i * stride;
-            for (py::ssize_t j = 0; j < steps; ++j) {
+            for (py::ssize_t j = 0; j != steps; ++j) {
                 out_ptr[i] += POPCOUNT_32(row_ptr[j]);
             }
         }
@@ -187,21 +166,17 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_1d(
     const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
         packed_fps,
     std::optional<py::ssize_t> n_features_opt) {
-    py::buffer_info in_bufinfo = packed_fps.request();
-    py::ssize_t n_bytes = in_bufinfo.shape[1];
+    py::ssize_t n_bytes = packed_fps.shape(1);
     py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
     if (n_features % 8 != 0) {
         throw std::runtime_error("Only n_features divisible by 8 is supported");
     }
     auto out = py::array_t<uint8_t>(n_features);
-    // Unchecked accessors (benchmarked and there is no real advantage to using
-    // ptrs)
-    auto acc_in = packed_fps.unchecked<1>();
-    auto acc_out = out.mutable_unchecked<1>();
-
-    for (py::ssize_t j = 0; j < n_features; j += 8) {
+    auto out_ptr = out.mutable_data();
+    auto in_ptr = packed_fps.data();
+    for (py::ssize_t j = 0; j != n_features; j += 8) {
         // Copy the next 8 uint8 values in one go
-        std::memcpy(&acc_out(j), BYTE_TO_BITS[acc_in(j / 8)].data(), 8);
+        std::memcpy(out_ptr + j, BYTE_TO_BITS[in_ptr[j / 8]].data(), 8);
     }
     return out;
 }
@@ -210,9 +185,8 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
     const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
         packed_fps,
     std::optional<py::ssize_t> n_features_opt) {
-    py::buffer_info in_bufinfo = packed_fps.request();
-    py::ssize_t n_samples = in_bufinfo.shape[0];
-    py::ssize_t n_bytes = in_bufinfo.shape[1];
+    py::ssize_t n_samples = packed_fps.shape(0);
+    py::ssize_t n_bytes = packed_fps.shape(1);
     py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
     if (n_features % 8 != 0) {
         throw std::runtime_error("Only features divisible by 8 is supported");
@@ -223,8 +197,8 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
     auto acc_in = packed_fps.unchecked<2>();
     auto acc_out = out.mutable_unchecked<2>();
 
-    for (py::ssize_t i = 0; i < n_samples; ++i) {
-        for (py::ssize_t j = 0; j < n_features; j += 8) {
+    for (py::ssize_t i = 0; i != n_samples; ++i) {
+        for (py::ssize_t j = 0; j != n_features; j += 8) {
             // Copy the next 8 uint8 values in one go
             std::memcpy(&acc_out(i, j), BYTE_TO_BITS[acc_in(i, j / 8)].data(),
                         8);
@@ -233,50 +207,46 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
     return out;
 }
 
-// Wrapper over the unchecked _unpack_fingerprints that performs dimension
-// checks
+// Wrapper over _nochecks_unpack_fingerprints that performs ndim checks
 py::array_t<uint8_t> unpack_fingerprints(
     const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
         packed_fps,
     std::optional<py::ssize_t> n_features_opt) {
-    py::buffer_info in_bufinfo = packed_fps.request();
-    if (in_bufinfo.ndim == 1) {
+    if (packed_fps.ndim() == 1) {
         return _nochecks_unpack_fingerprints_1d(packed_fps, n_features_opt);
     }
-    if (in_bufinfo.ndim == 2) {
+    if (packed_fps.ndim() == 2) {
         return _nochecks_unpack_fingerprints_2d(packed_fps, n_features_opt);
     }
     throw std::runtime_error("Input array must be 1- or 2-dimensional");
 }
 
-// TODO: Allow multiple dtypes as input, and code the "pack" function (Should be
-// simple to use py::array with no <template>, and cast to double if a sum is
-// needed, and to uint8 if it is not needed)
+// TODO: Allow multiple dtypes as input?
 py::array_t<uint8_t> calc_centroid(
     const py::array_t<uint64_t, py::array::c_style | py::array::forcecast>&
         linear_sum,
     int64_t n_samples, bool pack = true) {
-    std::cout << linear_sum.ndim() << '\n';
     if (linear_sum.ndim() != 1) {
         throw std::runtime_error("linear_sum must be 1-dimensional");
     }
 
     py::ssize_t n_features = linear_sum.shape(0);
-    auto ptr_linear_sum = static_cast<const uint64_t*>(linear_sum.data());
+    auto ptr_linear_sum = linear_sum.data();
 
-    // std::vector<uint8_t> centroid_unpacked(n_features);
     py::array_t<uint8_t> centroid_unpacked(n_features);
     auto ptr_centroid_unpacked = centroid_unpacked.mutable_data();
-
     if (n_samples <= 1) {
-        for (int i{0}; i < n_features; ++i) {
+        for (int i{0}; i != n_features; ++i) {
+            // Cast not required, but added for clarity since this is a
+            // narrowing conversion. if n_samples <= 1 then linear_sum is
+            // guaranteed to have a value that a uint8_t can hold (it should be
+            // 0 or 1)
             ptr_centroid_unpacked[i] = static_cast<uint8_t>(ptr_linear_sum[i]);
         }
     } else {
-        auto threshold = static_cast<double>(n_samples) * 0.5;
-        for (int i{0}; i < n_features; ++i) {
-            ptr_centroid_unpacked[i] =
-                (static_cast<double>(ptr_linear_sum[i]) >= threshold) ? 1 : 0;
+        auto threshold = n_samples * 0.5;
+        for (int i{0}; i != n_features; ++i) {
+            ptr_centroid_unpacked[i] = (ptr_linear_sum[i] >= threshold) ? 1 : 0;
         }
     }
 
@@ -284,13 +254,14 @@ py::array_t<uint8_t> calc_centroid(
         return centroid_unpacked;
     }
 
-    auto const_ptr_centroid_unpacked = static_cast<const uint8_t*>(centroid_unpacked.data());
+    auto const_ptr_centroid_unpacked = centroid_unpacked.data();
     int n_bytes = (n_features + 7) / 8;
-    auto centroid_packed = py::array_t<uint8_t>(n_bytes);  // Init to 0
-    auto ptr_centroid_packed = static_cast<uint8_t*>(centroid_packed.mutable_data());
-    std::memset(ptr_centroid_packed, 0, n_bytes);
-    // This is significantly slower than the numpy counterpart, due to no simd
-    for (int i{0}; i < n_features; ++i) {
+    auto centroid_packed = py::array_t<uint8_t>(n_bytes);
+    auto ptr_centroid_packed = centroid_packed.mutable_data();
+    std::memset(ptr_centroid_packed, 0, centroid_packed.nbytes());
+
+    // Slower than numpy, due to lack of SIMD
+    for (int i{0}; i != n_features; ++i) {
         if (const_ptr_centroid_unpacked[i]) {
             ptr_centroid_packed[i / 8] |= (1 << (7 - (i % 8)));
         }
@@ -298,25 +269,23 @@ py::array_t<uint8_t> calc_centroid(
     return centroid_packed;
 }
 
-double jt_isim(const py::array_t<uint64_t, py::array::c_style |
-                                               py::array::forcecast>& c_total,
-               int64_t n_objects) {
+double jt_isim(
+    const py::array_t<uint64_t, py::array::c_style | py::array::forcecast>&
+        linear_sum,
+    int64_t n_objects) {
     if (n_objects < 2) {
         PyErr_WarnEx(PyExc_RuntimeWarning,
                      "Invalid n_objects in isim. Expected n_objects >= 2", 1);
         return std::numeric_limits<double>::quiet_NaN();
     }
-
-    // Input buffer
-    py::buffer_info in_bufinfo = c_total.request();
-    if (in_bufinfo.ndim != 1) {
-        throw std::runtime_error("c_total must be a 1D array");
+    if (linear_sum.ndim() != 1) {
+        throw std::runtime_error("linear_sum must be a 1D array");
     }
-    py::ssize_t size = in_bufinfo.shape[0];
-    auto in_ptr = static_cast<const uint64_t*>(in_bufinfo.ptr);
+    py::ssize_t n_features = linear_sum.shape(0);
 
+    auto in_ptr = linear_sum.data();
     uint64_t sum_kq{0};
-    for (py::ssize_t i = 0; i < size; ++i) {
+    for (py::ssize_t i = 0; i != n_features; ++i) {
         sum_kq += in_ptr[i];
     }
 
@@ -325,12 +294,11 @@ double jt_isim(const py::array_t<uint64_t, py::array::c_style |
     }
 
     uint64_t sum_kqsq{0};
-    for (py::ssize_t i = 0; i < size; ++i) {
+    for (py::ssize_t i = 0; i != n_features; ++i) {
         sum_kqsq += in_ptr[i] * in_ptr[i];
     }
-    auto a = static_cast<double>(sum_kqsq - sum_kq) / 2.0;
-    return a / ((a + static_cast<double>(n_objects * sum_kq)) -
-                static_cast<double>(sum_kqsq));
+    auto a = (sum_kqsq - sum_kq) / 2.0;
+    return a / ((a + (n_objects * sum_kq)) - sum_kqsq);
 }
 
 // Contraint: T must be uint64_t or uint8_t
@@ -344,13 +312,13 @@ void _calc_arr_vec_jt(const py::buffer_info& arr_buf,
     const py::ssize_t stride = arr_buf.strides[0] / sizeof(T);
     auto arr_ptr = static_cast<const T*>(arr_buf.ptr);
     auto vec_ptr = static_cast<const T*>(vec_buf.ptr);
-    auto out_ptr = static_cast<double*>(out.request().ptr);
-    auto card_ptr = static_cast<const uint32_t*>(cardinalities.request().ptr);
+    auto out_ptr = out.mutable_data();
+    auto card_ptr = cardinalities.data();
 
-    for (py::ssize_t i = 0; i < n_samples; ++i) {
+    for (py::ssize_t i = 0; i != n_samples; ++i) {
         const T* arr_row_ptr = arr_ptr + i * stride;
         uint32_t intersection{0};
-        for (py::ssize_t j = 0; j < steps; ++j) {
+        for (py::ssize_t j = 0; j != steps; ++j) {
             if constexpr (std::is_same_v<T, uint64_t>) {
                 intersection += POPCOUNT_64(arr_row_ptr[j] & vec_ptr[j]);
             } else {
@@ -358,6 +326,8 @@ void _calc_arr_vec_jt(const py::buffer_info& arr_buf,
             }
         }
         auto denominator = card_ptr[i] + vec_popcount - intersection;
+        // Cast is technically unnecessary since std::max promotes to double,
+        // but added here for clarity
         out_ptr[i] =
             intersection / std::max(static_cast<double>(denominator), 1.0);
     }
@@ -367,51 +337,42 @@ void _calc_arr_vec_jt(const py::buffer_info& arr_buf,
 // In this function, _popcount_2d takes around ~25% of the time, _popcount_1d
 // around 5%. The internal loop with the popcounts is also quite heavy.
 // TODO: Investigate simple SIMD vectorization of these loops
+// TODO cardinalities should not be a copy, also does this function return a
+// copy?!
 py::array_t<double> jt_sim_packed(
-    py::array_t<uint8_t> arr, py::array_t<uint8_t> vec,
+    const py::array_t<uint8_t>& arr, const py::array_t<uint8_t>& vec,
     std::optional<py::array_t<uint32_t>> cardinalities_opt) {
-    py::buffer_info arr_bufinfo = arr.request();
-    py::buffer_info vec_bufinfo = vec.request();
-
-    if (arr_bufinfo.ndim != 2 || vec_bufinfo.ndim != 1) {
-        throw std::runtime_error("arr must be 2D and vec must be 1D");
+    if (arr.ndim() != 2 || vec.ndim() != 1) {
+        throw std::runtime_error("arr must be 2D, vec must be 1D");
     }
-    if (arr_bufinfo.shape[1] != vec_bufinfo.shape[0]) {
-        throw std::runtime_error("arr and vec have incompatible shapes");
+    if (arr.shape(1) != vec.shape(0)) {
+        throw std::runtime_error(
+            "Shapes should be (N, F) for arr and (F,) for vec");
     }
 
-    py::ssize_t n_samples = arr_bufinfo.shape[0];
-
-    py::array_t<uint32_t> cardinalities;
-    if (cardinalities_opt) {
-        cardinalities = cardinalities_opt.value();
-    } else {
-        cardinalities = _popcount_2d(arr);
-    }
+    py::array_t<uint32_t> cardinalities =
+        cardinalities_opt.value_or(_popcount_2d(arr));
     uint32_t vec_popcount = _popcount_1d(vec);
 
-    bool arr_is_8byte_aligned =
-        reinterpret_cast<std::uintptr_t>(arr_bufinfo.ptr) % alignof(uint64_t) ==
-        0;
-    bool vec_is_8byte_aligned =
-        reinterpret_cast<std::uintptr_t>(vec_bufinfo.ptr) % alignof(uint64_t) ==
-        0;
-
+    py::ssize_t n_samples = arr.shape(0);
+    py::buffer_info arr_bufinfo = arr.request();
+    py::buffer_info vec_bufinfo = vec.request();
     auto out = py::array_t<double>(n_samples);
+
+    bool arr_is_8byte_aligned =
+        reinterpret_cast<std::uintptr_t>(arr.data()) % alignof(uint64_t) == 0;
+    bool vec_is_8byte_aligned =
+        reinterpret_cast<std::uintptr_t>(vec.data()) % alignof(uint64_t) == 0;
     if (arr_is_8byte_aligned && vec_is_8byte_aligned) {
 #ifdef DEBUG_LOGS
-        std::cout
-            << "DEBUG: jt_sim_packed fn triggered uint64 + popcount 64 branch"
-            << std::endl;
+        py::print("DEBUG: jt_sim_packed fn triggered uint64 + popcount 64");
 #endif
         // Aligned to 64-bit boundary, interpret as uint64_t
         _calc_arr_vec_jt<uint64_t>(arr_bufinfo, vec_bufinfo, n_samples,
                                    vec_popcount, cardinalities, out);
     } else {
 #ifdef DEBUG_LOGS
-        std::cout
-            << "DEBUG: jt_sim_packed fn triggered uint8 + popcount 32 branch"
-            << std::endl;
+        py::print("DEBUG: jt_sim_packed fn triggered uint8 + popcount 32");
 #endif
         // Misaligned, loop over bytes
         _calc_arr_vec_jt<uint8_t>(arr_bufinfo, vec_bufinfo, n_samples,
@@ -420,61 +381,61 @@ py::array_t<double> jt_sim_packed(
     return out;
 }
 
+// TODO: I believe strides are not necessary for contiguous arrays
 py::tuple jt_most_dissimilar_packed(
-    py::array_t<uint8_t, py::array::c_style | py::array::forcecast> Y,
+    py::array_t<uint8_t, py::array::c_style | py::array::forcecast> fps,
     std::optional<py::ssize_t> n_features_opt) {
-    py::buffer_info Y_buf = Y.request();
-    if (Y_buf.ndim != 2) {
+    if (fps.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
-    auto Y_unpacked_buf =
-        _nochecks_unpack_fingerprints_2d(Y, n_features_opt).request();
+    py::ssize_t n_samples = fps.shape(0);
+    py::ssize_t n_features_packed = fps.shape(1);
+    py::ssize_t fps_strides0 = fps.strides(0);
 
-    py::ssize_t n_samples = Y_buf.shape[0];
-    py::ssize_t n_features_packed = Y_buf.shape[1];
-    auto Y_ptr = static_cast<const uint8_t*>(Y_buf.ptr);
-    py::ssize_t n_features = Y_unpacked_buf.shape[1];
-    auto Y_unpacked_ptr = static_cast<const uint8_t*>(Y_unpacked_buf.ptr);
+    auto fps_unpacked = _nochecks_unpack_fingerprints_2d(fps, n_features_opt);
+    py::ssize_t n_features = fps_unpacked.shape(1);
+    py::ssize_t fps_unpacked_strides0 = fps_unpacked.strides(0);
 
     auto linear_sum = py::array_t<uint64_t>(n_features);
-    auto linear_sum_ptr = static_cast<uint64_t*>(linear_sum.request().ptr);
-    std::fill(linear_sum_ptr, linear_sum_ptr + n_features, 0);
+    auto linear_sum_ptr = linear_sum.mutable_data();
+    std::memset(linear_sum_ptr, 0, linear_sum.nbytes());
 
-    // TODO: This sum could be vectorized or done more efficiently
-    for (py::ssize_t i = 0; i < n_samples; ++i) {
-        const uint8_t* row_ptr = Y_unpacked_ptr + i * Y_unpacked_buf.strides[0];
-        for (py::ssize_t j = 0; j < n_features; ++j) {
+    // TODO: This sum could be vectorized manually or automatically
+    auto fps_unpacked_ptr = fps_unpacked.data();
+    for (py::ssize_t i = 0; i != n_samples; ++i) {
+        const uint8_t* row_ptr = fps_unpacked_ptr + i * fps_unpacked_strides0;
+        for (py::ssize_t j = 0; j != n_features; ++j) {
             linear_sum_ptr[j] += row_ptr[j];
         }
     }
 
     auto packed_centroid = calc_centroid(linear_sum, n_samples, true);
-    auto cardinalities = _popcount_2d(Y);
+    auto cardinalities = _popcount_2d(fps);
 
-    auto sims_cent = jt_sim_packed(Y, packed_centroid, cardinalities);
-    py::buffer_info sims_cent_buf = sims_cent.request();
-    auto sims_cent_ptr = static_cast<const double*>(sims_cent_buf.ptr);
+    auto sims_cent = jt_sim_packed(fps, packed_centroid, cardinalities);
+    auto sims_cent_ptr = sims_cent.data();
 
-    py::ssize_t fp_1_idx = std::distance(
+    auto fps_ptr = fps.data();
+
+    // argmin
+    py::ssize_t fp1_idx = std::distance(
         sims_cent_ptr,
         std::min_element(sims_cent_ptr, sims_cent_ptr + n_samples));
+    auto fp1_packed = py::array_t<uint8_t>(n_features_packed,
+                                           fps_ptr + fp1_idx * fps_strides0);
 
-    auto fp_1_packed = py::array_t<uint8_t>(
-        n_features_packed, Y_ptr + fp_1_idx * Y_buf.strides[0]);
+    auto sims_fp1 = jt_sim_packed(fps, fp1_packed, cardinalities);
+    auto sims_fp1_ptr = sims_fp1.data();
 
-    auto sims_fp_1 = jt_sim_packed(Y, fp_1_packed, cardinalities);
-    py::buffer_info sims_fp_1_buf = sims_fp_1.request();
-    auto sims_fp_1_ptr = static_cast<const double*>(sims_fp_1_buf.ptr);
+    // argmin
+    py::ssize_t fp2_idx = std::distance(
+        sims_fp1_ptr, std::min_element(sims_fp1_ptr, sims_fp1_ptr + n_samples));
+    auto fp2_packed = py::array_t<uint8_t>(n_features_packed,
+                                           fps_ptr + fp2_idx * fps_strides0);
 
-    py::ssize_t fp_2_idx = std::distance(
-        sims_fp_1_ptr,
-        std::min_element(sims_fp_1_ptr, sims_fp_1_ptr + n_samples));
+    auto sims_fp2 = jt_sim_packed(fps, fp2_packed, cardinalities);
 
-    auto fp_2_packed = py::array_t<uint8_t>(
-        n_features_packed, Y_ptr + fp_2_idx * Y_buf.strides[0]);
-    auto sims_fp_2 = jt_sim_packed(Y, fp_2_packed, cardinalities);
-
-    return py::make_tuple(fp_1_idx, fp_2_idx, sims_fp_1, sims_fp_2);
+    return py::make_tuple(fp1_idx, fp2_idx, sims_fp1, sims_fp2);
 }
 
 PYBIND11_MODULE(_cpp_similarity, m) {
@@ -487,8 +448,7 @@ PYBIND11_MODULE(_cpp_similarity, m) {
     m.def("_nochecks_unpack_fingerprints_1d", &_nochecks_unpack_fingerprints_1d,
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
-    m.def("calc_centroid",
-          &calc_centroid, "centroid calculation",
+    m.def("calc_centroid", &calc_centroid, "centroid calculation",
           py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
