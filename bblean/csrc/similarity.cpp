@@ -217,8 +217,8 @@ py::array_t<uint8_t> unpack_fingerprints(
 // TODO: Allow multiple dtypes as input?
 template <typename T>
 py::array_t<uint8_t> calc_centroid(
-    const py::array_t<T, py::array::c_style | py::array::forcecast>& linear_sum,
-    int64_t n_samples, bool pack = true) {
+    const py::array_t<T, py::array::c_style>& linear_sum, int64_t n_samples,
+    bool pack = true) {
     if (linear_sum.ndim() != 1) {
         throw std::runtime_error("linear_sum must be 1-dimensional");
     }
@@ -443,10 +443,15 @@ PYBIND11_MODULE(_cpp_similarity, m) {
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
 
-    m.def("calc_centroid", &calc_centroid<uint8_t>, "centroid calculation", py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
-    m.def("calc_centroid", &calc_centroid<uint16_t>, "centroid calculation", py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
-    m.def("calc_centroid", &calc_centroid<uint32_t>, "centroid calculation", py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
-    m.def("calc_centroid", &calc_centroid<uint64_t>, "centroid calculation", py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
+    // Overloads so the correct function is dispatched with the correct input
+    m.def("calc_centroid", &calc_centroid<uint8_t>, "centroid calculation",
+          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
+    m.def("calc_centroid", &calc_centroid<uint16_t>, "centroid calculation",
+          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
+    m.def("calc_centroid", &calc_centroid<uint32_t>, "centroid calculation",
+          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
+    m.def("calc_centroid", &calc_centroid<uint64_t>, "centroid calculation",
+          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
 
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
