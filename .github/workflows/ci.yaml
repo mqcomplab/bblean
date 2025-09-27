@@ -44,11 +44,13 @@ jobs:
       - name: install-repo
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-subtests pytest-cov
-          pip install --verbose .
+          pip install pytest pytest-subtests pytest-cov coverage
+          pip install --verbose --editable .
 
       - name: run-pytest
-        run: pytest --cov=bblean --cov-report=json -s -k 'not regression' ./tests
+        run: |
+          pytest --cov=bblean --cov-report=json -s -k 'not regression' ./tests
+          coverage report
 
       - name: upload-badge-artifact
         uses: actions/upload-artifact@v4
@@ -87,8 +89,10 @@ jobs:
   # Ubuntu 24.04 for reproducibility in regression tests only
   # coverage makes tests slightly slower, so regression tests should not run with
   # coverage
+  # skip these for pushes to main since they are slower
   regression-tests:
     runs-on: ubuntu-24.04
+    if: github.ref != 'refs/heads/main'
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
