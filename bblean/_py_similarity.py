@@ -58,31 +58,37 @@ def jt_most_dissimilar_packed(
     cardinalities = _popcount(Y)
 
     # Get similarity of each fp to the centroid, and the least similar fp idx (fp_1)
-    sims_cent = jt_sim_packed(Y, packed_centroid, cardinalities)
+    sims_cent = _jt_sim_packed_precalc_cardinalities(Y, packed_centroid, cardinalities)
     fp_1 = np.argmin(sims_cent)
 
     # Get similarity of each fp to fp_1, and the least similar fp idx (fp_2)
-    sims_fp_1 = jt_sim_packed(Y, Y[fp_1], cardinalities)
+    sims_fp_1 = _jt_sim_packed_precalc_cardinalities(Y, Y[fp_1], cardinalities)
     fp_2 = np.argmin(sims_fp_1)
 
     # Get similarity of each fp to fp_2
-    sims_fp_2 = jt_sim_packed(Y, Y[fp_2], cardinalities)
+    sims_fp_2 = _jt_sim_packed_precalc_cardinalities(Y, Y[fp_2], cardinalities)
     return fp_1, fp_2, sims_fp_1, sims_fp_2
 
 
 def jt_sim_packed(
     arr: NDArray[np.uint8],
     vec: NDArray[np.uint8],
-    _cardinalities: NDArray[np.integer] | None = None,
 ) -> NDArray[np.float64]:
     r"""Tanimoto similarity between a matrix of packed fps and a single packed fp"""
-    # NOTE: If _cardinalities is passed, it must be the result of calling _popcount(arr)
+    return _jt_sim_packed_precalc_cardinalities(arr, vec, _popcount(arr))
+
+
+def _jt_sim_packed_precalc_cardinalities(
+    arr: NDArray[np.uint8],
+    vec: NDArray[np.uint8],
+    cardinalities: NDArray[np.integer],
+) -> NDArray[np.float64]:
+    # _cardinalities must be the result of calling _popcount(arr)
 
     # Maximum value in the denominator sum is the 2 * n_features (which is typically
     # uint16, but we use uint32 for safety)
     intersection = _popcount(np.bitwise_and(arr, vec))
-    if _cardinalities is None:
-        _cardinalities = _popcount(arr)
+
     # Return value requires an out-of-place operation since it casts uints to f64
     #
     # There may be NaN in the similarity array if the both the cardinality
@@ -90,7 +96,7 @@ def jt_sim_packed(
     #
     # In these cases the fps are equal so the similarity *should be 1*, so we
     # clamp the denominator, which is A | B (zero only if A & B is zero too).
-    return intersection / np.maximum(_cardinalities + _popcount(vec) - intersection, 1)
+    return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
 
 
 def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
