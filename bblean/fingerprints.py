@@ -18,8 +18,6 @@ __all__ = [
     "unpack_fingerprints",
     "calc_centroid",
 ]
-# TODO: Packing and unpacking *should be done in C++ using a lookup table*
-# calc_centroid is quite expensive and could be done in C++ too
 
 
 def calc_centroid(

@@ -256,9 +256,17 @@ py::array_t<uint8_t> calc_centroid(
     std::memset(centroid_packed_ptr, 0, centroid_packed.nbytes());
 
     // Slower than numpy, due to lack of SIMD
-    for (int i{0}; i != n_features; ++i) {  // not auto-vec by GCC
-        if (centroid_unpacked_cptr[i]) {
-            centroid_packed_ptr[i / 8] |= (1 << (7 - (i % 8)));
+    // The following loop is *marginally slower* (benchmkd') than the implemented one:
+    // for (int i{0}; i != n_features; ++i) {
+    //    if (centroid_unpacked_cptr[i]) {
+    //        centroid_packed_ptr[i / 8] |= (1 << (7 - (i % 8)));
+    //    }
+    //  }
+    //  TODO: Check if GCC is auto-vectorizing
+    for (int i{0}, stride{0}; i != n_bytes; i++, stride += 8) {
+        for (int b{0}; b != 8; ++b) {
+            centroid_packed_ptr[i] <<= 1;
+            centroid_packed_ptr[i] |= centroid_unpacked_cptr[stride + b];
         }
     }
     return centroid_packed;
@@ -444,9 +452,10 @@ PYBIND11_MODULE(_cpp_similarity, m) {
 
     // NOTE: pybind11's dynamic dispatch is *significantly* more
     // expensive than casting to uint64_t always
-    // still this function is *barely* faster than python for pack=False,
-    // and *slightly slower* for pack=True so it is not exposed in any module
-    // (only for internal use and debugging)
+    // still this function is *barely* faster than python if no casts are needed,
+    // and slightly slower if casts are needed
+    // so it is not useful outside the C++ code, and it should not be exposed by default
+    // in any module (only for internal use and debugging)
     m.def("calc_centroid", &calc_centroid<uint64_t>, "centroid calculation",
           py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
 
