@@ -24,6 +24,7 @@
 ###          Alexandre Gramfort <alexandre.gramfort@telecom-paristech.fr>
 ###          Joel Nothman <joel.nothman@gmail.com>
 ### License: BSD 3 clause
+from pathlib import Path
 
 import numpy as np
 from scipy import sparse
@@ -611,6 +612,7 @@ class BitBirch:
         store_centroids=False,
         input_is_packed: bool = False,
         n_features: int | None = None,
+        max_fps: int | None = None,
     ):
         """
         Build a BF Tree for the input data.
@@ -625,6 +627,10 @@ class BitBirch:
         self
             Fitted estimator.
         """
+        if isinstance(X, Path):
+            fps = np.load(file, mmap_mode="r")[max_fps:]
+        else:
+            X = X[max_fps:]
         threshold = self.threshold
         branching_factor = self.branching_factor
         n_features = _validate_n_features(X, input_is_packed, n_features)

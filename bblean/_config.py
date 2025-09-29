@@ -27,6 +27,8 @@ class BitBirchConfig:
 
 DEFAULTS = BitBirchConfig()
 
+TSNE_SEED = 42
+
 
 def collect_system_specs_and_dump_config(
     config: dict[str, tp.Any],

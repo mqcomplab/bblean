@@ -19,6 +19,8 @@ dependencies = [
     "pandas",
     "psutil",
     "matplotlib",
+    "colorcet",
+    "opentsne",
     "scikit-learn",
     "rich",
     "typer",

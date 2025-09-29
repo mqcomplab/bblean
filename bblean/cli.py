@@ -1,6 +1,5 @@
 r"""Command line interface entrypoints"""
 
-import typing_extensions as tpx
 import typing as tp
 import math
 import shutil
@@ -16,7 +15,7 @@ from typer import Typer, Argument, Option, Abort, Context, Exit
 
 from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
 from bblean._timer import Timer
-from bblean._config import DEFAULTS, collect_system_specs_and_dump_config
+from bblean._config import DEFAULTS, collect_system_specs_and_dump_config, TSNE_SEED
 from bblean.utils import _import_bitbirch_variant, batched
 
 app = Typer(
@@ -75,6 +74,144 @@ def _main(
     pass
 
 
+@app.command("tsne-plot")
+def _tsne_plot(
+    clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
+    fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    exaggeration: Annotated[
+        float | None,
+        Option("-e", "--exaggeration", rich_help_panel="Advanced"),
+    ] = None,
+    seed: Annotated[
+        int | None,
+        Option(
+            "-s",
+            "--seed",
+            help=(
+                "Seed for the rng, fixed value by default, for reproducibility."
+                " Pass -1 to randomize"
+            ),
+            show_default=False,
+        ),
+    ] = TSNE_SEED,
+    top: Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    dof: Annotated[
+        float,
+        Option("-d", "--dof", rich_help_panel="Advanced"),
+    ] = 1.0,
+    perplexity: Annotated[
+        int,
+        Option(help="t-SNE perplexity", rich_help_panel="Advanced"),
+    ] = 30,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    scaling: Annotated[
+        str,
+        Option("--scaling", rich_help_panel="Advanced"),
+    ] = "normalize",
+    do_pca_init: Annotated[
+        bool,
+        Option(
+            "--pca-init/--no-pca-init",
+            rich_help_panel="Advanced",
+            help="Use PCA for initialization",
+        ),
+    ] = True,
+    pca_reduce: Annotated[
+        int | None,
+        Option(
+            "-p",
+            "--pca-reduce",
+            rich_help_panel="Advanced",
+            help=(
+                "Reduce fingerprint dimensionality to N components using PCA."
+                " A value of 50 or more maintains cluster structure in general"
+            ),
+        ),
+    ] = None,
+    workers: Annotated[
+        int | None,
+        Option(
+            "-w",
+            "--workers",
+            help="Num. cores to use for parallel processing",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    multiscale: Annotated[
+        bool,
+        Option(
+            "-m/-M",
+            "--multiscale/--no-multiscale",
+            rich_help_panel="Advanced",
+            help="Use multiscale perplexities (WARNING: Can be very slow!)",
+        ),
+    ] = False,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+) -> None:
+    r"""Summary plot of the clustering results"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        from bblean.analysis import cluster_analysis
+        from bblean.plotting import tsne_plot
+
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        with open(clusters_path, mode="rb") as f:
+            clusters = pickle.load(f)
+        fps = np.load(fps_path, mmap_mode="r")
+        ca = cluster_analysis(
+            clusters,
+            fps,
+            smiles=(),
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+        )
+        tsne_plot(
+            ca,
+            title,
+            perplexity=perplexity,
+            exaggeration=exaggeration,
+            seed=seed,
+            dof=dof,
+            workers=workers,
+            scaling=scaling,
+            do_pca_init=do_pca_init,
+            multiscale=multiscale,
+            pca_reduce=pca_reduce,
+        )
+    plt.show()
+
+
 @app.command("summary-plot")
 def _summary_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
@@ -98,13 +235,13 @@ def _summary_plot(
     ] = 20,
     input_is_packed: Annotated[
         bool,
-        Option("--packed-input/--unpacked-input"),
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
     ] = True,
     scaffold_fp_kind: Annotated[
         str,
         Option("--scaffold-fp-kind"),
     ] = DEFAULTS.fp_kind,
-    annotate: tpx.Annotated[
+    annotate: Annotated[
         bool,
         Option(
             "--annotate/--no-annotate",
@@ -199,7 +336,7 @@ def _run(
         float,
         Option(help="BitBIRCH tolerance. For refinement and --set-merge 'tolerance'"),
     ] = DEFAULTS.tolerance,
-    refine_num: tpx.Annotated[
+    refine_num: Annotated[
         int,
         Option(
             "-r",
@@ -330,7 +467,12 @@ def _run(
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         for file in input_files:
             # Fitting a file uses mmap internally, and releases memory in a smart way
-            tree.fit(file, n_features, input_is_packed=input_is_packed, max_fps=max_fps)
+            tree.fit(
+                file,
+                n_features=n_features,
+                input_is_packed=input_is_packed,
+                max_fps=max_fps,
+            )
 
         if refine_num > 0:
             tree.set_merge("tolerance", tolerance=tolerance)
@@ -443,7 +585,7 @@ def _multiround(
             rich_help_panel="Advanced",
         ),
     ] = 1,
-    split_largest_after_midsection: tpx.Annotated[
+    split_largest_after_midsection: Annotated[
         bool,
         Option(
             "--split-after-mid/--no-split-after-mid",
@@ -869,6 +1011,38 @@ def _split_fps(
             name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
             np.save(out_dir / name, batch)
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
+
+
+@app.command("fps-shuffle")
+def _shuffle_fps(
+    in_file: Annotated[
+        Path,
+        Argument(help="`*.npy` file with packed fingerprints"),
+    ],
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+    seed: Annotated[
+        int | None,
+        Option("--seed", hidden=True, rich_help_panel="Debug"),
+    ] = None,
+) -> None:
+    """Shuffle a fingerprints file
+
+    This function is not optimized and as such may have high RAM usage. It is
+    meant for testing purposes only"""
+    import numpy as np
+
+    fps = np.load(in_file)
+    stem = in_file.stem
+    rng = np.random.default_rng(seed)
+    rng.shuffle(fps, axis=0)
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    np.save(out_dir / f"shuffled-{stem}.npy", fps)
 
 
 @app.command("fps-merge")
