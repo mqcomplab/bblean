@@ -25,7 +25,7 @@ def test_tsne() -> None:
         result = runner.invoke(
             app,
             [
-                "tsne-plot",
+                "plot-tsne",
                 "-c",
                 str(out_dir),
                 "-f",
@@ -55,7 +55,7 @@ def test_summary() -> None:
         result = runner.invoke(
             app,
             [
-                "summary-plot",
+                "plot-summary",
                 "-c",
                 str(out_dir),
                 "-f",
