@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import typing_extensions as tpx
 import typing as tp
 import math
 import shutil
@@ -16,7 +17,7 @@ from typer import Typer, Argument, Option, Abort, Context, Exit
 from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
 from bblean._timer import Timer
 from bblean._config import DEFAULTS, collect_system_specs_and_dump_config, TSNE_SEED
-from bblean.utils import _import_bitbirch_variant, batched
+from bblean.utils import _import_bitbirch_variant, batched, _has_files_or_valid_symlinks
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -76,8 +77,19 @@ def _main(
 
 @app.command("plot-tsne", rich_help_panel="Analysis")
 def _tsne_plot(
-    clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
-    fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
     title: Annotated[
         str | None,
         Option("--title", help="Plot title"),
@@ -182,7 +194,6 @@ def _tsne_plot(
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
         import matplotlib.pyplot as plt
-        import numpy as np
 
         from bblean.analysis import cluster_analysis
         from bblean.plotting import tsne_plot
@@ -191,10 +202,23 @@ def _tsne_plot(
             clusters_path = clusters_path / "clusters.pkl"
         with open(clusters_path, mode="rb") as f:
             clusters = pickle.load(f)
-        fps = np.load(fps_path, mmap_mode="r")
+        if fps_path is None:
+            input_fps_path = clusters_path.parent / "input-fps"
+            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+                fps_path = input_fps_path
+            else:
+                console.print(
+                    "Could not find input fingerprints. Please use --fps-path",
+                    style="red",
+                )
+                raise Abort()
+        if fps_path.is_dir():
+            fps_paths = sorted(fps_path.glob("*.npy"))
+        else:
+            fps_paths = [fps_path]
         ca = cluster_analysis(
             clusters,
-            fps,
+            fps_paths,
             smiles=(),
             top=top,
             n_features=n_features,
@@ -219,8 +243,19 @@ def _tsne_plot(
 
 @app.command("plot-summary", rich_help_panel="Analysis")
 def _summary_plot(
-    clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
-    fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
     smiles_path: Annotated[
         Path | None,
         Option(
@@ -279,7 +314,6 @@ def _summary_plot(
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
         import matplotlib.pyplot as plt
-        import numpy as np
 
         from bblean.smiles import load_smiles
         from bblean.analysis import cluster_analysis
@@ -289,7 +323,21 @@ def _summary_plot(
             clusters_path = clusters_path / "clusters.pkl"
         with open(clusters_path, mode="rb") as f:
             clusters = pickle.load(f)
-        fps = np.load(fps_path, mmap_mode="r")
+        if fps_path is None:
+            input_fps_path = clusters_path.parent / "input-fps"
+            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+                fps_path = input_fps_path
+            else:
+                console.print(
+                    "Could not find input fingerprints. Please use --fps-path",
+                    style="red",
+                )
+                raise Abort()
+        if fps_path.is_dir():
+            fps_paths = sorted(fps_path.glob("*.npy"))
+        else:
+            fps_paths = [fps_path]
+        # fps = np.load(fps_path, mmap_mode="r")
         smiles: tp.Iterable[str]
         if smiles_path is not None:
             smiles = load_smiles(smiles_path)
@@ -297,7 +345,7 @@ def _summary_plot(
             smiles = ()
         ca = cluster_analysis(
             clusters,
-            fps,
+            fps_paths,
             smiles,
             top=top,
             n_features=n_features,
@@ -408,6 +456,14 @@ def _run(
             hidden=True,
         ),
     ] = "lean",
+    copy_inputs: tpx.Annotated[
+        bool,
+        Option(
+            "--copy/--no-copy",
+            rich_help_panel="Advanced",
+            help="Copy the input files instead of symlink",
+        ),
+    ] = False,
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
@@ -505,10 +561,22 @@ def _run(
     timer.dump(out_dir / "timings.json")
 
     peak_rss_fpath = out_dir / "peak-rss.json"
-    with open(peak_rss_fpath, mode="wt", encoding="utf-8") as f:
+    with open(peak_rss_fpath, mode="wt", encoding="utf-8") as tf:
         json.dump(
-            {"self_max_rss_gib": None if stats is None else stats.self_gib}, f, indent=4
+            {"self_max_rss_gib": None if stats is None else stats.self_gib},
+            tf,
+            indent=4,
         )
+
+    # Symlink or copy fingerprint files
+    input_fps_dir = (out_dir / "input-fps").resolve()
+    input_fps_dir.mkdir()
+    if copy_inputs:
+        for file in input_files:
+            shutil.copy(file, input_fps_dir / file.name)
+    else:
+        for file in input_files:
+            (input_fps_dir / file.name).symlink_to(file.resolve())
 
 
 # TODO: Currently sometimes after a round is triggered *more* files are output, since
@@ -676,6 +744,14 @@ def _multiround(
         int | None,
         Option(help="Max num. files to read", rich_help_panel="Debug", hidden=True),
     ] = None,
+    copy_inputs: tpx.Annotated[
+        bool,
+        Option(
+            "--copy/--no-copy",
+            rich_help_panel="Advanced",
+            help="Copy the input files instead of symlink",
+        ),
+    ] = False,
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
@@ -751,6 +827,16 @@ def _multiround(
     timer.dump(out_dir / "timings.json")
     # TODO: Also dump peak-rss.json
     collect_system_specs_and_dump_config(ctx.params)
+
+    # Symlink or copy fingerprint files
+    input_fps_dir = (out_dir / "input-fps").resolve()
+    input_fps_dir.mkdir()
+    if copy_inputs:
+        for file in input_files:
+            shutil.copy(file, input_fps_dir / file.name)
+    else:
+        for file in input_files:
+            (input_fps_dir / file.name).symlink_to(file.resolve())
 
 
 @app.command("fps-info", rich_help_panel="Fingerprints")

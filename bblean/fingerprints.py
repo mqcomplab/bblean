@@ -204,6 +204,23 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
     console.print()
 
 
+class _FingerprintFileSequence:
+    def __init__(self, files: tp.Iterable[Path]) -> None:
+        self._files = list(files)
+        if len(self._files) == 0:
+            raise ValueError("At least 1 fingerprint file must be provided")
+
+    def __getitem__(self, idxs: tp.Sequence[int]) -> NDArray[np.uint8]:
+        return _get_fingerprints_from_file_seq(self._files, idxs)
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        shape, dtype, _, _ = _get_fps_file_shape_and_dtype(
+            self._files[0], raise_if_invalid=True
+        )
+        return shape
+
+
 # TODO: The logic of this function is pretty complicated, maybe there is a way to
 # simplify it?
 def _get_fingerprints_from_file_seq(

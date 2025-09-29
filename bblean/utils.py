@@ -1,5 +1,6 @@
 r"""Misc. utility functions"""
 
+from pathlib import Path
 import itertools
 import numpy as np
 import typing as tp
@@ -85,3 +86,14 @@ def _cpu_name() -> str:
 
     # Fallback for windows and all cases where it could not be found
     return platform.processor()
+
+
+def _has_files_or_valid_symlinks(path: Path) -> bool:
+    has_files = False
+    for p in path.iterdir():
+        if p.is_symlink() and not p.exists():
+            return False
+
+        if p.is_file():
+            has_files = True
+    return has_files

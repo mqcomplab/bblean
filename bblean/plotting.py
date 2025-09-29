@@ -93,7 +93,7 @@ def summary_plot(
     # Plot iSIM
     ax_isim = ax.twinx()
     ax_isim.plot(
-        df["label"],
+        df["label"] - 1,
         df["isim"],
         color="tab:green",
         linestyle="dashed",
@@ -102,7 +102,7 @@ def summary_plot(
         alpha=0.6,
     )
     ax_isim.scatter(
-        df["label"],
+        df["label"] - 1,
         df["isim"],
         color="tab:green",
         marker="o",

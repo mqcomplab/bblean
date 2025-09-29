@@ -12,7 +12,11 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 
 from bblean._config import DEFAULTS
 from bblean.similarity import jt_isim
-from bblean.fingerprints import fps_from_smiles, unpack_fingerprints
+from bblean.fingerprints import (
+    fps_from_smiles,
+    unpack_fingerprints,
+    _FingerprintFileSequence,
+)
 
 __all__ = [
     "scaffold_analysis",
@@ -60,10 +64,12 @@ class ClusterAnalysis:
 def scaffold_analysis(
     smiles: tp.Iterable[str], fp_kind: str = DEFAULTS.fp_kind
 ) -> ScaffoldAnalysis:
-    r"""Perform a scaffold analysis of a sequence of smiles"""
+    r"""Perform a scaffold analysis of a sequence of smiles
+
+    Note that the order of the input smiles is not relevant
+    """
     if isinstance(smiles, str):
         smiles = [smiles]
-    smiles = np.asarray(smiles)
     scaffolds = [MurckoScaffold.MurckoScaffoldSmilesFromSmiles(smi) for smi in smiles]
     unique_scaffolds = set(scaffolds)
     unique_num = len(unique_scaffolds)
@@ -74,7 +80,7 @@ def scaffold_analysis(
 
 def cluster_analysis(
     clusters: list[list[int]],
-    fps: NDArray[np.integer],
+    fps: NDArray[np.integer] | Path | tp.Sequence[Path],
     smiles: tp.Iterable[str] = (),
     n_features: int | None = None,
     top: int = 20,
@@ -93,14 +99,26 @@ def cluster_analysis(
     clusters = clusters[:top]
 
     info: dict[str, list[tp.Any]] = defaultdict(list)
-    fps = tp.cast(NDArray[np.uint8], fps.astype(np.uint8, copy=False))
-    selected = np.empty((sum(len(c) for c in clusters), fps.shape[1]), dtype=np.uint8)
+    fps_provider: tp.Union[_FingerprintFileSequence, NDArray[np.uint8]]
+    if isinstance(fps, Path):
+        fps_provider = np.load(fps, mmap_mode="r")
+    elif not isinstance(fps, np.ndarray):
+        fps_provider = _FingerprintFileSequence(fps)
+    else:
+        fps_provider = tp.cast(NDArray[np.uint8], fps.astype(np.uint8, copy=False))
+    selected = np.empty(
+        (sum(len(c) for c in clusters), fps_provider.shape[1]), dtype=np.uint8
+    )
     start = 0
     for i, c in enumerate(clusters, 1):
         size = len(c)
-        _fps = fps[c]
+        # If a file sequence is passed, the cluster indices must be sorted.
+        # the cluster analysis is idx-order-independent, so this is fine
+        _fps = fps_provider[sorted(c)]
         if input_is_packed:
             _fps_unpack = unpack_fingerprints(_fps, n_features=n_features)
+        else:
+            _fps_unpack = _fps.copy()
         info["label"].append(i)
         info["mol_num"].append(size)
         info["isim"].append(jt_isim(np.sum(_fps_unpack, axis=0, dtype=np.uint64), size))
