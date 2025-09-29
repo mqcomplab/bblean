@@ -18,7 +18,9 @@ dependencies:
   - pandas
   - psutil
   - matplotlib
+  - colorcet
   - scikit-learn
+  - opentsne
   # CLI
   - typer  # Handy cli library with support for type checking
   - rich  # Colorful styles and terminal outputs
