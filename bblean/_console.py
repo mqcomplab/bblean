@@ -124,7 +124,9 @@ class BBConsole(Console):
                 f"- Output directory: {config['out_dir']}\n",
                 end="",
             )
-        double_cluster_init = config.get("double_cluster_init", False)
+        full_refinement_before_midsection = config.get(
+            "full_refinement_before_midsection", False
+        )
         bb_variant = config.get("bitbirch_variant", "lean")
         max_files = config.get("max_files", None)
         bin_size = config.get("bin_size", None)
@@ -136,9 +138,9 @@ class BBConsole(Console):
                 f"- Multiprocessing method: [yellow]{mp.get_start_method()}[/yellow]\n",
                 end="",
             )
-        if not double_cluster_init:
+        if not full_refinement_before_midsection:
             self.print(
-                f"- Use double-cluster-init: {double_cluster_init}\n",
+                f"- Full refinement before midsection: {full_refinement_before_midsection}\n",  # noqa:E501
                 end="",
             )
         if bb_variant != "lean":

@@ -314,7 +314,7 @@ def _run(
     timer = Timer()
     timer.init_timing("total")
     if "lean" not in variant:
-        set_merge(merge_criterion, tolerance)
+        set_merge(merge_criterion, tolerance=tolerance)
         tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
     else:
         tree = BitBirch(
@@ -332,6 +332,7 @@ def _run(
             tree.fit(file, n_features, input_is_packed=input_is_packed, max_fps=max_fps)
 
         if refine_num > 0:
+            tree.set_merge("tolerance", tolerance=tolerance)
             tree.refine_inplace(
                 file, input_is_packed=input_is_packed, n_largest=refine_num
             )
@@ -343,7 +344,6 @@ def _run(
         console.print("[Peak memory stats not tracked for non-Unix systems]")
     else:
         console.print_peak_mem_raw(stats, indent=False)
-
     # Dump outputs (peak memory, timings, config, cluster ids)
     with open(out_dir / "clusters.pkl", mode="wb") as f:
         pickle.dump(cluster_mol_ids, f)
@@ -399,7 +399,7 @@ def _multiround(
         float,
         Option(
             help="BitBIRCH tolerance"
-            " (Used in Round 1 'double-cluster-init', Round 2, and Final clustering)"
+            " (Used in Round 1 for 'full refinment', Round 2, and Final clustering)"
         ),
     ] = DEFAULTS.tolerance,
     initial_merge_criterion: Annotated[
@@ -431,13 +431,28 @@ def _multiround(
     num_midsection_rounds: Annotated[
         int,
         Option(
-            "--num-midsection-rounds", help="Number of midsection rounds to perform"
+            "--num-midsection-rounds",
+            help="Number of midsection rounds to perform",
+            rich_help_panel="Advanced",
         ),
     ] = 1,
-    double_cluster_init: Annotated[
+    split_largest_after_midsection: tpx.Annotated[
         bool,
         Option(
-            help="Toggle 'double-cluster-init' ('True' is recommended)",
+            help=(
+                "Split largest cluster after each midsection round"
+                " (to be refined by the next round)"
+            ),
+            rich_help_panel="Advanced",
+        ),
+    ] = False,
+    full_refinement_before_midsection: Annotated[
+        bool,
+        Option(
+            help=(
+                "Run a *full* refinement step after the initial clustering round"
+                " (largest cluster is always split regardless of this flag)"
+            ),
             rich_help_panel="Advanced",
         ),
     ] = True,
@@ -554,14 +569,15 @@ def _multiround(
         initial_merge_criterion=initial_merge_criterion,
         num_initial_processes=num_initial_processes,
         num_midsection_processes=num_midsection_processes,
-        num_midsection_rounds=num_midsection_rounds,
         branching_factor=branching_factor,
         threshold=threshold,
         tolerance=tolerance,
         # Advanced
         bin_size=bin_size,
         max_tasks_per_process=max_tasks_per_process,
-        double_cluster_init=double_cluster_init,
+        full_refinement_before_midsection=full_refinement_before_midsection,
+        num_midsection_rounds=num_midsection_rounds,
+        split_largest_after_each_midsection_round=split_largest_after_midsection,
         # Debug
         only_first_round=only_first_round,
         max_fps=max_fps,
@@ -841,3 +857,43 @@ def _split_fps(
             name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
             np.save(out_dir / name, batch)
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
+
+
+@app.command("fps-merge")
+def _merge_fps(
+    in_dir: Annotated[
+        Path,
+        Argument(help="Directory with input `*.npy` files with packed fingerprints"),
+    ],
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+) -> None:
+    r"""Merge a dir with multiple `*.npy` fingerprint file into a single `*.npy` file"""
+    from bblean._console import get_console
+    import numpy as np
+
+    console = get_console()
+
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    arrays = []
+    with console.status("[italic]Merging fingerprints...[/italic]", spinner="dots"):
+        stem = None
+        for f in sorted(in_dir.glob("*.npy")):
+            if stem is None:
+                stem = f.name.split(".")[0]
+            elif stem != f.name.split(".")[0]:
+                raise ValueError(
+                    "Name convention must be <name>.<idx>.npy"
+                    " with all files having the same <name>"
+                )
+            arrays.append(np.load(f))
+        if stem is None:
+            console.print("No *.npy files found")
+            return
+        np.save(out_dir / stem, np.concatenate(arrays))
+    console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")

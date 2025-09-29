@@ -99,7 +99,9 @@ def cluster_analysis(
             _fps_unpacked = _fps.copy()
         info["label"].append(i)
         info["mol_num"].append(size)
-        info["isim"].append(jt_isim(np.sum(_fps_unpacked, axis=0), size))
+        info["isim"].append(
+            jt_isim(np.sum(_fps_unpacked, axis=0, dtype=np.uint64), size)
+        )
 
         if smiles.size:
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
