@@ -2,7 +2,21 @@ from pathlib import Path
 import tempfile
 import numpy as np
 import itertools
-from bblean.fingerprints import _get_fingerprints_from_file_seq, make_fake_fingerprints
+from bblean.fingerprints import (
+    _get_fingerprints_from_file_seq,
+    make_fake_fingerprints,
+    fps_from_smiles,
+)
+from bblean.smiles import load_smiles
+
+
+def test_fps_from_smiles() -> None:
+    smiles = load_smiles(Path(__file__).parent / "chembl-sample-3k.smi")
+    fps_raw = fps_from_smiles(smiles).reshape(-1)
+    nonzero = fps_raw.nonzero()[0].reshape(-1)
+    actual = fps_raw[nonzero][:19].tolist()
+    expect = [4, 128, 2, 16, 8, 16, 4, 16, 128, 16, 1, 128, 1, 64, 1, 1, 128, 32, 32]
+    assert actual == expect
 
 
 def test_fingerprints_from_file_seq_empty() -> None:
