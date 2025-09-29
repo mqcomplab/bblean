@@ -115,8 +115,8 @@ def _summary_plot(
         Option(
             "--n-features",
             help="Number of features in the fingerprints."
-            " It must be provided for packed inputs *if it is not a multiple of 8*."
-            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
             rich_help_panel="Advanced",
         ),
     ] = None,
@@ -180,24 +180,23 @@ def _run(
     branching_factor: Annotated[
         int,
         Option(
-            help="BitBIRCH branching factor. Under most circumstances 254 is"
-            " optimal for performance and memory efficiency. Set this above 254 for"
-            " slightly less RAM usage at the cost of some performance."
+            "--branching",
+            "-b",
+            help="BitBIRCH branching factor (all rounds). Usually 254 is"
+            " optimal. Set above 254 for slightly less RAM (at the cost of some perf.)",
         ),
     ] = DEFAULTS.branching_factor,
     threshold: Annotated[
         float,
-        Option("--threshold"),
+        Option("--threshold", "-t", help="Threshold for merge criterion"),
     ] = DEFAULTS.threshold,
     merge_criterion: Annotated[
         str,
-        Option("--set-merge"),
+        Option("--set-merge", "-m", help="Merge criterion for initial clustsering"),
     ] = "diameter",
     tolerance: Annotated[
         float,
-        Option(
-            help="BitBIRCH tolerance, only for --set-merge tolerance|tolerance_tough"
-        ),
+        Option(help="BitBIRCH tolerance. For refinement and --set-merge 'tolerance'"),
     ] = DEFAULTS.tolerance,
     refine_num: tpx.Annotated[
         int,
@@ -232,8 +231,8 @@ def _run(
     monitor_rss: Annotated[
         bool,
         Option(
-            help="Monitor RAM used by all processes (requires psutil)",
-            rich_help_panel="Debug",
+            help="Monitor RAM used by all processes",
+            rich_help_panel="Advanced",
         ),
     ] = False,
     monitor_rss_interval_s: Annotated[
@@ -242,14 +241,15 @@ def _run(
             "--monitor-rss-seconds",
             help="Interval in seconds for RSS monitoring",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = 0.01,
     max_fps: Annotated[
         int | None,
         Option(
-            "--max-fps",
-            rich_help_panel="Debug",
             help="Max. num of fingerprints to read from each file",
+            rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = None,
     variant: Annotated[
@@ -381,41 +381,47 @@ def _multiround(
         Option(
             "--mid-ps",
             "--mid-processes",
-            help="Num. processes to use for the middle section (if multiprocessing)."
-            "Middle section clustering can be very memory intensive, "
-            "so it may be desirable to use 50%-30% of the first round processes",
+            help="Num. processes for middle section rounds."
+            " These are be memory intensive,"
+            " you may want to use 50%-30% of --ps."
+            " Default is same as --ps",
         ),
     ] = None,
     branching_factor: Annotated[
         int,
         Option(
-            help="BitBIRCH branching factor. Under most circumstances 254 is"
-            " optimal for performance and memory efficiency. Set this above 254 for"
-            " slightly less RAM usage at the cost of some performance."
+            "--branching",
+            "-b",
+            help="BitBIRCH branching factor (all rounds). Usually 254 is"
+            " optimal. Set above 254 for slightly less RAM (at the cost of some perf.)",
         ),
     ] = DEFAULTS.branching_factor,
-    threshold: Annotated[float, Option(help="BitBIRCH threshold")] = DEFAULTS.threshold,
-    tolerance: Annotated[
+    threshold: Annotated[
         float,
-        Option(
-            help="BitBIRCH tolerance"
-            " (Used in Round 1 for 'full refinment', Round 2, and Final clustering)"
-        ),
-    ] = DEFAULTS.tolerance,
+        Option("--threshold", "-t", help="Threshold for merge criterions (all stetps)"),
+    ] = DEFAULTS.threshold,
     initial_merge_criterion: Annotated[
         str,
         Option(
             "--set-merge",
-            help="Initial merge criterion for Round 1 ('diameter' is recommended)",
+            "-m",
+            help="Initial merge criterion for round 1. ('diameter' recommended)",
         ),
     ] = DEFAULTS.merge_criterion,
+    tolerance: Annotated[
+        float,
+        Option(
+            help="Tolerance value for all steps that use the 'tolerance' criterion"
+            " (by default all except initial round)",
+        ),
+    ] = DEFAULTS.tolerance,
     n_features: Annotated[
         int | None,
         Option(
             "--n-features",
             help="Number of features in the fingerprints."
-            " It must be provided for packed inputs *if it is not a multiple of 8*."
-            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
             rich_help_panel="Advanced",
         ),
     ] = None,
@@ -431,7 +437,7 @@ def _multiround(
     num_midsection_rounds: Annotated[
         int,
         Option(
-            "--num-midsection-rounds",
+            "--num-mid-rounds",
             help="Number of midsection rounds to perform",
             rich_help_panel="Advanced",
         ),
@@ -439,6 +445,7 @@ def _multiround(
     split_largest_after_midsection: tpx.Annotated[
         bool,
         Option(
+            "--split-after-mid/--no-split-after-mid",
             help=(
                 "Split largest cluster after each midsection round"
                 " (to be refined by the next round)"
@@ -449,6 +456,7 @@ def _multiround(
     full_refinement_before_midsection: Annotated[
         bool,
         Option(
+            "--refine-before-mid/--no-refine-before-mid",
             help=(
                 "Run a *full* refinement step after the initial clustering round"
                 " (largest cluster is always split regardless of this flag)"
@@ -462,7 +470,7 @@ def _multiround(
     fork: Annotated[
         bool,
         Option(
-            help="In linux, force the 'fork' multiposcessing start method",
+            help="In linux, force the 'fork' multiprocessing start method",
             rich_help_panel="Advanced",
         ),
     ] = False,
@@ -484,13 +492,14 @@ def _multiround(
         Option(
             help="Only do first round clustering and exit early",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = False,
     monitor_rss: Annotated[
         bool,
         Option(
-            help="Monitor RAM used by all processes (requires psutil)",
-            rich_help_panel="Debug",
+            help="Monitor RAM used by all processes",
+            rich_help_panel="Advanced",
         ),
     ] = False,
     monitor_rss_interval_s: Annotated[
@@ -499,6 +508,7 @@ def _multiround(
             "--monitor-rss-seconds",
             help="Interval in seconds for RSS monitoring",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = 0.01,
     max_fps: Annotated[
@@ -506,10 +516,12 @@ def _multiround(
         Option(
             help="Max num. of fps to load from each input file",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = None,
     max_files: Annotated[
-        int | None, Option(help="Max num. files to read", rich_help_panel="Debug")
+        int | None,
+        Option(help="Max num. files to read", rich_help_panel="Debug", hidden=True),
     ] = None,
     verbose: Annotated[
         bool,
