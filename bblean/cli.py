@@ -170,6 +170,10 @@ def _tsne_plot(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
 ) -> None:
     r"""Summary plot of the clustering results"""
     from bblean._console import get_console
@@ -209,7 +213,8 @@ def _tsne_plot(
             multiscale=multiscale,
             pca_reduce=pca_reduce,
         )
-    plt.show()
+    if show:
+        plt.show()
 
 
 @app.command("summary-plot")
@@ -262,6 +267,10 @@ def _summary_plot(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
 ) -> None:
     r"""Summary plot of the clustering results"""
     from bblean._console import get_console
@@ -296,7 +305,8 @@ def _summary_plot(
             scaffold_fp_kind=scaffold_fp_kind,
         )
         summary_plot(ca, title, annotate=annotate)
-    plt.show()
+    if show:
+        plt.show()
 
 
 @app.command("run")

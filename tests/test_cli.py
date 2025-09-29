@@ -8,6 +8,64 @@ from bblean.cli import app
 from bblean.fingerprints import make_fake_fingerprints
 
 
+def test_tsne() -> None:
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        Path
+        dir = Path(d).resolve()
+        fps = make_fake_fingerprints(
+            500, n_features=2048, seed=12620509540149709235, pack=True
+        )
+        np.save(dir / "fingerprints.npy", fps)
+        out_dir = dir / "output"
+        result = runner.invoke(
+            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.3"]
+        )
+        assert result.exit_code == 0
+        result = runner.invoke(
+            app,
+            [
+                "tsne-plot",
+                "-c",
+                str(out_dir),
+                "-f",
+                str(dir / "fingerprints.npy"),
+                "--no-show",
+                "--top",
+                "2",
+            ],
+        )
+        assert result.exit_code == 0
+
+
+def test_summary() -> None:
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        Path
+        dir = Path(d).resolve()
+        fps = make_fake_fingerprints(
+            500, n_features=2048, seed=12620509540149709235, pack=True
+        )
+        np.save(dir / "fingerprints.npy", fps)
+        out_dir = dir / "output"
+        result = runner.invoke(
+            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.3"]
+        )
+        assert result.exit_code == 0
+        result = runner.invoke(
+            app,
+            [
+                "summary-plot",
+                "-c",
+                str(out_dir),
+                "-f",
+                str(dir / "fingerprints.npy"),
+                "--no-show",
+            ],
+        )
+        assert result.exit_code == 0
+
+
 def test_fps_from_smiles() -> None:
     runner = CliRunner()
     smiles_path = Path(__file__).parent / "chembl-sample-3k.smi"
