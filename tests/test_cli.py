@@ -26,7 +26,6 @@ def test_tsne() -> None:
             app,
             [
                 "plot-tsne",
-                "-c",
                 str(out_dir),
                 "-f",
                 str(dir / "fingerprints.npy"),
@@ -56,7 +55,6 @@ def test_summary() -> None:
             app,
             [
                 "plot-summary",
-                "-c",
                 str(out_dir),
                 "-f",
                 str(dir / "fingerprints.npy"),
