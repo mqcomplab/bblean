@@ -47,7 +47,6 @@
 r"""Multi-round BitBirch workflow for clustering huge datasets in parallel"""
 import math
 import pickle
-import gc
 import typing as tp
 import multiprocessing as mp
 from pathlib import Path
@@ -141,18 +140,18 @@ def _save_bufs_and_mol_idxs(
 class _InitialRound:
     def __init__(
         self,
-        double_cluster_init: bool,
         branching_factor: int,
         threshold: float,
         tolerance: float,
         out_dir: Path | str,
+        full_refinement_before_midsection: bool,
         n_features: int | None = None,
         max_fps: int | None = None,
-        merge_criterion: str = "diameter",
+        merge_criterion: str = DEFAULTS.merge_criterion,
         input_is_packed: bool = True,
     ) -> None:
         self.n_features = n_features
-        self.double_cluster_init = double_cluster_init
+        self.full_refinement_before_midsection = full_refinement_before_midsection
         self.branching_factor = branching_factor
         self.threshold = threshold
         self.tolerance = tolerance
@@ -179,18 +178,23 @@ class _InitialRound:
             input_is_packed=self.input_is_packed,
             max_fps=self.max_fps,
         )
-        # Extract the BitFeatures of the leaves, breaking the largest cluster(s) apart
+        # Extract the BitFeatures of the leaves, breaking the largest cluster(s) apart,
+        # to prepare for refinement
+        tree.delete_internal_nodes()
         fps_bfs, mols_bfs = tree._bf_to_np_refine(fp_file, initial_mol=start_idx)
 
-        if self.double_cluster_init:
-            # Rebuild the tree again, reinserting the fps from the largest cluster
+        if self.full_refinement_before_midsection:
+            # Finish the first refinement step internally in this round
             tree.reset()
-            tree.set_merge(merge_criterion="tolerance", tolerance=self.tolerance)
+            tree.set_merge("tolerance", tolerance=self.tolerance)
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
                 tree._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+                del mol_idxs
+                del bufs
+
+            tree.delete_internal_nodes()
             fps_bfs, mols_bfs = tree._bf_to_np()
-        del tree
-        gc.collect()
+
         _save_bufs_and_mol_idxs(self.out_dir, fps_bfs, mols_bfs, file_label, 1)
 
 
@@ -202,21 +206,25 @@ class _TreeMergingRound:
         tolerance: float,
         round_idx: int,
         out_dir: Path | str,
-        is_final: bool = False,
+        split_largest_cluster: bool,
+        criterion: str,
+        all_fp_paths: tp.Sequence[Path] = (),
     ) -> None:
+        self.all_fp_paths = list(all_fp_paths)
         self.branching_factor = branching_factor
         self.threshold = threshold
         self.tolerance = tolerance
         self.round_idx = round_idx
         self.out_dir = Path(out_dir)
-        self.is_final = is_final
+        self.split_largest_cluster = split_largest_cluster
+        self.criterion = criterion
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_label, batch_path_pairs = batch_info
         tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
-            merge_criterion="tolerance",
+            merge_criterion=self.criterion,
             tolerance=self.tolerance,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
@@ -225,26 +233,52 @@ class _TreeMergingRound:
                 mol_idxs = pickle.load(f)
             tree._fit_np(buf_path, reinsert_index_seqs=mol_idxs)
             del mol_idxs
-            gc.collect()
 
-        # If this this is the final round save the clusters and exit
-        # In this case self.round_idx and batch_label are unused
-        if self.is_final:
-            cluster_mol_ids = tree.get_cluster_mol_ids()
-            del tree
-            gc.collect()
-            with open(self.out_dir / "clusters.pkl", mode="wb") as f:
-                pickle.dump(cluster_mol_ids, f)
-            return
-
-        # TODO: A refinement step here would be a good idea
-        # Otherwise fetch and save the bufs and idxs for the next round
-        fps_bfs, mols_bfs = tree._bf_to_np()
-        del tree
-        gc.collect()
+        # Either do a refinement step, or fetch and save the bufs and idxs for the next
+        # round
+        tree.delete_internal_nodes()
+        if self.split_largest_cluster:
+            fps_bfs, mols_bfs = tree._bf_to_np_refine(self.all_fp_paths)
+        else:
+            fps_bfs, mols_bfs = tree._bf_to_np()
         _save_bufs_and_mol_idxs(
             self.out_dir, fps_bfs, mols_bfs, batch_label, self.round_idx
         )
+
+
+class _FinalTreeMergingRound(_TreeMergingRound):
+    def __init__(
+        self,
+        branching_factor: int,
+        threshold: float,
+        tolerance: float,
+        criterion: str,
+        out_dir: Path | str,
+    ) -> None:
+        super().__init__(
+            branching_factor, threshold, tolerance, -1, out_dir, False, criterion, ()
+        )
+
+    def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
+        batch_path_pairs = batch_info[1]
+        tree = BitBirch(
+            branching_factor=self.branching_factor,
+            threshold=self.threshold,
+            merge_criterion=self.criterion,
+            tolerance=self.tolerance,
+        )
+        # Rebuild a tree, inserting all BitFeatures from the corresponding batch
+        for buf_path, idx_path in batch_path_pairs:
+            with open(idx_path, "rb") as f:
+                mol_idxs = pickle.load(f)
+            tree._fit_np(buf_path, reinsert_index_seqs=mol_idxs)
+            del mol_idxs
+
+        # Save clusters and exit
+        tree.delete_internal_nodes()
+        cluster_mol_ids = tree.get_cluster_mol_ids()
+        with open(self.out_dir / "clusters.pkl", mode="wb") as f:
+            pickle.dump(cluster_mol_ids, f)
 
 
 # Create a list of tuples of labels, file paths and start-end idxs
@@ -262,14 +296,9 @@ def _get_files_range_tuples(
     return files_info
 
 
-# NOTE: 'double_cluster_init' indicates if the refinement of the batches is done
-# before or after combining all the data in the final tree
-#
-# False: potentially slightly faster, but splits the biggest cluster of each batch
-#     and doesn't try to re-form it until all the data goes through the final tree.
-# True:  re-fits the splitted cluster in a new tree using tolerance merge this adds
-#     a bit of time and memory overhead, so depending on the volume of data in each
-#     batch it might need to be skipped, but this is a more solid/robust choice
+# NOTE: 'full_refinement_before_midsection' indicates if the refinement of the batches
+# is fully done after the tree-merging rounds, or if the data is only split before the
+# tree-merging rounds
 def run_multiround_bitbirch(
     input_files: tp.Sequence[Path],
     out_dir: Path,
@@ -285,7 +314,10 @@ def run_multiround_bitbirch(
     num_midsection_rounds: int = 1,
     bin_size: int = 10,
     max_tasks_per_process: int = 1,
-    double_cluster_init: bool = True,
+    full_refinement_before_midsection: bool = True,
+    split_largest_after_each_midsection_round: bool = False,
+    midsection_merge_criterion: str = "tolerance",
+    final_merge_criterion: str = "tolerance",
     # Debug
     only_first_round: bool = False,
     max_fps: int | None = None,
@@ -320,7 +352,7 @@ def run_multiround_bitbirch(
     timer.init_timing("total")
 
     # Get starting and ending idxs for each file, and collect them into tuples
-    files_range_tuples = _get_files_range_tuples(input_files)
+    files_range_tuples = _get_files_range_tuples(input_files)  # correct
     num_files = len(input_files)
 
     # Initial round of clustering
@@ -330,7 +362,7 @@ def run_multiround_bitbirch(
 
     initial_fn = _InitialRound(
         n_features=n_features,
-        double_cluster_init=double_cluster_init,
+        full_refinement_before_midsection=full_refinement_before_midsection,
         max_fps=max_fps,
         merge_criterion=initial_merge_criterion,
         input_is_packed=input_is_packed,
@@ -363,7 +395,13 @@ def run_multiround_bitbirch(
 
         file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
         batches = _chunk_file_pairs_in_batches(file_pairs, bin_size, console)
-        merging_fn = _TreeMergingRound(round_idx=round_idx, **common_kwargs)
+        merging_fn = _TreeMergingRound(
+            round_idx=round_idx,
+            all_fp_paths=input_files,
+            split_largest_cluster=split_largest_after_each_midsection_round,
+            criterion=midsection_merge_criterion,
+            **common_kwargs,
+        )
         num_ps = min(num_midsection_processes, len(batches))
         console.print(f"    - Processing {len(batches)} inputs with {num_ps} processes")
         with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
@@ -385,7 +423,7 @@ def run_multiround_bitbirch(
     console.print(f"(Final) Round {round_idx}: Final round of clustering")
     file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
-    final_fn = _TreeMergingRound(round_idx=round_idx, is_final=True, **common_kwargs)
+    final_fn = _FinalTreeMergingRound(criterion=final_merge_criterion, **common_kwargs)
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         final_fn(("", file_pairs))
 

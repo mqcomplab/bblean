@@ -60,7 +60,11 @@ from numpy.typing import NDArray, DTypeLike
 from bblean._memory import _mmap_file_and_madvise_sequential, _ArrayMemPagesManager
 from bblean._merges import get_merge_accept_fn, MergeAcceptFunction
 from bblean.utils import min_safe_uint
-from bblean.fingerprints import pack_fingerprints, calc_centroid
+from bblean.fingerprints import (
+    pack_fingerprints,
+    calc_centroid,
+    _get_fingerprints_from_file_seq,
+)
 from bblean.similarity import jt_sim_packed, jt_most_dissimilar_packed
 
 try:
@@ -645,7 +649,7 @@ class BitBirch:
     @property
     def is_init(self) -> bool:
         r"""Whether the tree has been initialized (True after first call to `fit()`)"""
-        return self._root is not None
+        return self._dummy_leaf._next_leaf is not None
 
     @property
     def num_fitted_fps(self) -> int:
@@ -654,8 +658,8 @@ class BitBirch:
 
     def set_merge(
         self,
+        criterion: str = "diameter",
         *,
-        merge_criterion: str = "diameter",
         tolerance: float = 0.05,
         threshold: float | None = None,
         branching_factor: int | None = None,
@@ -669,7 +673,7 @@ class BitBirch:
                 "merge_criterion can only be set if "
                 "the global set_merge function has *not* been used"
             )
-        self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
+        self._merge_accept_fn = get_merge_accept_fn(criterion, tolerance)
         if threshold is not None:
             self._threshold = threshold
         if branching_factor is not None:
@@ -719,6 +723,8 @@ class BitBirch:
 
         n_features = _validate_n_features(X, input_is_packed, n_features)
         # Start a new tree the first time this function is called
+        if self._only_has_leaves:
+            raise ValueError("Internal nodes were released, call reset() before fit()")
         if not self.is_init:
             self._initialize_tree(n_features)
         self._root = cast("_BFNode", self._root)  # After init, this is not None
@@ -792,6 +798,8 @@ class BitBirch:
 
         n_features = _validate_n_features(X, input_is_packed=False) - 1
         # Start a new tree the first time this function is called
+        if self._only_has_leaves:
+            raise ValueError("Internal nodes were released, call reset() before fit()")
         if not self.is_init:
             self._initialize_tree(n_features)
         self._root = cast("_BFNode", self._root)  # After init, this is not None
@@ -846,6 +854,8 @@ class BitBirch:
 
     def _get_leaves(self) -> tp.Iterator[_BFNode]:
         r"""Yields all leaf nodes"""
+        if not self.is_init:
+            raise ValueError("The model has not been fitted yet.")
         leaf = self._dummy_leaf._next_leaf
         while leaf is not None:
             yield leaf
@@ -855,14 +865,12 @@ class BitBirch:
         self, sort: bool = True, packed: bool = True
     ) -> _CentroidsMolIds:
         """Get a dict with centroids and mol indices of the leaves"""
-        # NOTE: This is different from the original bitbirch, here outputs are sorted
-        # by default
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
+        # NOTE: This is different from the original bitbirch, here outputs are sorted by
+        # default
         centroids = []
         mol_ids = []
         attr = "packed_centroid" if packed else "unpacked_centroid"
-        for subcluster in self._get_bfs(sort=sort):
+        for subcluster in self._get_leaf_bfs(sort=sort):
             centroids.append(getattr(subcluster, attr))
             mol_ids.append(subcluster.mol_indices)
         return {"centroids": centroids, "mol_ids": mol_ids}
@@ -871,25 +879,19 @@ class BitBirch:
         self, sort: bool = True, packed: bool = True
     ) -> list[NDArray[np.uint8]]:
         r"""Get a list of arrays with the centroids' fingerprints"""
-        # NOTE: This is different from the original bitbirch, here outputs are sorted
-        # by default
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
+        # NOTE: This is different from the original bitbirch, here outputs are sorted by
+        # default
         attr = "packed_centroid" if packed else "unpacked_centroid"
-        return [getattr(s, attr) for s in self._get_bfs(sort=sort)]
+        return [getattr(s, attr) for s in self._get_leaf_bfs(sort=sort)]
 
     def get_cluster_mol_ids(self, sort: bool = True) -> list[list[int]]:
         r"""Get the indices of the molecules in each cluster"""
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
-        return [s.mol_indices for s in self._get_bfs(sort=sort)]
+        return [s.mol_indices for s in self._get_leaf_bfs(sort=sort)]
 
     def get_assignments(
         self, n_mols: int | None = None, sort: bool = True, check_valid: bool = True
     ) -> NDArray[np.uint64]:
         r"""Get an array with the cluster labels associated with each fingerprint idx"""
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
         if n_mols is not None:
             warnings.warn("The n_mols argument is redundant", DeprecationWarning)
         if n_mols is not None and n_mols != self.num_fitted_fps:
@@ -948,7 +950,8 @@ class BitBirch:
     def reset(self) -> None:
         r"""Reset the tree state
 
-        Delete all internal nodes and leafs, does not reset the merge criterion
+        Delete *all internal nodes and leafs*, does not reset the merge criterion or
+        other merge parameters.
         """
         # Reset the whole tree
         if self._root is not None:
@@ -958,6 +961,24 @@ class BitBirch:
         self._root = None
         self._num_fitted_fps = 0
 
+    def delete_internal_nodes(self) -> None:
+        r"""Delete all nodes in the tree that are not leafs
+
+        This function is for advanced usage only. It should be called if there is need
+        to use the BitBirch leaf clusters, but you need to release the memory held by
+        the internal nodes. After calling this function, no more fingerprints can be fit
+        into the tree, unless a call to `.reset()` afterwards releases the *whole tree*,
+        including the leaf clusters.
+        """
+        if not tp.cast(_BFNode, self._root).is_leaf:
+            # release all nodes that are not leaves,
+            # they are kept alive by references from dummy_leaf
+            self._root = None
+
+    @property
+    def _only_has_leaves(self) -> bool:
+        return (self._root is None) and (self._dummy_leaf._next_leaf is not None)
+
     def refine_inplace(
         self,
         X: _Input | Path | str,
@@ -966,9 +987,14 @@ class BitBirch:
         n_largest: int = 1,
     ) -> tpx.Self:
         r"""Refine the tree: break the largest clusters in singletons and re-fit"""
+        if not self.is_init:
+            raise ValueError("The model has not been fitted yet.")
+        # Release the memory held by non-leaf nodes
+        self.delete_internal_nodes()
+
         # Extract the BitFeatures of the leaves, breaking the largest cluster apart into
         # singleton subclusters
-        fps_bfs, mols_bfs = self._bf_to_np_refine(
+        fps_bfs, mols_bfs = self._bf_to_np_refine(  # This function takes a bunch of mem
             X,
             initial_mol=initial_mol,
             input_is_packed=input_is_packed,
@@ -982,10 +1008,8 @@ class BitBirch:
             self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
         return self
 
-    def _get_bfs(self, sort: bool = True) -> list[_BFSubcluster]:
+    def _get_leaf_bfs(self, sort: bool = True) -> list[_BFSubcluster]:
         r"""Get the BitFeatures of the leaves"""
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
         bfs = [s for leaf in self._get_leaves() for s in leaf._subclusters]
         if sort:
             # Sort the BitFeatures by the number of samples in the cluster
@@ -994,7 +1018,7 @@ class BitBirch:
 
     def _bf_to_np_refine(
         self,
-        X: _Input | Path | str,
+        X: _Input | Path | str | tp.Sequence[Path],
         initial_mol: int = 0,
         input_is_packed: bool = True,
         n_largest: int = 1,
@@ -1008,12 +1032,10 @@ class BitBirch:
         The split is only performed for the returned 'np' buffers, the clusters in the
         tree itself are not modified
         """
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
         if n_largest < 1:
             raise ValueError("n_largest must be >= 1")
 
-        bfs = self._get_bfs()
+        bfs = self._get_leaf_bfs()
         largest = bfs[:n_largest]
         rest = bfs[n_largest:]
         n_features = largest[0].n_features
@@ -1028,21 +1050,32 @@ class BitBirch:
             unpack_or_copy = lambda x: x.copy()
 
         for big_bf in largest:
-            mol_idxs = [(idx - initial_mol) for idx in big_bf.mol_indices]
+            full_arr_idxs = [(idx - initial_mol) for idx in big_bf.mol_indices]
             _X: _Input
             if isinstance(X, (Path, str)):
                 # Only load the specific required mol idxs
-                _X = cast(NDArray[np.integer], np.load(X, mmap_mode="r"))[mol_idxs]
+                _X = cast(NDArray[np.integer], np.load(X, mmap_mode="r"))[full_arr_idxs]
                 arr_idxs = list(range(len(_X)))
+                mol_idxs = big_bf.mol_indices
+            elif isinstance(X[0], Path):
+                # Only load the specific required mol idxs
+                sort_idxs = np.argsort(full_arr_idxs)
+                _X = _get_fingerprints_from_file_seq(
+                    cast(tp.Sequence[Path], X),
+                    [full_arr_idxs[i] for i in sort_idxs],
+                )
+                arr_idxs = list(range(len(_X)))
+                mol_idxs = big_bf.mol_indices
+                mol_idxs = [mol_idxs[i] for i in sort_idxs]
             else:
                 # Index the full array / list
-                _X = X
-                arr_idxs = mol_idxs
+                _X = cast(_Input, X)
+                arr_idxs = full_arr_idxs
+                mol_idxs = big_bf.mol_indices
 
             for mol_idx, arr_idx in zip(mol_idxs, arr_idxs):
-                fp = unpack_or_copy(_X[arr_idx])
-                buffer = np.empty(fp.shape[0] + 1, dtype=np.uint8)
-                buffer[:-1] = fp
+                buffer = np.empty(n_features + 1, dtype=np.uint8)
+                buffer[:-1] = unpack_or_copy(_X[arr_idx])
                 buffer[-1] = 1
                 dtypes_to_fp["uint8"].append(buffer)
                 dtypes_to_mols["uint8"].append([mol_idx])
@@ -1052,20 +1085,18 @@ class BitBirch:
         self,
     ) -> tuple[dict[str, list[NDArray[np.integer]]], dict[str, list[list[int]]]]:
         """Prepare numpy buffers ('np') for BitFeatures of all clusters"""
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
-        return self._prepare_bf_to_buffer_dicts(self._get_bfs())
+        return self._prepare_bf_to_buffer_dicts(self._get_leaf_bfs())
 
     @staticmethod
     def _prepare_bf_to_buffer_dicts(
-        BFs: list["_BFSubcluster"],
+        bfs: list["_BFSubcluster"],
     ) -> tuple[dict[str, list[NDArray[np.integer]]], dict[str, list[list[int]]]]:
         # Helper function used when returning lists of subclusters
         dtypes_to_fp = defaultdict(list)
         dtypes_to_mols = defaultdict(list)
-        for BF in BFs:
-            dtypes_to_fp[BF.dtype_name].append(BF._buffer)
-            dtypes_to_mols[BF.dtype_name].append(BF.mol_indices)
+        for bf in bfs:
+            dtypes_to_fp[bf.dtype_name].append(bf._buffer)
+            dtypes_to_mols[bf.dtype_name].append(bf.mol_indices)
         return dtypes_to_fp, dtypes_to_mols
 
     def __repr__(self) -> str:

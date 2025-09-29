@@ -115,8 +115,8 @@ def _summary_plot(
         Option(
             "--n-features",
             help="Number of features in the fingerprints."
-            " It must be provided for packed inputs *if it is not a multiple of 8*."
-            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
             rich_help_panel="Advanced",
         ),
     ] = None,
@@ -180,24 +180,23 @@ def _run(
     branching_factor: Annotated[
         int,
         Option(
-            help="BitBIRCH branching factor. Under most circumstances 254 is"
-            " optimal for performance and memory efficiency. Set this above 254 for"
-            " slightly less RAM usage at the cost of some performance."
+            "--branching",
+            "-b",
+            help="BitBIRCH branching factor (all rounds). Usually 254 is"
+            " optimal. Set above 254 for slightly less RAM (at the cost of some perf.)",
         ),
     ] = DEFAULTS.branching_factor,
     threshold: Annotated[
         float,
-        Option("--threshold"),
+        Option("--threshold", "-t", help="Threshold for merge criterion"),
     ] = DEFAULTS.threshold,
     merge_criterion: Annotated[
         str,
-        Option("--set-merge"),
+        Option("--set-merge", "-m", help="Merge criterion for initial clustsering"),
     ] = "diameter",
     tolerance: Annotated[
         float,
-        Option(
-            help="BitBIRCH tolerance, only for --set-merge tolerance|tolerance_tough"
-        ),
+        Option(help="BitBIRCH tolerance. For refinement and --set-merge 'tolerance'"),
     ] = DEFAULTS.tolerance,
     refine_num: tpx.Annotated[
         int,
@@ -232,8 +231,8 @@ def _run(
     monitor_rss: Annotated[
         bool,
         Option(
-            help="Monitor RAM used by all processes (requires psutil)",
-            rich_help_panel="Debug",
+            help="Monitor RAM used by all processes",
+            rich_help_panel="Advanced",
         ),
     ] = False,
     monitor_rss_interval_s: Annotated[
@@ -242,14 +241,15 @@ def _run(
             "--monitor-rss-seconds",
             help="Interval in seconds for RSS monitoring",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = 0.01,
     max_fps: Annotated[
         int | None,
         Option(
-            "--max-fps",
-            rich_help_panel="Debug",
             help="Max. num of fingerprints to read from each file",
+            rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = None,
     variant: Annotated[
@@ -314,7 +314,7 @@ def _run(
     timer = Timer()
     timer.init_timing("total")
     if "lean" not in variant:
-        set_merge(merge_criterion, tolerance)
+        set_merge(merge_criterion, tolerance=tolerance)
         tree = BitBirch(branching_factor=branching_factor, threshold=threshold)
     else:
         tree = BitBirch(
@@ -332,6 +332,7 @@ def _run(
             tree.fit(file, n_features, input_is_packed=input_is_packed, max_fps=max_fps)
 
         if refine_num > 0:
+            tree.set_merge("tolerance", tolerance=tolerance)
             tree.refine_inplace(
                 file, input_is_packed=input_is_packed, n_largest=refine_num
             )
@@ -343,7 +344,6 @@ def _run(
         console.print("[Peak memory stats not tracked for non-Unix systems]")
     else:
         console.print_peak_mem_raw(stats, indent=False)
-
     # Dump outputs (peak memory, timings, config, cluster ids)
     with open(out_dir / "clusters.pkl", mode="wb") as f:
         pickle.dump(cluster_mol_ids, f)
@@ -381,41 +381,47 @@ def _multiround(
         Option(
             "--mid-ps",
             "--mid-processes",
-            help="Num. processes to use for the middle section (if multiprocessing)."
-            "Middle section clustering can be very memory intensive, "
-            "so it may be desirable to use 50%-30% of the first round processes",
+            help="Num. processes for middle section rounds."
+            " These are be memory intensive,"
+            " you may want to use 50%-30% of --ps."
+            " Default is same as --ps",
         ),
     ] = None,
     branching_factor: Annotated[
         int,
         Option(
-            help="BitBIRCH branching factor. Under most circumstances 254 is"
-            " optimal for performance and memory efficiency. Set this above 254 for"
-            " slightly less RAM usage at the cost of some performance."
+            "--branching",
+            "-b",
+            help="BitBIRCH branching factor (all rounds). Usually 254 is"
+            " optimal. Set above 254 for slightly less RAM (at the cost of some perf.)",
         ),
     ] = DEFAULTS.branching_factor,
-    threshold: Annotated[float, Option(help="BitBIRCH threshold")] = DEFAULTS.threshold,
-    tolerance: Annotated[
+    threshold: Annotated[
         float,
-        Option(
-            help="BitBIRCH tolerance"
-            " (Used in Round 1 'double-cluster-init', Round 2, and Final clustering)"
-        ),
-    ] = DEFAULTS.tolerance,
+        Option("--threshold", "-t", help="Threshold for merge criterions (all stetps)"),
+    ] = DEFAULTS.threshold,
     initial_merge_criterion: Annotated[
         str,
         Option(
             "--set-merge",
-            help="Initial merge criterion for Round 1 ('diameter' is recommended)",
+            "-m",
+            help="Initial merge criterion for round 1. ('diameter' recommended)",
         ),
     ] = DEFAULTS.merge_criterion,
+    tolerance: Annotated[
+        float,
+        Option(
+            help="Tolerance value for all steps that use the 'tolerance' criterion"
+            " (by default all except initial round)",
+        ),
+    ] = DEFAULTS.tolerance,
     n_features: Annotated[
         int | None,
         Option(
             "--n-features",
             help="Number of features in the fingerprints."
-            " It must be provided for packed inputs *if it is not a multiple of 8*."
-            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
             rich_help_panel="Advanced",
         ),
     ] = None,
@@ -431,13 +437,30 @@ def _multiround(
     num_midsection_rounds: Annotated[
         int,
         Option(
-            "--num-midsection-rounds", help="Number of midsection rounds to perform"
+            "--num-mid-rounds",
+            help="Number of midsection rounds to perform",
+            rich_help_panel="Advanced",
         ),
     ] = 1,
-    double_cluster_init: Annotated[
+    split_largest_after_midsection: tpx.Annotated[
         bool,
         Option(
-            help="Toggle 'double-cluster-init' ('True' is recommended)",
+            "--split-after-mid/--no-split-after-mid",
+            help=(
+                "Split largest cluster after each midsection round"
+                " (to be refined by the next round)"
+            ),
+            rich_help_panel="Advanced",
+        ),
+    ] = False,
+    full_refinement_before_midsection: Annotated[
+        bool,
+        Option(
+            "--refine-before-mid/--no-refine-before-mid",
+            help=(
+                "Run a *full* refinement step after the initial clustering round"
+                " (largest cluster is always split regardless of this flag)"
+            ),
             rich_help_panel="Advanced",
         ),
     ] = True,
@@ -447,7 +470,7 @@ def _multiround(
     fork: Annotated[
         bool,
         Option(
-            help="In linux, force the 'fork' multiposcessing start method",
+            help="In linux, force the 'fork' multiprocessing start method",
             rich_help_panel="Advanced",
         ),
     ] = False,
@@ -469,13 +492,14 @@ def _multiround(
         Option(
             help="Only do first round clustering and exit early",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = False,
     monitor_rss: Annotated[
         bool,
         Option(
-            help="Monitor RAM used by all processes (requires psutil)",
-            rich_help_panel="Debug",
+            help="Monitor RAM used by all processes",
+            rich_help_panel="Advanced",
         ),
     ] = False,
     monitor_rss_interval_s: Annotated[
@@ -484,6 +508,7 @@ def _multiround(
             "--monitor-rss-seconds",
             help="Interval in seconds for RSS monitoring",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = 0.01,
     max_fps: Annotated[
@@ -491,10 +516,12 @@ def _multiround(
         Option(
             help="Max num. of fps to load from each input file",
             rich_help_panel="Debug",
+            hidden=True,
         ),
     ] = None,
     max_files: Annotated[
-        int | None, Option(help="Max num. files to read", rich_help_panel="Debug")
+        int | None,
+        Option(help="Max num. files to read", rich_help_panel="Debug", hidden=True),
     ] = None,
     verbose: Annotated[
         bool,
@@ -554,14 +581,15 @@ def _multiround(
         initial_merge_criterion=initial_merge_criterion,
         num_initial_processes=num_initial_processes,
         num_midsection_processes=num_midsection_processes,
-        num_midsection_rounds=num_midsection_rounds,
         branching_factor=branching_factor,
         threshold=threshold,
         tolerance=tolerance,
         # Advanced
         bin_size=bin_size,
         max_tasks_per_process=max_tasks_per_process,
-        double_cluster_init=double_cluster_init,
+        full_refinement_before_midsection=full_refinement_before_midsection,
+        num_midsection_rounds=num_midsection_rounds,
+        split_largest_after_each_midsection_round=split_largest_after_midsection,
         # Debug
         only_first_round=only_first_round,
         max_fps=max_fps,
@@ -841,3 +869,43 @@ def _split_fps(
             name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
             np.save(out_dir / name, batch)
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
+
+
+@app.command("fps-merge")
+def _merge_fps(
+    in_dir: Annotated[
+        Path,
+        Argument(help="Directory with input `*.npy` files with packed fingerprints"),
+    ],
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+) -> None:
+    r"""Merge a dir with multiple `*.npy` fingerprint file into a single `*.npy` file"""
+    from bblean._console import get_console
+    import numpy as np
+
+    console = get_console()
+
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    arrays = []
+    with console.status("[italic]Merging fingerprints...[/italic]", spinner="dots"):
+        stem = None
+        for f in sorted(in_dir.glob("*.npy")):
+            if stem is None:
+                stem = f.name.split(".")[0]
+            elif stem != f.name.split(".")[0]:
+                raise ValueError(
+                    "Name convention must be <name>.<idx>.npy"
+                    " with all files having the same <name>"
+                )
+            arrays.append(np.load(f))
+        if stem is None:
+            console.print("No *.npy files found")
+            return
+        np.save(out_dir / stem, np.concatenate(arrays))
+    console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")

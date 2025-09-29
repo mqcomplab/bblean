@@ -169,7 +169,7 @@ def _get_fps_file_num(path: Path) -> int:
 
 
 def _get_fps_file_shape_and_dtype(
-    path: Path,
+    path: Path, raise_if_invalid: bool = False
 ) -> tuple[tuple[int, int], np.dtype, bool, bool]:
     with open(path, mode="rb") as f:
         major, minor = np.lib.format.read_magic(f)
@@ -178,6 +178,10 @@ def _get_fps_file_shape_and_dtype(
         )
     shape_is_valid = len(shape) == 2
     dtype_is_valid = np.issubdtype(dtype, np.integer)
+    if raise_if_invalid and (not shape_is_valid) or (not dtype_is_valid):
+        raise ValueError(
+            f"Fingerprints file {path} is invalid. Shape: {shape}, DType {dtype}"
+        )
     return shape, dtype, shape_is_valid, dtype_is_valid
 
 
@@ -198,6 +202,56 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
         console.print(f"    - Shape: {shape}")
     console.print(f"    - DType: [yellow]{dtype.name}[/yellow]")
     console.print()
+
+
+# TODO: The logic of this function is pretty complicated, maybe there is a way to
+# simplify it?
+def _get_fingerprints_from_file_seq(
+    files: tp.Iterable[Path], idxs: tp.Sequence[int]
+) -> NDArray[np.uint8]:
+    if sorted(idxs) != list(idxs):
+        raise ValueError("idxs must be sorted")
+    # Sequence of files is assumed to have indexes in an increasing order,
+    # for example, if the first two files have 10k fingerprints, then the
+    # assoc. idxs are 0-9999 and 10000-19999. 'idxs' will index this sequence of files
+    # iter_idxs = iter(idxs)
+    n_features = None
+    local_file_idxs = []
+    consumed_idxs = 0
+    running_count = 0
+    for f in files:
+        (num, _n_features), _, _, _ = _get_fps_file_shape_and_dtype(
+            f, raise_if_invalid=True
+        )
+        # Fetch idxs Append array([]) if no idxs in the file
+        file_idxs = list(
+            filter(lambda x: x < running_count + num, idxs[consumed_idxs:])
+        )
+        consumed_idxs += len(file_idxs)
+        local_file_idxs.append(np.array(file_idxs, dtype=np.uint64) - running_count)
+        running_count += num
+
+        if n_features is None:
+            n_features = _n_features
+        elif _n_features != n_features:
+            raise ValueError(
+                f"Incompatible in fingerprint file {f},"
+                f" expected {n_features}, found {_n_features}"
+            )
+    if len(idxs) != sum(arr.size for arr in local_file_idxs):
+        raise ValueError("idxs could not be extracted from files")
+
+    arr = np.empty((len(idxs), tp.cast(int, n_features)), dtype=np.uint8)
+    i = 0
+    for file, local_idxs in zip(files, local_file_idxs):
+        size = local_idxs.size
+        if not size:
+            continue
+        arr[i : i + size] = np.load(file, mmap_mode="r")[local_idxs].astype(
+            np.uint8, copy=False
+        )
+        i += size
+    return arr
 
 
 # NOTE: Mostly convenient for usage in multiprocessing workflows
