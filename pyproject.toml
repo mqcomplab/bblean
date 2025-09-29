@@ -79,4 +79,4 @@ disallow_any_generics = true
 python_version = "3.11"
 
 [tool.coverage.run]
-omit = ["*/_legacy/*"]
+omit = ["*/_legacy/*", "*/tests/*", "setup.py"]
