@@ -27,8 +27,8 @@
 # Vicky (Vic) Jung <jungvicky@ufl.edu>
 # Kenneth Lopez Perez <klopezperez@chem.ufl.edu>
 # Kate Huddleston <kdavis2@chem.ufl.edu>
-
 from pathlib import Path
+
 import numpy as np
 from scipy import sparse
 

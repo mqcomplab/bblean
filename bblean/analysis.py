@@ -108,7 +108,7 @@ def cluster_analysis(
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
             info["unique_scaffolds_num"].append(analysis.unique_num)
             info["unique_scaffolds_isim"].append(analysis.isim)
-        selected[start:start + size] = _fps
+        selected[start : start + size] = _fps
         start += size
     return ClusterAnalysis(
         clusters,
