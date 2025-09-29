@@ -61,15 +61,16 @@ def _validate_input_dir(in_dir: Path | str) -> None:
 @app.callback()
 def _main(
     ctx: Context,
-    help_: bool = Option(
-        None,
-        "--help",
-        "-h",
-        is_flag=True,
-        is_eager=True,
-        help="Show this message and exit.",
-        callback=_print_help_banner,
-    ),
+    help_: Annotated[
+        bool,
+        Option(
+            "--help/ ",
+            "-h",
+            is_eager=True,
+            help="Show this message and exit.",
+            callback=_print_help_banner,
+        ),
+    ] = False,
 ) -> None:
     pass
 
@@ -704,9 +705,8 @@ def _fps_from_smiles(
     from bblean.fingerprints import _FingerprintFileCreator
     from bblean.smiles import iter_smiles_from_paths
 
-    if sys.platform == "linux":
-        # Force forkserver since rdkit may use threads, and fork is unsafe with threads
-        mp.set_start_method("forkserver")
+    # Force forkserver since rdkit may use threads, and fork is unsafe with threads
+    mp_context = mp.get_context("forkserver" if sys.platform == "linux" else None)
 
     def iter_mols_from_paths(
         smiles_paths: tp.Iterable[Path], skip_bad_smiles: bool = False
@@ -785,7 +785,7 @@ def _fps_from_smiles(
             idxs_batches = list(
                 enumerate(batched(iter_smiles_from_paths(smiles_paths), num_per_batch))
             )
-            with mp.Pool(processes=num_ps) as pool:
+            with mp_context.Pool(processes=num_ps) as pool:
                 pool.map(create_fp_file, idxs_batches)
     else:
         # Serial version
