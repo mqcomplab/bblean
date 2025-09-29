@@ -74,7 +74,7 @@ def _main(
     pass
 
 
-@app.command("tsne-plot", rich_help_panel="Analysis")
+@app.command("plot-tsne", rich_help_panel="Analysis")
 def _tsne_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
@@ -217,7 +217,7 @@ def _tsne_plot(
         plt.show()
 
 
-@app.command("summary-plot", rich_help_panel="Analysis")
+@app.command("plot-summary", rich_help_panel="Analysis")
 def _summary_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
