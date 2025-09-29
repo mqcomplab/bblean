@@ -25,7 +25,8 @@ class BBConsole(Console):
         self.print()
         self.print()
         self.print(
-            r"""If you find this software useful please cite the following articles:
+            r"""BitBirch-Lean is developed by the [bold]Miranda-Quintana Lab[/bold] https://github.com/mqcomplab
+If you find this software useful please cite the following articles:
     [yellow]•[/yellow] [italic]BitBIRCH: efficient clustering of large molecular libraries[/italic]:
         https://doi.org/10.1039/D5DD00030K
     [yellow]•[/yellow] [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
