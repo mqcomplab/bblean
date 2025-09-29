@@ -108,6 +108,7 @@ def _tsne_plot(
                 " Pass -1 to randomize"
             ),
             show_default=False,
+            rich_help_panel="Advanced",
         ),
     ] = TSNE_SEED,
     top: Annotated[
