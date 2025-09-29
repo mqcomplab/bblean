@@ -74,7 +74,7 @@ def _main(
     pass
 
 
-@app.command("tsne-plot")
+@app.command("tsne-plot", rich_help_panel="Analysis")
 def _tsne_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
@@ -175,7 +175,7 @@ def _tsne_plot(
         Option("--show/--no-show", hidden=True),
     ] = True,
 ) -> None:
-    r"""Summary plot of the clustering results"""
+    r"""t-SNE visualization of the clustering results"""
     from bblean._console import get_console
 
     console = get_console(silent=not verbose)
@@ -217,7 +217,7 @@ def _tsne_plot(
         plt.show()
 
 
-@app.command("summary-plot")
+@app.command("summary-plot", rich_help_panel="Analysis")
 def _summary_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
@@ -753,7 +753,7 @@ def _multiround(
     collect_system_specs_and_dump_config(ctx.params)
 
 
-@app.command("fps-info")
+@app.command("fps-info", rich_help_panel="Fingerprints")
 def _fps_info(
     fp_paths: Annotated[
         list[Path] | None,
@@ -776,7 +776,7 @@ def _fps_info(
             _print_fps_file_info(file, console)
 
 
-@app.command("fps-from-smiles")
+@app.command("fps-from-smiles", rich_help_panel="Fingerprints")
 def _fps_from_smiles(
     smiles_paths: Annotated[
         list[Path] | None,
@@ -955,7 +955,7 @@ def _fps_from_smiles(
         console.print(f"Finished. Outputs written to {str(out_dir / out_name)}.npy")
 
 
-@app.command("fps-split")
+@app.command("fps-split", rich_help_panel="Fingerprints")
 def _split_fps(
     input_: Annotated[
         Path,
@@ -1023,7 +1023,7 @@ def _split_fps(
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
 
 
-@app.command("fps-shuffle")
+@app.command("fps-shuffle", rich_help_panel="Fingerprints")
 def _shuffle_fps(
     in_file: Annotated[
         Path,
@@ -1055,7 +1055,7 @@ def _shuffle_fps(
     np.save(out_dir / f"shuffled-{stem}.npy", fps)
 
 
-@app.command("fps-merge")
+@app.command("fps-merge", rich_help_panel="Fingerprints")
 def _merge_fps(
     in_dir: Annotated[
         Path,
