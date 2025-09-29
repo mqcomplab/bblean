@@ -48,7 +48,7 @@ If you run into any issues when installing the extensions, please open a GitHub 
 and tag it with `C++`.
 
 
-<img src="bb-demo.gif" width="600" />
+<img src="bbdemo.gif" width="600" />
 
 ## CLI Quickstart
 
