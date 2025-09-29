@@ -34,10 +34,15 @@ class ScaffoldAnalysis:
 class ClusterAnalysis:
     r""":meta private:"""
 
+    clusters: list[list[int]]
     df: pd.DataFrame
-    fps: list[NDArray[np.uint8]]
+    fps: NDArray[np.uint8]
     fps_are_packed: bool = True
     n_features: int | None = None
+
+    @property
+    def unpacked_fps(self) -> NDArray[np.uint8]:
+        return unpack_fingerprints(self.fps, self.n_features)
 
     @property
     def has_scaffolds(self) -> bool:
@@ -88,29 +93,27 @@ def cluster_analysis(
     clusters = clusters[:top]
 
     info: dict[str, list[tp.Any]] = defaultdict(list)
-    cluster_fps: list[NDArray[np.uint8]] = []
-    fps_u8 = fps.astype(np.uint8, copy=False)
-    for i, c in enumerate(clusters):
+    fps = tp.cast(NDArray[np.uint8], fps.astype(np.uint8, copy=False))
+    selected = np.empty((sum(len(c) for c in clusters), fps.shape[1]), dtype=np.uint8)
+    start = 0
+    for i, c in enumerate(clusters, 1):
         size = len(c)
-        _fps = fps_u8[c]
+        _fps = fps[c]
         if input_is_packed:
-            _fps_unpacked = unpack_fingerprints(_fps, n_features=n_features)
-        else:
-            _fps_unpacked = _fps.copy()
+            _fps_unpack = unpack_fingerprints(_fps, n_features=n_features)
         info["label"].append(i)
         info["mol_num"].append(size)
-        info["isim"].append(
-            jt_isim(np.sum(_fps_unpacked, axis=0, dtype=np.uint64), size)
-        )
-
+        info["isim"].append(jt_isim(np.sum(_fps_unpack, axis=0, dtype=np.uint64), size))
         if smiles.size:
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
             info["unique_scaffolds_num"].append(analysis.unique_num)
             info["unique_scaffolds_isim"].append(analysis.isim)
-        cluster_fps.append(_fps)  # Lets see if something uses this
+        selected[start:start + size] = _fps
+        start += size
     return ClusterAnalysis(
+        clusters,
         pd.DataFrame(info),
-        cluster_fps,
+        selected,
         fps_are_packed=input_is_packed,
         n_features=n_features,
     )
