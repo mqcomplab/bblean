@@ -60,20 +60,21 @@ def _validate_input_dir(in_dir: Path | str) -> None:
 @app.callback()
 def _main(
     ctx: Context,
-    help_: bool = Option(
-        None,
-        "--help",
-        "-h",
-        is_flag=True,
-        is_eager=True,
-        help="Show this message and exit.",
-        callback=_print_help_banner,
-    ),
+    help_: Annotated[
+        bool,
+        Option(
+            "--help/ ",
+            "-h",
+            is_eager=True,
+            help="Show this message and exit.",
+            callback=_print_help_banner,
+        ),
+    ] = False,
 ) -> None:
     pass
 
 
-@app.command("tsne-plot")
+@app.command("plot-tsne", rich_help_panel="Analysis")
 def _tsne_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
@@ -169,8 +170,12 @@ def _tsne_plot(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
 ) -> None:
-    r"""Summary plot of the clustering results"""
+    r"""t-SNE visualization of the clustering results"""
     from bblean._console import get_console
 
     console = get_console(silent=not verbose)
@@ -208,10 +213,11 @@ def _tsne_plot(
             multiscale=multiscale,
             pca_reduce=pca_reduce,
         )
-    plt.show()
+    if show:
+        plt.show()
 
 
-@app.command("summary-plot")
+@app.command("plot-summary", rich_help_panel="Analysis")
 def _summary_plot(
     clusters_path: Annotated[Path, Option("-c", "--clusters-path", show_default=False)],
     fps_path: Annotated[Path, Option("-f", "--fps-path", show_default=False)],
@@ -261,6 +267,10 @@ def _summary_plot(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
 ) -> None:
     r"""Summary plot of the clustering results"""
     from bblean._console import get_console
@@ -295,7 +305,8 @@ def _summary_plot(
             scaffold_fp_kind=scaffold_fp_kind,
         )
         summary_plot(ca, title, annotate=annotate)
-    plt.show()
+    if show:
+        plt.show()
 
 
 @app.command("run")
@@ -742,7 +753,7 @@ def _multiround(
     collect_system_specs_and_dump_config(ctx.params)
 
 
-@app.command("fps-info")
+@app.command("fps-info", rich_help_panel="Fingerprints")
 def _fps_info(
     fp_paths: Annotated[
         list[Path] | None,
@@ -765,7 +776,7 @@ def _fps_info(
             _print_fps_file_info(file, console)
 
 
-@app.command("fps-from-smiles")
+@app.command("fps-from-smiles", rich_help_panel="Fingerprints")
 def _fps_from_smiles(
     smiles_paths: Annotated[
         list[Path] | None,
@@ -846,9 +857,8 @@ def _fps_from_smiles(
     from bblean.fingerprints import _FingerprintFileCreator
     from bblean.smiles import iter_smiles_from_paths
 
-    if sys.platform == "linux":
-        # Force forkserver since rdkit may use threads, and fork is unsafe with threads
-        mp.set_start_method("forkserver")
+    # Force forkserver since rdkit may use threads, and fork is unsafe with threads
+    mp_context = mp.get_context("forkserver" if sys.platform == "linux" else None)
 
     def iter_mols_from_paths(
         smiles_paths: tp.Iterable[Path], skip_bad_smiles: bool = False
@@ -927,7 +937,7 @@ def _fps_from_smiles(
             idxs_batches = list(
                 enumerate(batched(iter_smiles_from_paths(smiles_paths), num_per_batch))
             )
-            with mp.Pool(processes=num_ps) as pool:
+            with mp_context.Pool(processes=num_ps) as pool:
                 pool.map(create_fp_file, idxs_batches)
     else:
         # Serial version
@@ -945,7 +955,7 @@ def _fps_from_smiles(
         console.print(f"Finished. Outputs written to {str(out_dir / out_name)}.npy")
 
 
-@app.command("fps-split")
+@app.command("fps-split", rich_help_panel="Fingerprints")
 def _split_fps(
     input_: Annotated[
         Path,
@@ -1013,7 +1023,7 @@ def _split_fps(
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
 
 
-@app.command("fps-shuffle")
+@app.command("fps-shuffle", rich_help_panel="Fingerprints")
 def _shuffle_fps(
     in_file: Annotated[
         Path,
@@ -1045,7 +1055,7 @@ def _shuffle_fps(
     np.save(out_dir / f"shuffled-{stem}.npy", fps)
 
 
-@app.command("fps-merge")
+@app.command("fps-merge", rich_help_panel="Fingerprints")
 def _merge_fps(
     in_dir: Annotated[
         Path,
