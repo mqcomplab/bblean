@@ -6,6 +6,8 @@ import numpy as np
 from bblean.fingerprints import calc_centroid
 from bblean.similarity import jt_isim
 
+BUILTIN_MERGES = ["radius", "diameter", "tolerance", "tolerance_tough"]
+
 
 class MergeAcceptFunction:
     # For the merge functions, although outputs of jt_isim f64, directly using f64 is
