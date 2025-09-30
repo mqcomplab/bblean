@@ -36,7 +36,7 @@ jobs:
   # coverage makes tests slightly slower, so regression tests should not run with
   # coverage
   # skip these for pushes to main since they are slower
-  regression-tests:
+  cpp-regression-tests:
     runs-on: ubuntu-24.04
     if: github.ref != 'refs/heads/main'
     steps:
