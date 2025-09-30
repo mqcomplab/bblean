@@ -8,6 +8,7 @@ authors = [
     {name = "Kenneth Lopez Perez", email = "klopezperez@chem.ufl.edu"},
     {name = "Miroslav Lzicar", email= "miroslav.lzicar@deepmedchem.com"},
 ]
+license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 description = "BitBirch-Lean Python package"
 requires-python = ">=3.11"
