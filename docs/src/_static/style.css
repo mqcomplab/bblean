@@ -13,7 +13,7 @@ div.sphx-glr-download-link-note {
 }
 
 .navbar-brand {
-    padding: 0;
+    padding: .65rem 0;
 }
 
 /* Show inverted colors in svg icons, if using a dark theme */

@@ -1,9 +1,6 @@
 {{ fullname | escape | underline}}
 
 .. automodule:: {{ fullname }}
-   {%- if fullname == "bblean" %}
-   :no-members:
-   {%- endif %}
 
    {% block attributes %}
    {%- if attributes %}
@@ -30,7 +27,7 @@
    {%- endblock %}
 
    {%- block classes %}
-   {%- if classes and fullname != "bblean" %}
+   {%- if classes %}
    .. rubric:: {{ _('Classes') }}
 
    .. autosummary::
@@ -55,19 +52,12 @@
 
 {%- block modules %}
 {%- if modules %}
-{%- if fullname == "bblean" %}
-.. toctree::
-    :hidden:
-    :caption: API reference
-
-    self
-{%- endif %}
 .. rubric:: Modules
 
 .. autosummary::
-   :nosignatures:
    :toctree:
    :recursive:
+   :nosignatures:
    :template: custom-module.rst
 {% for item in modules %}
    {{ item }}

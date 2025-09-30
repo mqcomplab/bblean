@@ -12,7 +12,6 @@ release = bblean.__version__
 rst_epilog = """
 ..  |X| replace:: Fingerprints
 """
-
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",  # For autogen python module docs
@@ -24,6 +23,7 @@ extensions = [
     "sphinx_design",  # For grid directive
 ]
 # Autosummary
+templates_path = ["_templates"]
 autosummary_ignore_module_all = False  # Respect <module>.__all__
 # Extensions config
 # autodoc
@@ -49,7 +49,6 @@ intersphinx_mapping = {
 # nitpicky = True  # Fail if refs can't be resolved TODO re-enable and fix invalid refs
 default_role = "any"  # Behavior of `inline-backticks`, try to link to "anything"
 pygments_style = "sphinx"  # Code render style
-# templates_path = ["_templates"]
 master_doc = "index"  # Default, Main toctree
 source_suffix = {".rst": "restructuredtext"}  # Default, Suffix of files
 
@@ -75,6 +74,7 @@ html_sidebars = {
     "installing": [],
     "user-guide": [],
     "api-reference": ["sidebar-nav-bs"],
+    "api_autogen/*": ["sidebar-nav-bs"],
     "publications": [],
 }
 html_theme_options = {
@@ -87,6 +87,7 @@ html_theme_options = {
         "installing": [],
         "user-guide": [],
         "api-reference": ["page-toc"],
+        "_api_autogen/*": ["page-toc"],
         "publications": [],
     },
     # Misc
@@ -117,7 +118,7 @@ texinfo_documents = [
         "BitBIRCH-Lean Documentation",
         author,
         "BitBIRCH-Lean",
-        "One line description of project.",
+        "Clustering of huge molecular libraries",
         "Miscellaneous",
     ),
 ]

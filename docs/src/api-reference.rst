@@ -6,13 +6,15 @@ API Reference
 =============
 
 .. autosummary::
-   :toctree: _autosummary
+   :toctree: _api_autogen
    :recursive:
+   :nosignatures:
+   :template: module.rst
 
-   bblean.bitbirch
-   bblean.fingerprints
-   bblean.smiles
-   bblean.similarity
-   bblean.multiround
-   bblean.analysis
-   bblean.plotting
+   bitbirch
+   fingerprints
+   smiles
+   similarity
+   multiround
+   analysis
+   plotting
