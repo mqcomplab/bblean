@@ -4,6 +4,7 @@
 [![CI](https://github.com/mqcomplab/bblean/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/mqcomplab/bblean/actions/workflows/ci.yaml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ![Code coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fmqcomplab.github.io%2Fbblean%2Fcoverage%2Fcoverage-badge.json) 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ## Overview
 
