@@ -39,7 +39,9 @@ dependencies:
   - memray
   - py-spy
   # Docs
-  - sphinx  # Documentation framework, uses restructured text (.rst)
+  - sphinx
+  - sphinx-design
+  - pydata-sphinx-theme
   # Loading and converting jupyter notebooks
   - jupyter
   - jupytext

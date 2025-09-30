@@ -35,7 +35,8 @@ coverage.json
 .pytest_cache/
 
 # Sphinx documentation
-docs/_build
+docs/build
+docs/src/_api_autogen/
 
 # Mypy
 .mypy_cache/
