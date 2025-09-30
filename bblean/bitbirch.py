@@ -58,7 +58,7 @@ import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
 from bblean._memory import _mmap_file_and_madvise_sequential, _ArrayMemPagesManager
-from bblean._merges import get_merge_accept_fn, MergeAcceptFunction
+from bblean._merges import get_merge_accept_fn, MergeAcceptFunction, BUILTIN_MERGES
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import (
     pack_fingerprints,
@@ -296,68 +296,50 @@ class _BFNode:
         threshold: float,
     ) -> bool:
         """Insert a new subcluster into the node."""
-        # Reusing tree with different features is forbidden
         if not self._subclusters:
             self.append_subcluster(subcluster)
             return False
 
-        # We need to find the closest subcluster among all the
-        # subclusters so that we can insert our new subcluster.
+        # Within this node, find the closest subcluster to the one to-be-inserted
         sim_matrix = jt_sim_packed(self.packed_centroids, subcluster.packed_centroid)
-        closest_index = np.argmax(sim_matrix)
-        closest_subcluster = self._subclusters[closest_index]
-
-        # If the subcluster has a child, we need a recursive strategy.
-        if closest_subcluster.child is not None:
-
-            split_child = closest_subcluster.child.insert_bf_subcluster(
-                subcluster, merge_accept_fn, threshold
-            )
-
-            if not split_child:
-                # If it is determined that the child need not be split, we
-                # can just update the closest_subcluster
-                closest_subcluster.update(subcluster)
-                self._packed_centroids_buf[closest_index] = self._subclusters[
-                    closest_index
-                ].packed_centroid
-                return False
-
-            # things not too good. we need to redistribute the subclusters in
-            # our child node, and add a new subcluster in the parent
-            # subcluster to accommodate the new child.
-            else:
-                new_subcluster1, new_subcluster2 = _split_node(closest_subcluster.child)
-                self.update_split_subclusters(
-                    closest_subcluster, new_subcluster1, new_subcluster2
-                )
-
-                if len(self._subclusters) > self.branching_factor:
-                    return True
-                return False
-
-        # good to go!
-        else:
-            merged = closest_subcluster.merge_subcluster(
+        closest_idx = np.argmax(sim_matrix)
+        closest_subcluster = self._subclusters[closest_idx]
+        closest_node = closest_subcluster.child
+        if closest_node is None:
+            # The subcluster doesn't have a child node (this is a leaf node)
+            # attempt direct merge
+            merge_was_successful = closest_subcluster.merge_subcluster(
                 subcluster, threshold, merge_accept_fn
             )
-            if merged:
-                self._packed_centroids_buf[closest_index] = (
-                    closest_subcluster.packed_centroid
-                )
-                return False
-
-            # not close to any other subclusters, and we still
-            # have space, so add.
-            elif len(self._subclusters) < self.branching_factor:
+            if not merge_was_successful:
+                # Could not merge due to criteria
+                # Append subcluster, and check if splitting *this node* is needed
                 self.append_subcluster(subcluster)
-                return False
+                return len(self._subclusters) > self.branching_factor
+            # Merge success, update the centroid
+            self._packed_centroids_buf[closest_idx] = closest_subcluster.packed_centroid
+            return False
 
-            # We do not have enough space nor is it closer to an
-            # other subcluster. We need to split.
-            else:
-                self.append_subcluster(subcluster)
-                return True
+        # Hard case: the closest subcluster has a child (is 'tracking'), use recursion
+        child_must_be_split = closest_node.insert_bf_subcluster(
+            subcluster, merge_accept_fn, threshold
+        )
+        if child_must_be_split:
+            # Split the child node and redistribute subclusters. Update
+            # this node with the 'tracking' subclusters of the two new children.
+            # Then, check if *this node* needs splitting too
+            new_subcluster1, new_subcluster2 = _split_node(closest_node)
+            self.update_split_subclusters(
+                closest_subcluster, new_subcluster1, new_subcluster2
+            )
+            return len(self._subclusters) > self.branching_factor
+
+        # Child need not be split, update the *tracking* closest subcluster
+        closest_subcluster.update(subcluster)
+        self._packed_centroids_buf[closest_idx] = self._subclusters[
+            closest_idx
+        ].packed_centroid
+        return False
 
 
 class _BFSubcluster:
@@ -593,7 +575,7 @@ class BitBirch:
         *,
         threshold: float = 0.65,
         branching_factor: int = 50,
-        merge_criterion: str | None = None,
+        merge_criterion: str | MergeAcceptFunction | None = None,
         tolerance: float | None = None,
     ):
         # Criterion for merges
@@ -615,7 +597,14 @@ class BitBirch:
         else:
             merge_criterion = "diameter" if merge_criterion is None else merge_criterion
             tolerance = 0.05 if tolerance is None else tolerance
-            self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
+            if isinstance(merge_criterion, MergeAcceptFunction):
+                if tolerance is not None:
+                    raise ValueError(
+                        "'tolerance' arg is disregarded for custom merge functions"
+                    )
+                self._merge_accept_fn = merge_criterion
+            else:
+                self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
 
         # Tree state
         self._num_fitted_fps = 0
@@ -658,7 +647,7 @@ class BitBirch:
 
     def set_merge(
         self,
-        criterion: str = "diameter",
+        criterion: str | MergeAcceptFunction | None = None,
         *,
         tolerance: float = 0.05,
         threshold: float | None = None,
@@ -670,10 +659,19 @@ class BitBirch:
         """
         if _global_merge_accept is not None:
             raise ValueError(
-                "merge_criterion can only be set if "
-                "the global set_merge function has *not* been used"
+                "BitBirch.set_merge() can only called if "
+                "the global set_merge() function has *not* been used"
             )
-        self._merge_accept_fn = get_merge_accept_fn(criterion, tolerance)
+        if criterion is not None:
+            if isinstance(criterion, MergeAcceptFunction):
+                if tolerance is not None:
+                    raise ValueError(
+                        "'tolerance' arg is disregarded for custom merge functions"
+                    )
+                self._merge_accept_fn = criterion
+            else:
+                self._merge_accept_fn = get_merge_accept_fn(criterion, tolerance)
+            self._merge_accept_fn = get_merge_accept_fn(criterion, tolerance)
         if threshold is not None:
             self._threshold = threshold
         if branching_factor is not None:
@@ -823,11 +821,13 @@ class BitBirch:
             split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
             )
+
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(self._root)
                 self._root = _BFNode(branching_factor, n_features)
                 self._root.append_subcluster(new_subcluster1)
                 self._root.append_subcluster(new_subcluster2)
+
             self._num_fitted_fps += len(idxs)
             arr_idx += 1
             if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
@@ -962,7 +962,7 @@ class BitBirch:
         self._num_fitted_fps = 0
 
     def delete_internal_nodes(self) -> None:
-        r"""Delete all nodes in the tree that are not leafs
+        r"""Delete all nodes in the tree that are not leaves
 
         This function is for advanced usage only. It should be called if there is need
         to use the BitBirch leaf clusters, but you need to release the memory held by
@@ -1104,7 +1104,7 @@ class BitBirch:
         parts = [
             f"threshold={self.threshold}",
             f"branching_factor={self.branching_factor}",
-            f"merge_criterion='{fn.name}'",
+            f"merge_criterion='{fn.name if fn.name in BUILTIN_MERGES else fn}'",
         ]
         if self.tolerance is not None:
             parts.append(f"tolerance={self.tolerance}")
