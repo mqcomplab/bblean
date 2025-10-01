@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=4554af9a"></script>
+    <script src="../_static/documentation_options.js?v=78344a3b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -387,10 +387,16 @@
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_from_sum" title="bblean.similarity.jt_isim_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_from_sum</span></code></a></p></td>
-<td><p>iSIM Tanimoto calculation</p></td>
+<td><p>iSIM Tanimoto, from sum of rows of a fingerprint array and number of rows</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_sim_packed" title="bblean.similarity.jt_sim_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_sim_packed</span></code></a></p></td>
 <td><p>Tanimoto similarity between a matrix of packed fps and a single packed fp</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_unpacked" title="bblean.similarity.jt_isim_unpacked"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_unpacked</span></code></a></p></td>
+<td><p>iSIM Tanimoto calculation, from unpacked fingerprints</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_packed" title="bblean.similarity.jt_isim_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_packed</span></code></a></p></td>
+<td><p>iSIM Tanimoto calculation, from packed fingerprints</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_most_dissimilar_packed" title="bblean.similarity.jt_most_dissimilar_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed</span></code></a></p></td>
 <td><p>Finds two fps in a packed fp array that are the most Tanimoto-dissimilar</p></td>
@@ -400,8 +406,8 @@
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="bblean.similarity.jt_isim_from_sum">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c_total</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_objects</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_isim_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_from_sum" title="Link to this definition">#</a></dt>
-<dd><p>iSIM Tanimoto calculation</p>
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_objects</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_isim_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_from_sum" title="Link to this definition">#</a></dt>
+<dd><p>iSIM Tanimoto, from sum of rows of a fingerprint array and number of rows</p>
 <p>iSIM Tanimoto was first propsed in:
 <a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
 <dl class="field-list simple">
@@ -427,6 +433,52 @@ n_objects = X.shape[0]</p></li>
 <span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_sim_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_sim_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_sim_packed" title="Link to this definition">#</a></dt>
 <dd><p>Tanimoto similarity between a matrix of packed fps and a single packed fp</p>
 <dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_unpacked">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_unpacked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_isim_unpacked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_unpacked" title="Link to this definition">#</a></dt>
+<dd><p>iSIM Tanimoto calculation, from unpacked fingerprints</p>
+<p>iSIM Tanimoto was first propsed in:
+<a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fps</strong> (<em>np.ndarray</em>) – 2D <em>unpacked</em> fingerprint array</p></li>
+<li><p><strong>n_objects</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of elements
+n_objects = X.shape[0]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>isim</strong> – iSIM Jaccard-Tanimoto value</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_packed">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_isim_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_packed" title="Link to this definition">#</a></dt>
+<dd><p>iSIM Tanimoto calculation, from packed fingerprints</p>
+<p>iSIM Tanimoto was first propsed in:
+<a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fps</strong> (<em>np.ndarray</em>) – 2D <em>packed</em> fingerprint array</p></li>
+<li><p><strong>n_objects</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of elements
+n_objects = X.shape[0]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>isim</strong> – iSIM Jaccard-Tanimoto value</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -505,6 +557,8 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_from_sum()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_sim_packed"><code class="docutils literal notranslate"><span class="pre">jt_sim_packed()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_unpacked"><code class="docutils literal notranslate"><span class="pre">jt_isim_unpacked()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_packed"><code class="docutils literal notranslate"><span class="pre">jt_isim_packed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_most_dissimilar_packed"><code class="docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed()</span></code></a></li>
 </ul>
   </nav></div>
