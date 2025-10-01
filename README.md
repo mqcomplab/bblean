@@ -22,7 +22,7 @@ If you find this software useful please cite the following articles:
 **NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
 we hit version 1.0
 
-The [documentation](https://mqcomplab.github.io/bblean/) of the developer version is a work in progress. Please let us know if you find any issues.
+The [documentation](https://mqcomplab.github.io/bblean/devdocs) of the developer version is a work in progress. Please let us know if you find any issues.
 
 ## Installation
 
