@@ -99,7 +99,7 @@ def _jt_sim_packed_precalc_cardinalities(
     return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
 
 
-def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
+def jt_isim_from_sum(c_total: NDArray[np.integer], n_objects: int) -> float:
     r"""iSIM Tanimoto calculation
 
     iSIM Tanimoto was first propsed in:

@@ -157,57 +157,57 @@ def test_jt_sim_packed() -> None:
         assert np.isclose(out, expect).all()
 
 
-def test_jt_isim() -> None:
+def test_jt_isim_from_sum() -> None:
     fps = make_fake_fingerprints(100, seed=17408390758220920002, pack=False)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    s = pysim.jt_isim(c_total, c_objects)
+    s = pysim.jt_isim_from_sum(c_total, c_objects)
     assert s == 0.21824334501491158
     if CSIM_AVAIL:
-        s = csim.jt_isim(c_total, c_objects)
+        s = csim.jt_isim_from_sum(c_total, c_objects)
         assert s == 0.21824334501491158
 
 
-def test_jt_isim_disjoint() -> None:
+def test_jt_isim_from_sum_disjoint() -> None:
     fps = make_fake_fingerprints(1, seed=17408390758220920002, pack=False)
     disjoint = (~fps.astype(np.bool)).view(np.uint8)
     fps = np.concatenate((fps, disjoint))
     c_total = fps.sum(0)
     c_objects = len(fps)
-    assert pysim.jt_isim(c_total, c_objects) == 0
+    assert pysim.jt_isim_from_sum(c_total, c_objects) == 0
     if CSIM_AVAIL:
-        assert csim.jt_isim(c_total, c_objects) == 0
+        assert csim.jt_isim_from_sum(c_total, c_objects) == 0
 
     fps = np.eye(2048, 2048, dtype=np.uint8)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    assert pysim.jt_isim(c_total, c_objects) == 0
+    assert pysim.jt_isim_from_sum(c_total, c_objects) == 0
     if CSIM_AVAIL:
-        assert csim.jt_isim(c_total, c_objects) == 0
+        assert csim.jt_isim_from_sum(c_total, c_objects) == 0
 
 
-def test_jt_isim_homogeneous() -> None:
+def test_jt_isim_from_sum_homogeneous() -> None:
     fps = np.zeros((100, 2048), dtype=np.uint8)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    assert pysim.jt_isim(c_total, c_objects) == 1.0
+    assert pysim.jt_isim_from_sum(c_total, c_objects) == 1.0
     if CSIM_AVAIL:
-        assert csim.jt_isim(c_total, c_objects) == 1.0
+        assert csim.jt_isim_from_sum(c_total, c_objects) == 1.0
 
     fps = np.ones((100, 2048), dtype=np.uint8)
     c_total = fps.sum(0)
     c_objects = len(fps)
-    assert pysim.jt_isim(c_total, c_objects) == 1.0
+    assert pysim.jt_isim_from_sum(c_total, c_objects) == 1.0
     if CSIM_AVAIL:
-        assert csim.jt_isim(c_total, c_objects) == 1.0
+        assert csim.jt_isim_from_sum(c_total, c_objects) == 1.0
 
 
-def test_jt_isim_single() -> None:
+def test_jt_isim_from_sum_single() -> None:
     fps = make_fake_fingerprints(1, seed=17408390758220920002, pack=False)
     c_total = fps.sum(0)
     c_objects = len(fps)
     with pytest.warns(RuntimeWarning):
-        _ = pysim.jt_isim(c_total, c_objects)
+        _ = pysim.jt_isim_from_sum(c_total, c_objects)
     if CSIM_AVAIL:
         with pytest.warns(RuntimeWarning):
-            _ = csim.jt_isim(c_total, c_objects)
+            _ = csim.jt_isim_from_sum(c_total, c_objects)

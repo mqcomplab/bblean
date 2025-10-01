@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
 from bblean._config import DEFAULTS
-from bblean.similarity import jt_isim
+from bblean.similarity import jt_isim_from_sum
 from bblean.fingerprints import (
     fps_from_smiles,
     unpack_fingerprints,
@@ -74,7 +74,7 @@ def scaffold_analysis(
     unique_scaffolds = set(scaffolds)
     unique_num = len(unique_scaffolds)
     scaffolds_fps = fps_from_smiles(unique_scaffolds, kind=fp_kind, pack=False)
-    scaffolds_isim = jt_isim(np.sum(scaffolds_fps, axis=0), unique_num)
+    scaffolds_isim = jt_isim_from_sum(np.sum(scaffolds_fps, axis=0), unique_num)
     return ScaffoldAnalysis(unique_num, scaffolds_isim)
 
 
@@ -121,7 +121,10 @@ def cluster_analysis(
             _fps_unpack = _fps.copy()
         info["label"].append(i)
         info["mol_num"].append(size)
-        info["isim"].append(jt_isim(np.sum(_fps_unpack, axis=0, dtype=np.uint64), size))
+        info["isim"].append(
+            jt_isim_from_sum(
+                np.sum(_fps_unpack, axis=0, dtype=np.uint64), size)  # type: ignore
+        )
         if smiles.size:
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
             info["unique_scaffolds_num"].append(analysis.unique_num)

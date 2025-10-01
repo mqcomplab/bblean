@@ -272,7 +272,7 @@ py::array_t<uint8_t> calc_centroid(
     return centroid_packed;
 }
 
-double jt_isim(
+double jt_isim_from_sum(
     const py::array_t<uint64_t, py::array::c_style | py::array::forcecast>&
         linear_sum,
     int64_t n_objects) {
@@ -469,7 +469,7 @@ PYBIND11_MODULE(_cpp_similarity, m) {
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
 
     // API
-    m.def("jt_isim", &jt_isim, "iSIM Tanimoto calculation", py::arg("c_total"),
+    m.def("jt_isim_from_sum", &jt_isim_from_sum, "iSIM Tanimoto calculation", py::arg("c_total"),
           py::arg("n_objects"));
     m.def("jt_sim_packed", &jt_sim_packed,
           "Tanimoto similarity between a matrix of packed fps and a single "
