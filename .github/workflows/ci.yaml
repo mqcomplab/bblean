@@ -6,8 +6,6 @@ on:
   push:
     branches:
       - main
-  release:
-    types: [published]
 
 env:
   PYTHON_VERSION: '3.11'
@@ -15,7 +13,6 @@ env:
 jobs:
   flake8:
     runs-on: ubuntu-latest
-    if: (github.event_name != "release")
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
@@ -35,7 +32,6 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
-    if: (github.event_name != "release")
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
@@ -91,7 +87,7 @@ jobs:
   upload-docs-and-badges-to-gh-pages:
     runs-on: ubuntu-latest
     needs: [tests, docs]
-    if: (github.ref == 'refs/heads/main') || (github.event_name == "release" && github.event.release.prerelease == false)
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -101,11 +97,12 @@ jobs:
           mkdir -p site/devdocs
           mkdir -p site/docs/stable
 
+      # TODO: releases to docs/stable
       - name: fetch-docs
         uses: actions/download-artifact@v4
         with:
           name: docs
-          path: ${{ github.event_name == 'release' && './site/docs/stable' || './site/devdocs' }}
+          path: './site/devdocs'
 
       - name: fetch-coverage-report
         uses: actions/download-artifact@v4
@@ -131,7 +128,7 @@ jobs:
   # skip these for pushes to main since they are slower
   regression-tests:
     runs-on: ubuntu-24.04
-    if: (github.ref != 'refs/heads/main') && (github.event_name != "release")
+    if: github.ref != 'refs/heads/main'
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
