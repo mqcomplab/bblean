@@ -64,9 +64,9 @@ else:
     except ImportError:
         from bblean._py_similarity import (  # type: ignore
             jt_isim_from_sum,
+            jt_isim_unpacked,
+            jt_isim_packed,
             jt_sim_packed,
-            jt_isim_unpacked_u8,
-            jt_isim_packed_u8,
             jt_most_dissimilar_packed,
         )
 
