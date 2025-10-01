@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
 from bblean._config import DEFAULTS
-from bblean.similarity import jt_isim_from_sum
+from bblean.similarity import jt_isim_packed, jt_isim_unpacked
 from bblean.fingerprints import (
     fps_from_smiles,
     unpack_fingerprints,
@@ -72,10 +72,9 @@ def scaffold_analysis(
         smiles = [smiles]
     scaffolds = [MurckoScaffold.MurckoScaffoldSmilesFromSmiles(smi) for smi in smiles]
     unique_scaffolds = set(scaffolds)
-    unique_num = len(unique_scaffolds)
     scaffolds_fps = fps_from_smiles(unique_scaffolds, kind=fp_kind, pack=False)
-    scaffolds_isim = jt_isim_from_sum(np.sum(scaffolds_fps, axis=0), unique_num)
-    return ScaffoldAnalysis(unique_num, scaffolds_isim)
+    scaffolds_isim = jt_isim_unpacked(scaffolds_fps)
+    return ScaffoldAnalysis(len(unique_scaffolds), scaffolds_isim)
 
 
 def cluster_analysis(
@@ -115,17 +114,12 @@ def cluster_analysis(
         # If a file sequence is passed, the cluster indices must be sorted.
         # the cluster analysis is idx-order-independent, so this is fine
         _fps = fps_provider[sorted(c)]
-        if input_is_packed:
-            _fps_unpack = unpack_fingerprints(_fps, n_features=n_features)
-        else:
-            _fps_unpack = _fps.copy()
         info["label"].append(i)
         info["mol_num"].append(size)
-        info["isim"].append(
-            jt_isim_from_sum(
-                np.sum(_fps_unpack, axis=0, dtype=np.uint64), size  # type: ignore
-            )
-        )
+        if input_is_packed:
+            info["isim"].append(jt_isim_packed(_fps, n_features))  # type: ignore
+        else:
+            info["isim"].append(jt_isim_unpacked(_fps))  # type: ignore
         if smiles.size:
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
             info["unique_scaffolds_num"].append(analysis.unique_num)

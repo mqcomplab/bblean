@@ -99,8 +99,65 @@ def _jt_sim_packed_precalc_cardinalities(
     return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
 
 
-def jt_isim_from_sum(c_total: NDArray[np.integer], n_objects: int) -> float:
-    r"""iSIM Tanimoto calculation
+def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:
+    r"""iSIM Tanimoto calculation, from unpacked fingerprints
+
+    iSIM Tanimoto was first propsed in:
+    https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
+
+    Parameters
+    ----------
+    fps : np.ndarray
+        2D *unpacked* fingerprint array
+
+    n_objects : int
+                Number of elements
+                n_objects = X.shape[0]
+
+    Returns
+    ----------
+    isim : float
+           iSIM Jaccard-Tanimoto value
+    """
+    # cast is slower
+    return jt_isim_from_sum(
+        np.sum(arr, axis=0, dtype=np.uint64), len(arr)  # type: ignore
+    )
+
+
+def jt_isim_packed(fps: NDArray[np.integer], n_features: int | None = None) -> float:
+    r"""iSIM Tanimoto calculation, from packed fingerprints
+
+    iSIM Tanimoto was first propsed in:
+    https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
+
+    Parameters
+    ----------
+    fps : np.ndarray
+        2D *packed* fingerprint array
+
+    n_objects : int
+                Number of elements
+                n_objects = X.shape[0]
+
+    Returns
+    ----------
+    isim : float
+           iSIM Jaccard-Tanimoto value
+    """
+    # cast is slower
+    return jt_isim_from_sum(
+        np.sum(
+            unpack_fingerprints(fps, n_features),  # type: ignore
+            axis=0,
+            dtype=np.uint64,
+        ),
+        len(fps),
+    )
+
+
+def jt_isim_from_sum(linear_sum: NDArray[np.integer], n_objects: int) -> float:
+    r"""iSIM Tanimoto, from sum of rows of a fingerprint array and number of rows
 
     iSIM Tanimoto was first propsed in:
     https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
@@ -127,7 +184,7 @@ def jt_isim_from_sum(c_total: NDArray[np.integer], n_objects: int) -> float:
         )
         return np.nan
 
-    x = c_total.astype(np.uint64, copy=False)
+    x = linear_sum.astype(np.uint64, copy=False)
     sum_kq = np.sum(x)
     # isim of fingerprints that are all zeros should be 1 (they are all equal)
     if sum_kq == 0:
