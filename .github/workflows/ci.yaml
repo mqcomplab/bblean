@@ -15,6 +15,7 @@ env:
 jobs:
   flake8:
     runs-on: ubuntu-latest
+    if: github.event_name != "release"
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
@@ -34,6 +35,7 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    if: github.event_name != "release"
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
@@ -89,7 +91,7 @@ jobs:
   upload-docs-and-badges-to-gh-pages:
     runs-on: ubuntu-latest
     needs: tests
-    if: (github.ref == 'refs/heads/main') || (github.event_name == "release")
+    if: (github.ref == 'refs/heads/main') || (github.event_name == "release" && github.event.release.prerelease == false)
     permissions:
       contents: write
     steps:
