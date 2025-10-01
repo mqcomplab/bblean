@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 import numpy as np
 
 from bblean.utils import min_safe_uint
-from bblean.fingerprints import unpack_fingerprints, calc_centroid
+from bblean.fingerprints import unpack_fingerprints, centroid_from_sum
 
 
 # Requires numpy >= 2.0
@@ -53,7 +53,7 @@ def jt_most_dissimilar_packed(
     Y_unpacked = unpack_fingerprints(Y, n_features)
     # np.sum() automatically promotes to uint64 unless forced to a smaller dtype
     linear_sum = np.sum(Y_unpacked, axis=0, dtype=min_safe_uint(n_samples))
-    packed_centroid = calc_centroid(linear_sum, n_samples, pack=True)
+    packed_centroid = centroid_from_sum(linear_sum, n_samples, pack=True)
 
     cardinalities = _popcount(Y)
 
@@ -99,7 +99,7 @@ def _jt_sim_packed_precalc_cardinalities(
     return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
 
 
-def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
+def jt_isim_from_sum(c_total: NDArray[np.integer], n_objects: int) -> float:
     r"""iSIM Tanimoto calculation
 
     iSIM Tanimoto was first propsed in:

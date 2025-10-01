@@ -62,7 +62,7 @@ from bblean._merges import get_merge_accept_fn, MergeAcceptFunction, BUILTIN_MER
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import (
     pack_fingerprints,
-    calc_centroid,
+    centroid_from_sum,
     _get_fingerprints_from_file_seq,
 )
 from bblean.similarity import jt_sim_packed, jt_most_dissimilar_packed
@@ -403,7 +403,7 @@ class _BFSubcluster:
                     f" but found {len(mol_indices)} != {buffer[-1]}"
                 )
             self._buffer = buffer
-            self.packed_centroid = calc_centroid(buffer[:-1], buffer[-1], pack=True)
+            self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
         else:
             if linear_sum is not None:
                 if len(mol_indices) != 1:
@@ -466,7 +466,7 @@ class _BFSubcluster:
         # NOTE: Assignments are safe and do not recast the buffer
         self._buffer[:-1] = linear_sum
         self._buffer[-1] = n_samples
-        self.packed_centroid = calc_centroid(linear_sum, n_samples, pack=True)
+        self.packed_centroid = centroid_from_sum(linear_sum, n_samples, pack=True)
 
     # NOTE: Part of the contract is that all elements of linear sum must always be
     # less or equal to n_samples. This function does not check this
@@ -479,7 +479,7 @@ class _BFSubcluster:
         # NOTE: Assignment and inplace add are safe and do not recast the buffer
         self._buffer[:-1] += linear_sum
         self._buffer[-1] = new_n_samples
-        self.packed_centroid = calc_centroid(
+        self.packed_centroid = centroid_from_sum(
             self._buffer[:-1], new_n_samples, pack=True
         )
 
