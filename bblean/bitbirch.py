@@ -97,15 +97,16 @@ def set_merge(merge_criterion: str, tolerance: float = 0.05) -> None:
     ..  warning::
 
         Use of this function is highly discouraged, instead use either:
-            bb_tree = BitBirch(...)
-            bb_tree.set_merge(merge_criterion=..., tolerance=...)
-        or directly: `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`."
+        ``bb_tree = BitBirch(...)``
+        ``bb_tree.set_merge(merge_criterion=..., tolerance=...)``
+        or directly: ``bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)``"
+
     """
     msg = (
         "Use of the global `set_merge` function is highly discouraged,\n"
         " instead use either: "
-        "    bb_tree = BitBirch(...)\n"
-        "    bb_tree.set_merge(merge_criterion=..., tolerance=...)\n"
+        " bb_tree = BitBirch(...)\n"
+        " bb_tree.set_merge(merge_criterion=..., tolerance=...)\n"
         " or directly: `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`."
     )
     warnings.warn(msg, UserWarning)
@@ -522,6 +523,7 @@ class BitBirch:
     structure with the cluster centroids being read off the leaf.
 
     If you find this software useful please cite the following articles:
+
     - BitBIRCH: efficient clustering of large molecular libraries:
       https://doi.org/10.1039/D5DD00030K
     - BitBIRCH Clustering Refinement Strategies:
@@ -538,27 +540,27 @@ class BitBirch:
         vice-versa.
 
     branching_factor : int = 50
-        Maximum number of 'BitFeatures' subclusters in each node. If a new sample
-        enters such that the number of subclusters exceed the branching_factor then that
-        node is split into two nodes with the subclusters redistributed in each. The
-        parent subcluster of that node is removed and two new subclusters are added as
-        parents of the 2 split nodes.
+        Maximum number of 'BitFeatures' subclusters in each node. If a new sample enters
+        such that the number of subclusters exceed the branching_factor then that node
+        is split into two nodes with the subclusters redistributed in each. The parent
+        subcluster of that node is removed and two new subclusters are added as parents
+        of the 2 split nodes.
 
     merge_criterion: str
-        radius, diameter or tolerance
-        - radius: merge subcluster based on comparison to centroid of the cluster
-        - diameter: merge subcluster based on instant Tanimoto similarity of cluster
-        - tolerance: applies tolerance threshold to diameter merge criteria, which
-            will merge subcluster with stricter threshold for newly added molecules
+        radius, diameter or tolerance. *radius*: merge subcluster based on comparison to
+        centroid of the cluster. *diameter*: merge subcluster based on instant Tanimoto
+        similarity of cluster. *tolerance*: applies tolerance threshold to diameter
+        merge criteria, which will merge subcluster with stricter threshold for newly
+        added molecules.
 
     tolerance: float
-        Penalty value for similarity threshold of the 'tolerance' merge criteria
+        Penalty value for similarity threshold of the 'tolerance' merge criteria.
 
     Notes
     -----
 
     The tree data structure consists of nodes with each node holdint a number of
-    subclusters ('BitFeatures'). The maximum number of subclusters in a node is
+    subclusters (``BitFeatures``). The maximum number of subclusters in a node is
     determined by the branching factor. Each subcluster maintains a linear sum,
     mol_indices and the number of samples in that subcluster. In addition, each
     subcluster can also have a node as its child, if the subcluster is not a member of a
@@ -568,6 +570,7 @@ class BitBirch:
     it and the linear sum, mol_indices and the number of samples int the corresponding
     subcluster are updated. This is done recursively untils the properties of a leaf
     node are updated.
+
     """
 
     def __init__(
@@ -695,9 +698,9 @@ class BitBirch:
             Input data.
 
         reinsert_indices: Iterable[int]
-            if `reinsert_indices` is passed, X corresponds only to the molecules that
-            will be reinserted into the tree, and `reinsert_indices` are the indices
-            associated with these molecules.
+            if ``reinsert_indices`` is passed, ``X`` corresponds only to the molecules
+            that will be reinserted into the tree, and ``reinsert_indices`` are the
+            indices associated with these molecules.
 
         input_is_packed: bool
             Whether the input fingerprints are packed
@@ -927,7 +930,7 @@ class BitBirch:
         sort: bool = True,
         check_valid: bool = True,
     ) -> None:
-        r"""Dump the cluster assignments to a *.csv file"""
+        r"""Dump the cluster assignments to a ``*.csv`` file"""
         import pandas as pd  # Hide pandas import since it is heavy
 
         path = Path(path)
@@ -967,8 +970,8 @@ class BitBirch:
         This function is for advanced usage only. It should be called if there is need
         to use the BitBirch leaf clusters, but you need to release the memory held by
         the internal nodes. After calling this function, no more fingerprints can be fit
-        into the tree, unless a call to `.reset()` afterwards releases the *whole tree*,
-        including the leaf clusters.
+        into the tree, unless a call to `BitBirch.reset` afterwards releases the
+        *whole tree*, including the leaf clusters.
         """
         if not tp.cast(_BFNode, self._root).is_leaf:
             # release all nodes that are not leaves,

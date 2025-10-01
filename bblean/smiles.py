@@ -9,7 +9,7 @@ __all__ = ["load_smiles"]
 
 
 def load_smiles(path: Path | str, max_num: int = -1) -> NDArray[np.str_]:
-    r"""Simple utility to load smiles from a *.smi file"""
+    r"""Simple utility to load smiles from a ``*.smi`` file"""
     path = Path(path)
     smiles = []
     with open(path, mode="rt", encoding="utf-8") as f:

@@ -64,11 +64,11 @@ def unpack_fingerprints(
 
     .. note::
 
-        If `n_features` is not passed, unpacking will only recover the correct number of
-        features if it is a multiple of 8, otherwise fingerprints will be padded with
+        If ``n_features`` is not passed, unpacking will only recover the correct number
+        of features if it is a multiple of 8, otherwise fingerprints will be padded with
         zeros to the closest multiple of 8. This is generally not an issue since most
         common fingerprints feature sizes (2048, 1024, etc) are multiples of 8, but if
-        you are using a non-standard number of features you should pass `n_features`
+        you are using a non-standard number of features you should pass ``n_features``
         explicitly.
     """
     # n_features is required to discard padded zeros if it is not a multiple of 8

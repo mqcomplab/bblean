@@ -29,7 +29,7 @@ def summary_plot(
     title: str | None = None,
     annotate: bool = True,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
-    r"""Create a summary plot from a cluster analysis.
+    r"""Create a summary plot from a cluster analysis
 
     If the analysis contains scaffolds, a scaffold analysis is added to the plot"""
     orange = "tab:orange"
@@ -233,7 +233,7 @@ def dump_mol_images(
     cluster_idx: int = 0,
     batch_size: int = 30,
 ) -> None:
-    r"""Dump smiles associated with a specific cluster as *.png image files"""
+    r"""Dump smiles associated with a specific cluster as ``*.png`` image files"""
     if isinstance(smiles, str):
         smiles = [smiles]
     smiles = np.asarray(smiles)
