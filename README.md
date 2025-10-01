@@ -22,6 +22,8 @@ If you find this software useful please cite the following articles:
 **NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
 we hit version 1.0
 
+The [documentation](https://mqcomplab.github.io/bblean/) of the developer version is a work in progress. Please let us know if you find any issues.
+
 ## Installation
 
 From source, editable mode, using a conda environment:
@@ -178,9 +180,6 @@ By default all functions take *packed* fingerprints of dtype `uint8`. Many funct
 support an `input_is_packed: bool` flag, which you can toggle to `False` in case for
 some reason you want to pass unpacked fingerprints (not recommended).
 
-Documentation is currently a work in progress, for the time being you can consult
-functions and classes `"""docstrings"""` for info on usage, or the Jupyter notebook
-examples under `./examples` (More to be added soon!).
 
 - Functions and classes that *end in an underscore* are considered private (such as
   `_private_function(...)`) and should not be used, since they can be removed or
