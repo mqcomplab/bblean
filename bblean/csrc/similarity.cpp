@@ -380,6 +380,28 @@ py::array_t<double> jt_sim_packed(const py::array_t<uint8_t>& arr,
     return jt_sim_packed_precalc_cardinalities(arr, vec, _popcount_2d(arr));
 }
 
+// NOTE: This is only *slightly* faster for C++ than numpy, and only if the array
+// is uint8_t
+py::array_t<uint64_t> add_rows(const py::array_t<uint8_t, py::array::c_style>& arr) {
+    if (arr.ndim() != 2) {
+        throw std::runtime_error("Input array must be 2-dimensional");
+    }
+    auto arr_ptr = arr.data();
+    auto out = py::array_t<uint64_t>(arr.shape(1));
+    auto out_ptr = out.mutable_data();
+    std::memset(out_ptr, 0, out.nbytes());
+    py::ssize_t n_samples = arr.shape(0);
+    py::ssize_t n_features = arr.shape(1);
+    // Check GCC / CLang vectorize this
+    for (py::ssize_t i = 0; i < n_samples; ++i) {
+        const uint8_t* arr_row_ptr = arr_ptr + i * n_features;
+        for (py::ssize_t j = 0; j < n_features; ++j) {
+            out_ptr[j] += static_cast<uint64_t>(arr_row_ptr[j]);
+        }
+    }
+    return out;
+}
+
 py::tuple jt_most_dissimilar_packed(
     py::array_t<uint8_t, py::array::c_style | py::array::forcecast> fps_packed,
     std::optional<py::ssize_t> n_features_opt) {
@@ -467,6 +489,7 @@ PYBIND11_MODULE(_cpp_similarity, m) {
 
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
+    m.def("add_rows", &add_rows, "add_rows", py::arg("arr"));
 
     // API
     m.def("jt_isim", &jt_isim, "iSIM Tanimoto calculation", py::arg("c_total"),
