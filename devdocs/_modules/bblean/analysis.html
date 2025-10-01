@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=e6b0530f"></script>
+    <script src="../../_static/documentation_options.js?v=4554af9a"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -371,7 +371,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">rdkit.Chem.Scaffolds</span><span class="w"> </span><span class="kn">import</span> <span class="n">MurckoScaffold</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._config</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULTS</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">jt_isim</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">jt_isim_from_sum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">fps_from_smiles</span><span class="p">,</span>
     <span class="n">unpack_fingerprints</span><span class="p">,</span>
@@ -436,7 +436,7 @@
     <span class="n">unique_scaffolds</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">scaffolds</span><span class="p">)</span>
     <span class="n">unique_num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_scaffolds</span><span class="p">)</span>
     <span class="n">scaffolds_fps</span> <span class="o">=</span> <span class="n">fps_from_smiles</span><span class="p">(</span><span class="n">unique_scaffolds</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">fp_kind</span><span class="p">,</span> <span class="n">pack</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">scaffolds_isim</span> <span class="o">=</span> <span class="n">jt_isim</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">scaffolds_fps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">unique_num</span><span class="p">)</span>
+    <span class="n">scaffolds_isim</span> <span class="o">=</span> <span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">scaffolds_fps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">unique_num</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ScaffoldAnalysis</span><span class="p">(</span><span class="n">unique_num</span><span class="p">,</span> <span class="n">scaffolds_isim</span><span class="p">)</span></div>
 
 
@@ -486,7 +486,11 @@
             <span class="n">_fps_unpack</span> <span class="o">=</span> <span class="n">_fps</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;mol_num&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">jt_isim</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_fps_unpack</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">),</span> <span class="n">size</span><span class="p">))</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">jt_isim_from_sum</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_fps_unpack</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">),</span> <span class="n">size</span>  <span class="c1"># type: ignore</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">smiles</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
             <span class="n">analysis</span> <span class="o">=</span> <span class="n">scaffold_analysis</span><span class="p">(</span><span class="n">smiles</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">fp_kind</span><span class="o">=</span><span class="n">scaffold_fp_kind</span><span class="p">)</span>
             <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_num&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">unique_num</span><span class="p">)</span>

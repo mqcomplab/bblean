@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=e6b0530f"></script>
+    <script src="../../_static/documentation_options.js?v=4554af9a"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -360,6 +360,7 @@
   <h1>Source code for bblean.fingerprints</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Utilites for manipulating fingerprints and fingerprint files&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">DTypeLike</span>
@@ -376,13 +377,13 @@
     <span class="s2">&quot;fps_from_smiles&quot;</span><span class="p">,</span>
     <span class="s2">&quot;pack_fingerprints&quot;</span><span class="p">,</span>
     <span class="s2">&quot;unpack_fingerprints&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;calc_centroid&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;centroid_from_sum&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="calc_centroid">
-<a class="viewcode-back" href="../../_api_autogen/bblean.fingerprints.html#bblean.fingerprints.calc_centroid">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">calc_centroid</span><span class="p">(</span>
+<div class="viewcode-block" id="centroid_from_sum">
+<a class="viewcode-back" href="../../_api_autogen/bblean.fingerprints.html#bblean.fingerprints.centroid_from_sum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">centroid_from_sum</span><span class="p">(</span>
     <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates centroid</span>
@@ -412,6 +413,15 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">packbits</span><span class="p">(</span><span class="n">centroid</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">centroid</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_centroid</span><span class="p">(</span>
+    <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+        <span class="s2">&quot;Please use centroid_from_sum(...) instead&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">centroid_from_sum</span><span class="p">(</span><span class="n">linear_sum</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">pack</span><span class="o">=</span><span class="n">pack</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="pack_fingerprints">

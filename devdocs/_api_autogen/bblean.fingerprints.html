@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=e6b0530f"></script>
+    <script src="../_static/documentation_options.js?v=4554af9a"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -398,7 +398,7 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#bblean.fingerprints.unpack_fingerprints" title="bblean.fingerprints.unpack_fingerprints"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unpack_fingerprints</span></code></a></p></td>
 <td><p>Unpack packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.fingerprints.calc_centroid" title="bblean.fingerprints.calc_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calc_centroid</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.fingerprints.centroid_from_sum" title="bblean.fingerprints.centroid_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">centroid_from_sum</span></code></a></p></td>
 <td><p>Calculates centroid</p></td>
 </tr>
 </tbody>
@@ -446,8 +446,8 @@ explicitly.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="bblean.fingerprints.calc_centroid">
-<span class="sig-prename descclassname"><span class="pre">bblean.fingerprints.</span></span><span class="sig-name descname"><span class="pre">calc_centroid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/fingerprints.html#calc_centroid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.fingerprints.calc_centroid" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="bblean.fingerprints.centroid_from_sum">
+<span class="sig-prename descclassname"><span class="pre">bblean.fingerprints.</span></span><span class="sig-name descname"><span class="pre">centroid_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/fingerprints.html#centroid_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.fingerprints.centroid_from_sum" title="Link to this definition">#</a></dt>
 <dd><p>Calculates centroid</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -519,7 +519,7 @@ explicitly.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.fingerprints.fps_from_smiles"><code class="docutils literal notranslate"><span class="pre">fps_from_smiles()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.fingerprints.pack_fingerprints"><code class="docutils literal notranslate"><span class="pre">pack_fingerprints()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.fingerprints.unpack_fingerprints"><code class="docutils literal notranslate"><span class="pre">unpack_fingerprints()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.fingerprints.calc_centroid"><code class="docutils literal notranslate"><span class="pre">calc_centroid()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.fingerprints.centroid_from_sum"><code class="docutils literal notranslate"><span class="pre">centroid_from_sum()</span></code></a></li>
 </ul>
   </nav></div>
 
