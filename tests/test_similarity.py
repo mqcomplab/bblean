@@ -168,6 +168,29 @@ def test_jt_isim_from_sum() -> None:
         assert s == 0.21824334501491158
 
 
+def test_jt_isim() -> None:
+    fps = make_fake_fingerprints(100, seed=17408390758220920002, pack=False)
+    fps_packed = make_fake_fingerprints(100, seed=17408390758220920002, pack=True)
+    s = pysim.jt_isim_unpacked(fps)
+    assert s == 0.21824334501491158
+    s2 = pysim.jt_isim_packed(fps_packed)
+    assert s2 == 0.21824334501491158
+    if CSIM_AVAIL:
+        from bblean.similarity import (
+            jt_isim_unpacked as jt_isim_unpacked_wrap,
+            jt_isim_packed as jt_isim_packed_wrap,
+        )
+
+        s = csim.jt_isim_unpacked_u8(fps)
+        assert s == 0.21824334501491158
+        s2 = csim.jt_isim_packed_u8(fps_packed)
+        assert s2 == 0.21824334501491158
+        s = jt_isim_unpacked_wrap(fps)
+        assert s == 0.21824334501491158
+        s2 = jt_isim_packed_wrap(fps_packed)
+        assert s2 == 0.21824334501491158
+
+
 def test_jt_isim_from_sum_disjoint() -> None:
     fps = make_fake_fingerprints(1, seed=17408390758220920002, pack=False)
     disjoint = (~fps.astype(np.bool)).view(np.uint8)
