@@ -1,0 +1,684 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>bblean.bitbirch &#8212; BitBIRCH-Lean v0.0 (dev) Manual</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/style.css?v=62db9d97" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=d69afe8d"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_api_autogen/bblean.bitbirch';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bblean.fingerprints" href="bblean.fingerprints.html" />
+    <link rel="prev" title="API Reference" href="../api-reference.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0 (dev)" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo-light-bw.svg" class="logo__image only-light" alt="BitBIRCH-Lean v0.0 (dev) Manual - Home"/>
+    <img src="../_static/logo-dark-bw.svg" class="logo__image only-dark pst-js-only" alt="BitBIRCH-Lean v0.0 (dev) Manual - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installing.html">
+    Installing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../user-guide.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api-reference.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../publications.html">
+    Publications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/mqcomplab/bblean" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installing.html">
+    Installing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../user-guide.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api-reference.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../publications.html">
+    Publications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/mqcomplab/bblean" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">bblean.bitbirch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bblean.fingerprints.html">bblean.fingerprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bblean.smiles.html">bblean.smiles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bblean.similarity.html">bblean.similarity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bblean.multiround.html">bblean.multiround</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bblean.analysis.html">bblean.analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bblean.plotting.html">bblean.plotting</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api-reference.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bblean.bitbirch</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-bblean.bitbirch">
+<span id="bblean-bitbirch"></span><h1>bblean.bitbirch<a class="headerlink" href="#module-bblean.bitbirch" title="Link to this heading">#</a></h1>
+<p>BitBirch ‘Lean’ class for fast, memory-efficient O(N) clustering</p>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.bitbirch.BitBirch" title="bblean.bitbirch.BitBirch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BitBirch</span></code></a></p></td>
+<td><p>Implements the BitBIRCH clustering algorithm, 'Lean' version</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bblean.bitbirch.</span></span><span class="sig-name descname"><span class="pre">BitBirch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.65</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">branching_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_criterion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch" title="Link to this definition">#</a></dt>
+<dd><p>Implements the BitBIRCH clustering algorithm, ‘Lean’ version</p>
+<p>Memory and time efficient, online-learning algorithm. It constructs a tree data
+structure with the cluster centroids being read off the leaf.</p>
+<p>If you find this software useful please cite the following articles:</p>
+<ul class="simple">
+<li><p>BitBIRCH: efficient clustering of large molecular libraries:
+<a class="reference external" href="https://doi.org/10.1039/D5DD00030K">https://doi.org/10.1039/D5DD00030K</a></p></li>
+<li><p>BitBIRCH Clustering Refinement Strategies:
+<a class="reference external" href="https://doi.org/10.1021/acs.jcim.5c00627">https://doi.org/10.1021/acs.jcim.5c00627</a></p></li>
+<li><p>BitBIRCH-Lean: TO-BE-ADDED</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>threshold</strong> (<em>float = 0.65</em>) – The similarity radius of the subcluster obtained by merging a new sample and the
+closest subcluster should be greater than the threshold. Otherwise a new
+subcluster is started. Setting this value to be very low promotes splitting and
+vice-versa.</p></li>
+<li><p><strong>branching_factor</strong> (<em>int = 50</em>) – Maximum number of ‘BitFeatures’ subclusters in each node. If a new sample enters
+such that the number of subclusters exceed the branching_factor then that node
+is split into two nodes with the subclusters redistributed in each. The parent
+subcluster of that node is removed and two new subclusters are added as parents
+of the 2 split nodes.</p></li>
+<li><p><strong>merge_criterion</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – radius, diameter or tolerance. <em>radius</em>: merge subcluster based on comparison to
+centroid of the cluster. <em>diameter</em>: merge subcluster based on instant Tanimoto
+similarity of cluster. <em>tolerance</em>: applies tolerance threshold to diameter
+merge criteria, which will merge subcluster with stricter threshold for newly
+added molecules.</p></li>
+<li><p><strong>tolerance</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – Penalty value for similarity threshold of the ‘tolerance’ merge criteria.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The tree data structure consists of nodes with each node holdint a number of
+subclusters (<code class="docutils literal notranslate"><span class="pre">BitFeatures</span></code>). The maximum number of subclusters in a node is
+determined by the branching factor. Each subcluster maintains a linear sum,
+mol_indices and the number of samples in that subcluster. In addition, each
+subcluster can also have a node as its child, if the subcluster is not a member of a
+leaf node.</p>
+<p>Each time a new fingerprint is fitted, it is merged with the subcluster closest to
+it and the linear sum, mol_indices and the number of samples int the corresponding
+subcluster are updated. This is done recursively untils the properties of a leaf
+node are updated.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.is_init">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_init</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#bblean.bitbirch.BitBirch.is_init" title="Link to this definition">#</a></dt>
+<dd><p>Whether the tree has been initialized (True after first call to <a class="reference internal" href="#bblean.bitbirch.BitBirch.fit" title="bblean.bitbirch.BitBirch.fit"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>)</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.num_fitted_fps">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_fitted_fps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#bblean.bitbirch.BitBirch.num_fitted_fps" title="Link to this definition">#</a></dt>
+<dd><p>Total number of fitted fingerprints</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.set_merge">
+<span class="sig-name descname"><span class="pre">set_merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">criterion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">branching_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.set_merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.set_merge" title="Link to this definition">#</a></dt>
+<dd><p>Changes the criteria for merging subclusters in this BitBirch tree</p>
+<p>For an explanation of the parameters see the <a class="reference internal" href="#bblean.bitbirch.BitBirch" title="bblean.bitbirch.BitBirch"><code class="xref any py py-class docutils literal notranslate"><span class="pre">BitBirch</span></code></a> class docstring.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reinsert_indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_fps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.fit" title="Link to this definition">#</a></dt>
+<dd><p>Build a BF Tree for the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>{array-like</em><em>, </em><em>sparse matrix}</em><em> of </em><em>shape</em><em> (</em><em>n_samples</em><em>, </em><em>n_features</em><em>)</em>) – Input data.</p></li>
+<li><p><strong>reinsert_indices</strong> (<em>Iterable</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>]</em>) – if <code class="docutils literal notranslate"><span class="pre">reinsert_indices</span></code> is passed, <code class="docutils literal notranslate"><span class="pre">X</span></code> corresponds only to the molecules
+that will be reinserted into the tree, and <code class="docutils literal notranslate"><span class="pre">reinsert_indices</span></code> are the
+indices associated with these molecules.</p></li>
+<li><p><strong>input_is_packed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – Whether the input fingerprints are packed</p></li>
+<li><p><strong>n_features</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of featurs of input fingerprints. Only required for packed inputs if
+it is not a multiple of 8, otherwise it is redundant.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Fitted estimator.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.get_centroids_mol_ids">
+<span class="sig-name descname"><span class="pre">get_centroids_mol_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.get_centroids_mol_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.get_centroids_mol_ids" title="Link to this definition">#</a></dt>
+<dd><p>Get a dict with centroids and mol indices of the leaves</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.get_centroids">
+<span class="sig-name descname"><span class="pre">get_centroids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.get_centroids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.get_centroids" title="Link to this definition">#</a></dt>
+<dd><p>Get a list of arrays with the centroids’ fingerprints</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.get_cluster_mol_ids">
+<span class="sig-name descname"><span class="pre">get_cluster_mol_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.get_cluster_mol_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.get_cluster_mol_ids" title="Link to this definition">#</a></dt>
+<dd><p>Get the indices of the molecules in each cluster</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.get_assignments">
+<span class="sig-name descname"><span class="pre">get_assignments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_mols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_valid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.get_assignments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.get_assignments" title="Link to this definition">#</a></dt>
+<dd><p>Get an array with the cluster labels associated with each fingerprint idx</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.dump_assignments">
+<span class="sig-name descname"><span class="pre">dump_assignments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_valid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.dump_assignments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.dump_assignments" title="Link to this definition">#</a></dt>
+<dd><p>Dump the cluster assignments to a <code class="docutils literal notranslate"><span class="pre">*.csv</span></code> file</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.reset" title="Link to this definition">#</a></dt>
+<dd><p>Reset the tree state</p>
+<p>Delete <em>all internal nodes and leafs</em>, does not reset the merge criterion or
+other merge parameters.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.delete_internal_nodes">
+<span class="sig-name descname"><span class="pre">delete_internal_nodes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.delete_internal_nodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.delete_internal_nodes" title="Link to this definition">#</a></dt>
+<dd><p>Delete all nodes in the tree that are not leaves</p>
+<p>This function is for advanced usage only. It should be called if there is need
+to use the BitBirch leaf clusters, but you need to release the memory held by
+the internal nodes. After calling this function, no more fingerprints can be fit
+into the tree, unless a call to <a class="reference internal" href="#bblean.bitbirch.BitBirch.reset" title="bblean.bitbirch.BitBirch.reset"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">BitBirch.reset</span></code></a> afterwards releases the
+<em>whole tree</em>, including the leaf clusters.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bblean.bitbirch.BitBirch.refine_inplace">
+<span class="sig-name descname"><span class="pre">refine_inplace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_mol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_largest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/bitbirch.html#BitBirch.refine_inplace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.bitbirch.BitBirch.refine_inplace" title="Link to this definition">#</a></dt>
+<dd><p>Refine the tree: break the largest clusters in singletons and re-fit</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../api-reference.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">API Reference</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="bblean.fingerprints.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">bblean.fingerprints</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch"><code class="docutils literal notranslate"><span class="pre">BitBirch</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.is_init"><code class="docutils literal notranslate"><span class="pre">BitBirch.is_init</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.num_fitted_fps"><code class="docutils literal notranslate"><span class="pre">BitBirch.num_fitted_fps</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.set_merge"><code class="docutils literal notranslate"><span class="pre">BitBirch.set_merge()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.fit"><code class="docutils literal notranslate"><span class="pre">BitBirch.fit()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.get_centroids_mol_ids"><code class="docutils literal notranslate"><span class="pre">BitBirch.get_centroids_mol_ids()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.get_centroids"><code class="docutils literal notranslate"><span class="pre">BitBirch.get_centroids()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.get_cluster_mol_ids"><code class="docutils literal notranslate"><span class="pre">BitBirch.get_cluster_mol_ids()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.get_assignments"><code class="docutils literal notranslate"><span class="pre">BitBirch.get_assignments()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.dump_assignments"><code class="docutils literal notranslate"><span class="pre">BitBirch.dump_assignments()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.reset"><code class="docutils literal notranslate"><span class="pre">BitBirch.reset()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.delete_internal_nodes"><code class="docutils literal notranslate"><span class="pre">BitBirch.delete_internal_nodes()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.bitbirch.BitBirch.refine_inplace"><code class="docutils literal notranslate"><span class="pre">BitBirch.refine_inplace()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025  The Miranda-Quintana Lab and other BitBirch developers.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

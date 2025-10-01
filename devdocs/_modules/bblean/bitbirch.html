@@ -1,0 +1,1629 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bblean.bitbirch &#8212; BitBIRCH-Lean v0.0 (dev) Manual</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/style.css?v=62db9d97" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=d69afe8d"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/bblean/bitbirch';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0 (dev)" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-light-bw.svg" class="logo__image only-light" alt="BitBIRCH-Lean v0.0 (dev) Manual - Home"/>
+    <img src="../../_static/logo-dark-bw.svg" class="logo__image only-dark pst-js-only" alt="BitBIRCH-Lean v0.0 (dev) Manual - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installing.html">
+    Installing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user-guide.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api-reference.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../publications.html">
+    Publications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/mqcomplab/bblean" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installing.html">
+    Installing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user-guide.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api-reference.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../publications.html">
+    Publications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/mqcomplab/bblean" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">bblean.bitbirch</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for bblean.bitbirch</h1><div class="highlight"><pre>
+<span></span><span class="c1"># BitBIRCH-Lean Python Package: An open-source clustering module based on iSIM.</span>
+<span class="c1">#</span>
+<span class="c1"># If you find this software useful please cite the following articles:</span>
+<span class="c1"># - BitBIRCH: efficient clustering of large molecular libraries:</span>
+<span class="c1">#   https://doi.org/10.1039/D5DD00030K</span>
+<span class="c1"># - BitBIRCH Clustering Refinement Strategies:</span>
+<span class="c1">#   https://doi.org/10.1021/acs.jcim.5c00627</span>
+<span class="c1"># - BitBIRCH-Lean: TO-BE-ADDED</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, including:</span>
+<span class="c1"># - Ramon Alain Miranda Quintana &lt;ramirandaq@gmail.com&gt;, &lt;quintana@chem.ufl.edu&gt;</span>
+<span class="c1"># - Krisztina Zsigmond &lt;kzsigmond@ufl.edu&gt;</span>
+<span class="c1"># - Ignacio Pickering &lt;ipickering@chem.ufl.edu&gt;</span>
+<span class="c1"># - Kenneth Lopez Perez &lt;klopezperez@chem.ufl.edu&gt;</span>
+<span class="c1"># - Miroslav Lzicar &lt;miroslav.lzicar@deepmedchem.com&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># Authors of ./bblean/multiround.py are:</span>
+<span class="c1"># - Ramon Alain Miranda Quintana &lt;ramirandaq@gmail.com&gt;, &lt;quintana@chem.ufl.edu&gt;</span>
+<span class="c1"># - Ignacio Pickering &lt;ipickering@chem.ufl.edu&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># This program is free software: you can redistribute it and/or modify it under the</span>
+<span class="c1"># terms of the GNU General Public License as published by the Free Software Foundation,</span>
+<span class="c1"># version 3 (SPDX-License-Identifier: GPL-3.0-only).</span>
+<span class="c1">#</span>
+<span class="c1"># Portions of this file are licensed under the BSD 3-Clause License</span>
+<span class="c1"># Copyright (c) 2007-2024 The scikit-learn developers. All rights reserved.</span>
+<span class="c1"># (SPDX-License-Identifier: BSD-3-Clause). Copies or reproductions of code in this</span>
+<span class="c1"># file must in addition adhere to the BSD-3-Clause license terms. A</span>
+<span class="c1"># copy of the BSD-3-Clause license can be located at the root of this repository, under</span>
+<span class="c1"># ./LICENSES/BSD-3-Clause.txt.</span>
+<span class="c1">#</span>
+<span class="c1"># Portions of this file were previously licensed under the LGPL 3.0</span>
+<span class="c1"># license (SPDX-License-Identifier: LGPL-3.0-only), they are relicensed in this program</span>
+<span class="c1"># as GPL-3.0, with permission of all original copyright holders:</span>
+<span class="c1"># - Ramon Alain Miranda Quintana &lt;ramirandaq@gmail.com&gt;, &lt;quintana@chem.ufl.edu&gt;</span>
+<span class="c1"># - Vicky (Vic) Jung &lt;jungvicky@ufl.edu&gt;</span>
+<span class="c1"># - Kenneth Lopez Perez &lt;klopezperez@chem.ufl.edu&gt;</span>
+<span class="c1"># - Kate Huddleston &lt;kdavis2@chem.ufl.edu&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># This program is distributed in the hope that it will be useful, but WITHOUT ANY</span>
+<span class="c1"># WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A</span>
+<span class="c1"># PARTICULAR PURPOSE.  See the GNU General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU General Public License along with this</span>
+<span class="c1"># program. This copy can be located at the root of this repository, under</span>
+<span class="c1"># ./LICENSES/GPL-3.0-only.txt.  If not, see &lt;http://www.gnu.org/licenses/gpl-3.0.html&gt;.</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;BitBirch &#39;Lean&#39; class for fast, memory-efficient O(N) clustering&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>  <span class="c1"># Stringize type annotations for no runtime overhead</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">cast</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">weakref</span><span class="w"> </span><span class="kn">import</span> <span class="n">WeakSet</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">DTypeLike</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean._memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">_mmap_file_and_madvise_sequential</span><span class="p">,</span> <span class="n">_ArrayMemPagesManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean._merges</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_merge_accept_fn</span><span class="p">,</span> <span class="n">MergeAcceptFunction</span><span class="p">,</span> <span class="n">BUILTIN_MERGES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">min_safe_uint</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">pack_fingerprints</span><span class="p">,</span>
+    <span class="n">calc_centroid</span><span class="p">,</span>
+    <span class="n">_get_fingerprints_from_file_seq</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">jt_sim_packed</span><span class="p">,</span> <span class="n">jt_most_dissimilar_packed</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># NOTE: There are small gains from using this fn but only ~3%, so don&#39;t warn for now</span>
+    <span class="c1"># if this fails, and don&#39;t expose it</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._cpp_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_fingerprints</span> <span class="k">as</span> <span class="n">_unpack_fingerprints</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_fingerprints</span> <span class="k">as</span> <span class="n">_unpack_fingerprints</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;BitBirch&quot;</span><span class="p">]</span>
+
+
+<span class="c1"># For backwards compatibility with the global &quot;set_merge&quot;, keep weak references to all</span>
+<span class="c1"># the BitBirch instances and update them when set_merge is called</span>
+<span class="n">_BITBIRCH_INSTANCES</span><span class="p">:</span> <span class="n">WeakSet</span><span class="p">[</span><span class="s2">&quot;BitBirch&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">WeakSet</span><span class="p">()</span>
+
+
+<span class="c1"># For backwards compatibility: global function used to accept merges</span>
+<span class="n">_global_merge_accept</span><span class="p">:</span> <span class="n">MergeAcceptFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">_Input</span> <span class="o">=</span> <span class="n">tp</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]]</span>
+
+
+<span class="c1"># For backwards compatibility: set the global merge_accept function</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_merge</span><span class="p">(</span><span class="n">merge_criterion</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Sets the global criteria for merging subclusters in any BitBirch tree</span>
+
+<span class="sd">    For usage see `BitBirch.set_merge`</span>
+
+<span class="sd">    ..  warning::</span>
+
+<span class="sd">        Use of this function is highly discouraged, instead use either:</span>
+<span class="sd">        ``bb_tree = BitBirch(...)``</span>
+<span class="sd">        ``bb_tree.set_merge(merge_criterion=..., tolerance=...)``</span>
+<span class="sd">        or directly: ``bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)``&quot;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Use of the global `set_merge` function is highly discouraged,</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot; instead use either: &quot;</span>
+        <span class="s2">&quot; bb_tree = BitBirch(...)</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot; bb_tree.set_merge(merge_criterion=..., tolerance=...)</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot; or directly: `bb_tree = BitBirch(..., merge_criterion=..., tolerance=...)`.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">UserWarning</span><span class="p">)</span>
+    <span class="c1"># Set the global merge_accept function</span>
+    <span class="k">global</span> <span class="n">_global_merge_accept</span>
+    <span class="n">_global_merge_accept</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">merge_criterion</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">bbirch</span> <span class="ow">in</span> <span class="n">_BITBIRCH_INSTANCES</span><span class="p">:</span>
+        <span class="n">bbirch</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">_global_merge_accept</span>
+
+
+<span class="c1"># Utility function to validate the n_features argument for packed inputs</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_n_features</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input must have at least 1 fingerprint&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">input_is_packed</span><span class="p">:</span>
+        <span class="n">_padded_n_features</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">8</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span>
+        <span class="k">if</span> <span class="n">n_features</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Assume multiple of 8</span>
+            <span class="k">return</span> <span class="n">_padded_n_features</span>
+        <span class="k">if</span> <span class="n">_padded_n_features</span> <span class="o">&lt;</span> <span class="n">n_features</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;n_features is larger than the padded length, which is inconsistent&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">n_features</span>
+
+    <span class="n">x_n_features</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">n_features</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">n_features</span> <span class="o">!=</span> <span class="n">x_n_features</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;n_features is redundant for non-packed inputs&quot;</span>
+                <span class="s2">&quot; if passed, it must be equal to X.shape[1] (or len(X[0])).&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; For passed X the inferred n_features was </span><span class="si">{</span><span class="n">x_n_features</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="s2">&quot; If this value is not what you expected,&quot;</span>
+                <span class="s2">&quot; make sure the passed X is actually unpacked.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">x_n_features</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_node</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="s2">&quot;_BFNode&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">,</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The node has to be split if there is no place for a new subcluster</span>
+<span class="sd">    in the node.</span>
+<span class="sd">    1. An extra empty node and two empty subclusters are initialized.</span>
+<span class="sd">    2. The pair of distant subclusters are found.</span>
+<span class="sd">    3. The properties of the empty subclusters and nodes are updated</span>
+<span class="sd">       according to the nearest distance between the subclusters to the</span>
+<span class="sd">       pair of distant subclusters.</span>
+<span class="sd">    4. The two nodes are set as children to the two subclusters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_features</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">n_features</span>
+    <span class="n">branching_factor</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">branching_factor</span>
+    <span class="n">new_subcluster1</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span><span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
+    <span class="n">new_subcluster2</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span><span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
+
+    <span class="n">node1</span> <span class="o">=</span> <span class="n">_BFNode</span><span class="p">(</span><span class="n">branching_factor</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
+    <span class="n">node2</span> <span class="o">=</span> <span class="n">node</span>  <span class="c1"># Rename for clarity</span>
+    <span class="n">new_subcluster1</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">node1</span>
+    <span class="n">new_subcluster2</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">node2</span>
+
+    <span class="k">if</span> <span class="n">node2</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">:</span>
+        <span class="c1"># If is_leaf, _prev_leaf is guaranteed to be not None</span>
+        <span class="c1"># NOTE: cast seems to have a small overhead here for some reason</span>
+        <span class="n">node1</span><span class="o">.</span><span class="n">_prev_leaf</span> <span class="o">=</span> <span class="n">node2</span><span class="o">.</span><span class="n">_prev_leaf</span>
+        <span class="n">node2</span><span class="o">.</span><span class="n">_prev_leaf</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="o">=</span> <span class="n">node1</span>  <span class="c1"># type: ignore</span>
+        <span class="n">node1</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="o">=</span> <span class="n">node2</span>
+        <span class="n">node2</span><span class="o">.</span><span class="n">_prev_leaf</span> <span class="o">=</span> <span class="n">node1</span>
+
+    <span class="c1"># O(N) approximation to obtain &quot;most dissimilar fingerprints&quot; within an array</span>
+    <span class="n">node1_idx</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">node1_sim</span><span class="p">,</span> <span class="n">node2_sim</span> <span class="o">=</span> <span class="n">jt_most_dissimilar_packed</span><span class="p">(</span>
+        <span class="n">node2</span><span class="o">.</span><span class="n">packed_centroids</span><span class="p">,</span> <span class="n">n_features</span>
+    <span class="p">)</span>
+    <span class="n">node1_closer</span> <span class="o">=</span> <span class="n">node1_sim</span> <span class="o">&gt;</span> <span class="n">node2_sim</span>
+    <span class="c1"># Make sure node1 and node2 are closest to themselves, even if all sims are equal.</span>
+    <span class="c1"># This can only happen when all node.packed_centroids are duplicates leading to all</span>
+    <span class="c1"># distances between centroids being zero.</span>
+
+    <span class="c1"># TODO: Currently this behavior is buggy (?), seems like in some cases one of the</span>
+    <span class="c1"># subclusters may *never* get updated, double check this logic</span>
+    <span class="n">node1_closer</span><span class="p">[</span><span class="n">node1_idx</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">subclusters</span> <span class="o">=</span> <span class="n">node2</span><span class="o">.</span><span class="n">_subclusters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>  <span class="c1"># Shallow copy</span>
+    <span class="n">node2</span><span class="o">.</span><span class="n">_subclusters</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Reset the node</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">subcluster</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">subclusters</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node1_closer</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span>
+            <span class="n">node1</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+            <span class="n">new_subcluster1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">node2</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+            <span class="n">new_subcluster2</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_subcluster1</span><span class="p">,</span> <span class="n">new_subcluster2</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_BFNode</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Each node in a BitBirch tree is a _BFNode.</span>
+
+<span class="sd">    The _BFNode holds a maximum of branching_factor _BFSubclusters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    branching_factor : int</span>
+<span class="sd">        Maximum number of _BFSubcluster in the node.</span>
+
+<span class="sd">    n_features : int</span>
+<span class="sd">        The number of features.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    _subclusters : list</span>
+<span class="sd">        List of _BFSubcluster for thre _BFNode.</span>
+
+<span class="sd">    _prev_leaf : _BFNode</span>
+<span class="sd">        Only useful for leaf nodes, otherwise None</span>
+
+<span class="sd">    _next_leaf : _BFNode</span>
+<span class="sd">        Only useful for leaf nodes, otherwise None</span>
+
+<span class="sd">    _packed_centroids_buf : NDArray[np.uint8]</span>
+<span class="sd">        Packed array of shape (branching_factor + 1, (n_features + 7) // 8) The code</span>
+<span class="sd">        internally manipulates this buf rather than packed_centroids, which is just a</span>
+<span class="sd">        view of this buf.</span>
+
+<span class="sd">    packed_centroids : ndarray of shape (branching_factor, n_features)</span>
+<span class="sd">        Packed array of shape (len(_subclusters), (n_features + 7) // 8)</span>
+<span class="sd">        View of the valid section of ``_packed_centroids_buf``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># NOTE: Slots deactivates __dict__, and thus reduces memory usage of python objects</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;n_features&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_subclusters&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_packed_centroids_buf&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_prev_leaf&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;_next_leaf&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">branching_factor</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
+        <span class="c1"># The list of subclusters, centroids and squared norms</span>
+        <span class="c1"># to manipulate throughout.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Centroids are stored packed. All centroids up to branching_factor are</span>
+        <span class="c1"># allocated in a contiguous array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packed_centroids_buf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">branching_factor</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">n_features</span> <span class="o">+</span> <span class="mi">7</span><span class="p">)</span> <span class="o">//</span> <span class="mi">8</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
+        <span class="p">)</span>
+        <span class="c1"># Nodes that are leaves have a non-null _prev_leaf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prev_leaf</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;_BFNode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_next_leaf</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;_BFNode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_leaf</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prev_leaf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">branching_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_centroids_buf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">packed_centroids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
+        <span class="c1"># packed_centroids returns a view of the valid part of _packed_centroids_buf.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_centroids_buf</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">),</span> <span class="p">:]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">append_subcluster</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subcluster</span><span class="p">:</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packed_centroids_buf</span><span class="p">[</span><span class="n">n_samples</span><span class="p">]</span> <span class="o">=</span> <span class="n">subcluster</span><span class="o">.</span><span class="n">packed_centroid</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_split_subclusters</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">subcluster</span><span class="p">:</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">,</span>
+        <span class="n">new_subcluster1</span><span class="p">:</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">,</span>
+        <span class="n">new_subcluster2</span><span class="p">:</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a subcluster from a node and update it with the</span>
+<span class="sd">        split subclusters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Replace subcluster with new_subcluster1</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_subcluster1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packed_centroids_buf</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_subcluster1</span><span class="o">.</span><span class="n">packed_centroid</span>
+        <span class="c1"># Append new_subcluster2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">new_subcluster2</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_bf_subcluster</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">subcluster</span><span class="p">:</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">,</span>
+        <span class="n">merge_accept_fn</span><span class="p">:</span> <span class="n">MergeAcceptFunction</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Insert a new subcluster into the node.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Within this node, find the closest subcluster to the one to-be-inserted</span>
+        <span class="n">sim_matrix</span> <span class="o">=</span> <span class="n">jt_sim_packed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">packed_centroids</span><span class="p">,</span> <span class="n">subcluster</span><span class="o">.</span><span class="n">packed_centroid</span><span class="p">)</span>
+        <span class="n">closest_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">sim_matrix</span><span class="p">)</span>
+        <span class="n">closest_subcluster</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">[</span><span class="n">closest_idx</span><span class="p">]</span>
+        <span class="n">closest_node</span> <span class="o">=</span> <span class="n">closest_subcluster</span><span class="o">.</span><span class="n">child</span>
+        <span class="k">if</span> <span class="n">closest_node</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># The subcluster doesn&#39;t have a child node (this is a leaf node)</span>
+            <span class="c1"># attempt direct merge</span>
+            <span class="n">merge_was_successful</span> <span class="o">=</span> <span class="n">closest_subcluster</span><span class="o">.</span><span class="n">merge_subcluster</span><span class="p">(</span>
+                <span class="n">subcluster</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">merge_accept_fn</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">merge_was_successful</span><span class="p">:</span>
+                <span class="c1"># Could not merge due to criteria</span>
+                <span class="c1"># Append subcluster, and check if splitting *this node* is needed</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span>
+            <span class="c1"># Merge success, update the centroid</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_packed_centroids_buf</span><span class="p">[</span><span class="n">closest_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">closest_subcluster</span><span class="o">.</span><span class="n">packed_centroid</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Hard case: the closest subcluster has a child (is &#39;tracking&#39;), use recursion</span>
+        <span class="n">child_must_be_split</span> <span class="o">=</span> <span class="n">closest_node</span><span class="o">.</span><span class="n">insert_bf_subcluster</span><span class="p">(</span>
+            <span class="n">subcluster</span><span class="p">,</span> <span class="n">merge_accept_fn</span><span class="p">,</span> <span class="n">threshold</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">child_must_be_split</span><span class="p">:</span>
+            <span class="c1"># Split the child node and redistribute subclusters. Update</span>
+            <span class="c1"># this node with the &#39;tracking&#39; subclusters of the two new children.</span>
+            <span class="c1"># Then, check if *this node* needs splitting too</span>
+            <span class="n">new_subcluster1</span><span class="p">,</span> <span class="n">new_subcluster2</span> <span class="o">=</span> <span class="n">_split_node</span><span class="p">(</span><span class="n">closest_node</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_split_subclusters</span><span class="p">(</span>
+                <span class="n">closest_subcluster</span><span class="p">,</span> <span class="n">new_subcluster1</span><span class="p">,</span> <span class="n">new_subcluster2</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span>
+
+        <span class="c1"># Child need not be split, update the *tracking* closest subcluster</span>
+        <span class="n">closest_subcluster</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subcluster</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packed_centroids_buf</span><span class="p">[</span><span class="n">closest_idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">[</span>
+            <span class="n">closest_idx</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">packed_centroid</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_BFSubcluster</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Each subcluster in a BFNode is called a BFSubcluster.</span>
+
+<span class="sd">    A BFSubcluster can have a BFNode as its child.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    linear_sum : ndarray of shape (n_features,), default=None</span>
+<span class="sd">        Sample. This is kept optional to allow initialization of empty</span>
+<span class="sd">        subclusters.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_samples : int</span>
+<span class="sd">        Number of samples that belong to each subcluster.</span>
+
+<span class="sd">    linear_sum : ndarray</span>
+<span class="sd">        Linear sum of all the samples in a subcluster. Prevents holding</span>
+<span class="sd">        all sample data in memory.</span>
+
+<span class="sd">    packed_centroid : ndarray of shape (branching_factor + 1, n_features)</span>
+<span class="sd">        Centroid of the subcluster. Prevent recomputing of centroids when</span>
+<span class="sd">        ``BFNode.packed_centroids`` is called.</span>
+
+<span class="sd">    mol_indices : list, default=[]</span>
+<span class="sd">        List of indices of molecules included in the given cluster.</span>
+
+<span class="sd">    child : _BFNode</span>
+<span class="sd">        Child Node of the subcluster. Once a given _BFNode is set as the child</span>
+<span class="sd">        of the _BFNode, it is set to ``self.child``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># NOTE: Slots deactivates __dict__, and thus reduces memory usage of python objects</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;_buffer&quot;</span><span class="p">,</span> <span class="s2">&quot;packed_centroid&quot;</span><span class="p">,</span> <span class="s2">&quot;child&quot;</span><span class="p">,</span> <span class="s2">&quot;mol_indices&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mol_indices</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">,</span>
+        <span class="n">buffer</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># NOTE: Internally, _buffer holds both &quot;linear_sum&quot; and &quot;n_samples&quot; It is</span>
+        <span class="c1"># guaranteed to always have the minimum required uint dtype It should not be</span>
+        <span class="c1"># accessed by external classes, only used internally. The individual parts can</span>
+        <span class="c1"># be accessed in a read-only way using the linear_sum and n_samples</span>
+        <span class="c1"># properties.</span>
+        <span class="c1">#</span>
+        <span class="c1"># IMPORTANT: To mutate instances of this class, *always* use the public API</span>
+        <span class="c1"># given by replace|add_to_n_samples_and_linear_sum(...)</span>
+        <span class="k">if</span> <span class="n">buffer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">linear_sum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;linear_sum&#39; and &#39;buffer&#39; are mutually exclusive&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Expected len(mol_indices) == buffer[-1],&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; but found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">buffer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">calc_centroid</span><span class="p">(</span><span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">linear_sum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Expected len(mol_indices) == 1,&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot; but found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> != 1&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">linear_sum</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                <span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">linear_sum</span>
+                <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">buffer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">pack_fingerprints</span><span class="p">(</span>
+                    <span class="n">linear_sum</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Empty subcluster</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Expected len(mol_indices) == 0 for empty subcluster,&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot; but found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> != 0&quot;</span>
+                    <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_features</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+                    <span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
+                <span class="p">)</span>  <span class="c1"># Will be overwritten</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mol_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;_BFNode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpacked_centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">_unpack_fingerprints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">n_features</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dtype_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">linear_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]:</span>
+        <span class="n">read_only_view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">read_only_view</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">writeable</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">read_only_view</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">n_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="c1"># Returns a python int, which is guaranteed to never overflow in sums, so</span>
+        <span class="c1"># n_samples can always be safely added when accessed through this property</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># NOTE: Part of the contract is that all elements of linear sum must always be</span>
+    <span class="c1"># less or equal to n_samples. This function does not check this</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replace_n_samples_and_linear_sum</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Cast to the minimum uint that can hold the inputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">min_safe_uint</span><span class="p">(</span><span class="n">n_samples</span><span class="p">),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># NOTE: Assignments are safe and do not recast the buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">linear_sum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">calc_centroid</span><span class="p">(</span><span class="n">linear_sum</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">pack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># NOTE: Part of the contract is that all elements of linear sum must always be</span>
+    <span class="c1"># less or equal to n_samples. This function does not check this</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_to_n_samples_and_linear_sum</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Cast to the minimum uint that can hold the inputs</span>
+        <span class="n">new_n_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">+</span> <span class="n">n_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">min_safe_uint</span><span class="p">(</span><span class="n">new_n_samples</span><span class="p">),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># NOTE: Assignment and inplace add are safe and do not recast the buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">linear_sum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_n_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">calc_centroid</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">new_n_samples</span><span class="p">,</span> <span class="n">pack</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subcluster</span><span class="p">:</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_to_n_samples_and_linear_sum</span><span class="p">(</span>
+            <span class="n">subcluster</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">subcluster</span><span class="o">.</span><span class="n">linear_sum</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mol_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">subcluster</span><span class="o">.</span><span class="n">mol_indices</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge_subcluster</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">nominee_cluster</span><span class="p">:</span> <span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">merge_accept_fn</span><span class="p">:</span> <span class="n">MergeAcceptFunction</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a cluster is worthy enough to be merged. If yes, merge.&quot;&quot;&quot;</span>
+        <span class="n">old_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span>
+        <span class="n">nom_n</span> <span class="o">=</span> <span class="n">nominee_cluster</span><span class="o">.</span><span class="n">n_samples</span>
+        <span class="n">new_n</span> <span class="o">=</span> <span class="n">old_n</span> <span class="o">+</span> <span class="n">nom_n</span>
+        <span class="n">old_ls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_sum</span>
+        <span class="n">nom_ls</span> <span class="o">=</span> <span class="n">nominee_cluster</span><span class="o">.</span><span class="n">linear_sum</span>
+        <span class="c1"># np.add with explicit dtype is safe from overflows, e.g. :</span>
+        <span class="c1"># np.add(np.uint8(255), np.uint8(255), dtype=np.uint16) = np.uint16(510)</span>
+        <span class="n">new_ls</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">old_ls</span><span class="p">,</span> <span class="n">nom_ls</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">min_safe_uint</span><span class="p">(</span><span class="n">new_n</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">merge_accept_fn</span><span class="p">(</span><span class="n">threshold</span><span class="p">,</span> <span class="n">new_ls</span><span class="p">,</span> <span class="n">new_n</span><span class="p">,</span> <span class="n">old_ls</span><span class="p">,</span> <span class="n">nom_ls</span><span class="p">,</span> <span class="n">old_n</span><span class="p">,</span> <span class="n">nom_n</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_n_samples_and_linear_sum</span><span class="p">(</span><span class="n">new_n</span><span class="p">,</span> <span class="n">new_ls</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mol_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">nominee_cluster</span><span class="o">.</span><span class="n">mol_indices</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_CentroidsMolIds</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">centroids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]]</span>
+    <span class="n">mol_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+
+
+<div class="viewcode-block" id="BitBirch">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BitBirch</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Implements the BitBIRCH clustering algorithm, &#39;Lean&#39; version</span>
+
+<span class="sd">    Memory and time efficient, online-learning algorithm. It constructs a tree data</span>
+<span class="sd">    structure with the cluster centroids being read off the leaf.</span>
+
+<span class="sd">    If you find this software useful please cite the following articles:</span>
+
+<span class="sd">    - BitBIRCH: efficient clustering of large molecular libraries:</span>
+<span class="sd">      https://doi.org/10.1039/D5DD00030K</span>
+<span class="sd">    - BitBIRCH Clustering Refinement Strategies:</span>
+<span class="sd">      https://doi.org/10.1021/acs.jcim.5c00627</span>
+<span class="sd">    - BitBIRCH-Lean: TO-BE-ADDED</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    threshold : float = 0.65</span>
+<span class="sd">        The similarity radius of the subcluster obtained by merging a new sample and the</span>
+<span class="sd">        closest subcluster should be greater than the threshold. Otherwise a new</span>
+<span class="sd">        subcluster is started. Setting this value to be very low promotes splitting and</span>
+<span class="sd">        vice-versa.</span>
+
+<span class="sd">    branching_factor : int = 50</span>
+<span class="sd">        Maximum number of &#39;BitFeatures&#39; subclusters in each node. If a new sample enters</span>
+<span class="sd">        such that the number of subclusters exceed the branching_factor then that node</span>
+<span class="sd">        is split into two nodes with the subclusters redistributed in each. The parent</span>
+<span class="sd">        subcluster of that node is removed and two new subclusters are added as parents</span>
+<span class="sd">        of the 2 split nodes.</span>
+
+<span class="sd">    merge_criterion: str</span>
+<span class="sd">        radius, diameter or tolerance. *radius*: merge subcluster based on comparison to</span>
+<span class="sd">        centroid of the cluster. *diameter*: merge subcluster based on instant Tanimoto</span>
+<span class="sd">        similarity of cluster. *tolerance*: applies tolerance threshold to diameter</span>
+<span class="sd">        merge criteria, which will merge subcluster with stricter threshold for newly</span>
+<span class="sd">        added molecules.</span>
+
+<span class="sd">    tolerance: float</span>
+<span class="sd">        Penalty value for similarity threshold of the &#39;tolerance&#39; merge criteria.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+<span class="sd">    The tree data structure consists of nodes with each node holdint a number of</span>
+<span class="sd">    subclusters (``BitFeatures``). The maximum number of subclusters in a node is</span>
+<span class="sd">    determined by the branching factor. Each subcluster maintains a linear sum,</span>
+<span class="sd">    mol_indices and the number of samples in that subcluster. In addition, each</span>
+<span class="sd">    subcluster can also have a node as its child, if the subcluster is not a member of a</span>
+<span class="sd">    leaf node.</span>
+
+<span class="sd">    Each time a new fingerprint is fitted, it is merged with the subcluster closest to</span>
+<span class="sd">    it and the linear sum, mol_indices and the number of samples int the corresponding</span>
+<span class="sd">    subcluster are updated. This is done recursively untils the properties of a leaf</span>
+<span class="sd">    node are updated.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.65</span><span class="p">,</span>
+        <span class="n">branching_factor</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">MergeAcceptFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># Criterion for merges</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span>
+        <span class="k">if</span> <span class="n">_global_merge_accept</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Backwards compat</span>
+            <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;tolerance can only be passed if &quot;</span>
+                    <span class="s2">&quot;the *global* set_merge function has *not* been used&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">merge_criterion</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;merge_criterion can only be passed if &quot;</span>
+                    <span class="s2">&quot;the *global* set_merge function has *not* been used&quot;</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">_global_merge_accept</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">merge_criterion</span> <span class="o">=</span> <span class="s2">&quot;diameter&quot;</span> <span class="k">if</span> <span class="n">merge_criterion</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">merge_criterion</span>
+            <span class="n">tolerance</span> <span class="o">=</span> <span class="mf">0.05</span> <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tolerance</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merge_criterion</span><span class="p">,</span> <span class="n">MergeAcceptFunction</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;&#39;tolerance&#39; arg is disregarded for custom merge functions&quot;</span>
+                    <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">merge_criterion</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">merge_criterion</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+
+        <span class="c1"># Tree state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_fitted_fps</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">:</span> <span class="n">_BFNode</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span> <span class="o">=</span> <span class="n">_BFNode</span><span class="p">(</span><span class="n">branching_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># For backwards compatibility, weak-register in global state This is used to</span>
+        <span class="c1"># update the merge_accept function if the global set_merge() is called</span>
+        <span class="c1"># (discouraged)</span>
+        <span class="n">_BITBIRCH_INSTANCES</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">branching_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge_criterion</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="s2">&quot;tolerance&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="o">.</span><span class="n">tolerance</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_init</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Whether the tree has been initialized (True after first call to `fit()`)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_fitted_fps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Total number of fitted fingerprints&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_fitted_fps</span>
+
+<div class="viewcode-block" id="BitBirch.set_merge">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.set_merge">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_merge</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">MergeAcceptFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">branching_factor</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Changes the criteria for merging subclusters in this BitBirch tree</span>
+
+<span class="sd">        For an explanation of the parameters see the `BitBirch` class docstring.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_global_merge_accept</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;BitBirch.set_merge() can only called if &quot;</span>
+                <span class="s2">&quot;the global set_merge() function has *not* been used&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">criterion</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">MergeAcceptFunction</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;&#39;tolerance&#39; arg is disregarded for custom merge functions&quot;</span>
+                    <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">criterion</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="k">if</span> <span class="n">branching_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span></div>
+
+
+<div class="viewcode-block" id="BitBirch.fit">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">/</span><span class="p">,</span>
+        <span class="n">reinsert_indices</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Build a BF Tree for the input data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        X : {array-like, sparse matrix} of shape (n_samples, n_features)</span>
+<span class="sd">            Input data.</span>
+
+<span class="sd">        reinsert_indices: Iterable[int]</span>
+<span class="sd">            if ``reinsert_indices`` is passed, ``X`` corresponds only to the molecules</span>
+<span class="sd">            that will be reinserted into the tree, and ``reinsert_indices`` are the</span>
+<span class="sd">            indices associated with these molecules.</span>
+
+<span class="sd">        input_is_packed: bool</span>
+<span class="sd">            Whether the input fingerprints are packed</span>
+
+<span class="sd">        n_features: int</span>
+<span class="sd">            Number of featurs of input fingerprints. Only required for packed inputs if</span>
+<span class="sd">            it is not a multiple of 8, otherwise it is redundant.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        self</span>
+<span class="sd">            Fitted estimator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">_mmap_file_and_madvise_sequential</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">max_fps</span><span class="o">=</span><span class="n">max_fps</span><span class="p">)</span>
+            <span class="n">mmanager</span> <span class="o">=</span> <span class="n">_ArrayMemPagesManager</span><span class="o">.</span><span class="n">from_bb_input</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="n">max_fps</span><span class="p">]</span>
+            <span class="n">mmanager</span> <span class="o">=</span> <span class="n">_ArrayMemPagesManager</span><span class="o">.</span><span class="n">from_bb_input</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">can_release</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">_validate_n_features</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
+        <span class="c1"># Start a new tree the first time this function is called</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_only_has_leaves</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Internal nodes were released, call reset() before fit()&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_tree</span><span class="p">(</span><span class="n">n_features</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;_BFNode&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">)</span>  <span class="c1"># After init, this is not None</span>
+
+        <span class="c1"># The array iterator either copies, un-sparsifies, or does nothing</span>
+        <span class="c1"># with the array rows, depending on the kind of X passed</span>
+        <span class="n">arr_iterable</span> <span class="o">=</span> <span class="n">_get_array_iterable</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
+        <span class="n">arr_iterable</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]],</span> <span class="n">arr_iterable</span><span class="p">)</span>
+        <span class="n">iterable</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]]]</span>
+        <span class="k">if</span> <span class="n">reinsert_indices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">iterable</span> <span class="o">=</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arr_iterable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iterable</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">reinsert_indices</span><span class="p">,</span> <span class="n">arr_iterable</span><span class="p">)</span>
+
+        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span>
+        <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span>
+        <span class="n">merge_accept_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span>
+
+        <span class="n">arr_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">fp</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
+            <span class="n">subcluster</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span>
+                <span class="n">linear_sum</span><span class="o">=</span><span class="n">fp</span><span class="p">,</span> <span class="n">mol_indices</span><span class="o">=</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span>
+            <span class="p">)</span>
+            <span class="n">split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">insert_bf_subcluster</span><span class="p">(</span>
+                <span class="n">subcluster</span><span class="p">,</span> <span class="n">merge_accept_fn</span><span class="p">,</span> <span class="n">threshold</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">split</span><span class="p">:</span>
+                <span class="n">new_subcluster1</span><span class="p">,</span> <span class="n">new_subcluster2</span> <span class="o">=</span> <span class="n">_split_node</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">_BFNode</span><span class="p">(</span><span class="n">branching_factor</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">new_subcluster1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">new_subcluster2</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_num_fitted_fps</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">arr_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">mmanager</span><span class="o">.</span><span class="n">can_release</span> <span class="ow">and</span> <span class="n">mmanager</span><span class="o">.</span><span class="n">should_release_curr_page</span><span class="p">(</span><span class="n">arr_idx</span><span class="p">):</span>
+                <span class="n">mmanager</span><span class="o">.</span><span class="n">release_curr_page_and_update_addr</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit_np</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">reinsert_index_seqs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Build a BF Tree starting from buffers</span>
+
+<span class="sd">        Buffers are arrays of the form:</span>
+<span class="sd">            - buffer[0:-1] = linear_sum</span>
+<span class="sd">            - buffer[-1] = n_samples</span>
+<span class="sd">        And X is either an array or a list of such buffers</span>
+
+<span class="sd">        if `reinsert_index_seqs` is passed, X corresponds only to the buffers to be</span>
+<span class="sd">        reinserted into the tree, and `reinsert_index_seqs` are the sequences</span>
+<span class="sd">        of indices associated with such buffers.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : {array-like, sparse matrix} of shape (n_samples + 1, n_features)</span>
+<span class="sd">            Input data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self</span>
+<span class="sd">            Fitted estimator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">_mmap_file_and_madvise_sequential</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+            <span class="n">mmanager</span> <span class="o">=</span> <span class="n">_ArrayMemPagesManager</span><span class="o">.</span><span class="n">from_bb_input</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mmanager</span> <span class="o">=</span> <span class="n">_ArrayMemPagesManager</span><span class="o">.</span><span class="n">from_bb_input</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">can_release</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">_validate_n_features</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="c1"># Start a new tree the first time this function is called</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_only_has_leaves</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Internal nodes were released, call reset() before fit()&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_tree</span><span class="p">(</span><span class="n">n_features</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;_BFNode&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">)</span>  <span class="c1"># After init, this is not None</span>
+
+        <span class="c1"># The array iterator either copies, un-sparsifies, or does nothing with the</span>
+        <span class="c1"># array rows, depending on the kind of X passed</span>
+        <span class="n">arr_iterable</span> <span class="o">=</span> <span class="n">_get_array_iterable</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">merge_accept_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span>
+        <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span>
+        <span class="n">idx_provider</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+        <span class="n">arr_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">reinsert_index_seqs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">idx_provider</span> <span class="o">=</span> <span class="p">([</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx_provider</span> <span class="o">=</span> <span class="n">reinsert_index_seqs</span>
+        <span class="k">for</span> <span class="n">idxs</span><span class="p">,</span> <span class="n">buf</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx_provider</span><span class="p">,</span> <span class="n">arr_iterable</span><span class="p">):</span>
+            <span class="n">subcluster</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span>
+                <span class="n">buffer</span><span class="o">=</span><span class="n">buf</span><span class="p">,</span> <span class="n">mol_indices</span><span class="o">=</span><span class="n">idxs</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span>
+            <span class="p">)</span>
+            <span class="n">split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">insert_bf_subcluster</span><span class="p">(</span>
+                <span class="n">subcluster</span><span class="p">,</span> <span class="n">merge_accept_fn</span><span class="p">,</span> <span class="n">threshold</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">split</span><span class="p">:</span>
+                <span class="n">new_subcluster1</span><span class="p">,</span> <span class="n">new_subcluster2</span> <span class="o">=</span> <span class="n">_split_node</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">_BFNode</span><span class="p">(</span><span class="n">branching_factor</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">new_subcluster1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">append_subcluster</span><span class="p">(</span><span class="n">new_subcluster2</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_num_fitted_fps</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span>
+            <span class="n">arr_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">mmanager</span><span class="o">.</span><span class="n">can_release</span> <span class="ow">and</span> <span class="n">mmanager</span><span class="o">.</span><span class="n">should_release_curr_page</span><span class="p">(</span><span class="n">arr_idx</span><span class="p">):</span>
+                <span class="n">mmanager</span><span class="o">.</span><span class="n">release_curr_page_and_update_addr</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="c1"># Provided for backwards compatibility</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_reinsert</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">reinsert_indices</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">reinsert_indices</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="p">,</span> <span class="n">max_fps</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Initialize the root (and a dummy node to get back the subclusters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="n">_BFNode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">_prev_leaf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_leaves</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">_BFNode</span><span class="p">]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Yields all leaf nodes&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model has not been fitted yet.&quot;</span><span class="p">)</span>
+        <span class="n">leaf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span><span class="o">.</span><span class="n">_next_leaf</span>
+        <span class="k">while</span> <span class="n">leaf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">leaf</span>
+            <span class="n">leaf</span> <span class="o">=</span> <span class="n">leaf</span><span class="o">.</span><span class="n">_next_leaf</span>
+
+<div class="viewcode-block" id="BitBirch.get_centroids_mol_ids">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.get_centroids_mol_ids">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_centroids_mol_ids</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_CentroidsMolIds</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a dict with centroids and mol indices of the leaves&quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: This is different from the original bitbirch, here outputs are sorted by</span>
+        <span class="c1"># default</span>
+        <span class="n">centroids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">mol_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="s2">&quot;packed_centroid&quot;</span> <span class="k">if</span> <span class="n">packed</span> <span class="k">else</span> <span class="s2">&quot;unpacked_centroid&quot;</span>
+        <span class="k">for</span> <span class="n">subcluster</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaf_bfs</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">):</span>
+            <span class="n">centroids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">subcluster</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+            <span class="n">mol_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcluster</span><span class="o">.</span><span class="n">mol_indices</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;centroids&quot;</span><span class="p">:</span> <span class="n">centroids</span><span class="p">,</span> <span class="s2">&quot;mol_ids&quot;</span><span class="p">:</span> <span class="n">mol_ids</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="BitBirch.get_centroids">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.get_centroids">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_centroids</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get a list of arrays with the centroids&#39; fingerprints&quot;&quot;&quot;</span>
+        <span class="c1"># NOTE: This is different from the original bitbirch, here outputs are sorted by</span>
+        <span class="c1"># default</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="s2">&quot;packed_centroid&quot;</span> <span class="k">if</span> <span class="n">packed</span> <span class="k">else</span> <span class="s2">&quot;unpacked_centroid&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaf_bfs</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="BitBirch.get_cluster_mol_ids">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.get_cluster_mol_ids">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cluster_mol_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get the indices of the molecules in each cluster&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">mol_indices</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaf_bfs</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="BitBirch.get_assignments">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.get_assignments">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_assignments</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n_mols</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">check_valid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get an array with the cluster labels associated with each fingerprint idx&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_mols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The n_mols argument is redundant&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_mols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">n_mols</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Provided n_mols </span><span class="si">{</span><span class="n">n_mols</span><span class="si">}</span><span class="s2"> is different&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; from the number of fitted fingerprints </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">check_valid</span><span class="p">:</span>
+            <span class="n">assignments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">assignments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+        <span class="n">iterator</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+            <span class="n">iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cluster_mol_ids</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">iterator</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">mol_indices</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaves</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">leaf</span><span class="o">.</span><span class="n">_subclusters</span>
+            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mol_ids</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">assignments</span><span class="p">[</span><span class="n">mol_ids</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+
+        <span class="c1"># Check that there are no unassigned molecules</span>
+        <span class="k">if</span> <span class="n">check_valid</span> <span class="ow">and</span> <span class="p">(</span><span class="n">assignments</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;There are unasigned molecules&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">assignments</span></div>
+
+
+<div class="viewcode-block" id="BitBirch.dump_assignments">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.dump_assignments">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dump_assignments</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">smiles</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">sort</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">check_valid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Dump the cluster assignments to a ``*.csv`` file&quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>  <span class="c1"># Hide pandas import since it is heavy</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">smiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">smiles</span><span class="p">]</span>
+        <span class="n">smiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">smiles</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">)</span>
+        <span class="c1"># Dump cluster assignments to *.csv</span>
+        <span class="n">assignments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_assignments</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">,</span> <span class="n">check_valid</span><span class="o">=</span><span class="n">check_valid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">smiles</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">assignments</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">smiles</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Len of the provided smiles </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">smiles</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; must match the number of fitted fingerprints </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">smiles</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;assignments&quot;</span><span class="p">:</span> <span class="n">assignments</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">smiles</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;smiles&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">smiles</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BitBirch.reset">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Reset the tree state</span>
+
+<span class="sd">        Delete *all internal nodes and leafs*, does not reset the merge criterion or</span>
+<span class="sd">        other merge parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Reset the whole tree</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">_prev_leaf</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_fitted_fps</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="BitBirch.delete_internal_nodes">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.delete_internal_nodes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_internal_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Delete all nodes in the tree that are not leaves</span>
+
+<span class="sd">        This function is for advanced usage only. It should be called if there is need</span>
+<span class="sd">        to use the BitBirch leaf clusters, but you need to release the memory held by</span>
+<span class="sd">        the internal nodes. After calling this function, no more fingerprints can be fit</span>
+<span class="sd">        into the tree, unless a call to `BitBirch.reset` afterwards releases the</span>
+<span class="sd">        *whole tree*, including the leaf clusters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tp</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">_BFNode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">)</span><span class="o">.</span><span class="n">is_leaf</span><span class="p">:</span>
+            <span class="c1"># release all nodes that are not leaves,</span>
+            <span class="c1"># they are kept alive by references from dummy_leaf</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_only_has_leaves</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BitBirch.refine_inplace">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.refine_inplace">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">refine_inplace</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">initial_mol</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">n_largest</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Refine the tree: break the largest clusters in singletons and re-fit&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model has not been fitted yet.&quot;</span><span class="p">)</span>
+        <span class="c1"># Release the memory held by non-leaf nodes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
+
+        <span class="c1"># Extract the BitFeatures of the leaves, breaking the largest cluster apart into</span>
+        <span class="c1"># singleton subclusters</span>
+        <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bf_to_np_refine</span><span class="p">(</span>  <span class="c1"># This function takes a bunch of mem</span>
+            <span class="n">X</span><span class="p">,</span>
+            <span class="n">initial_mol</span><span class="o">=</span><span class="n">initial_mol</span><span class="p">,</span>
+            <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span>
+            <span class="n">n_largest</span><span class="o">=</span><span class="n">n_largest</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Reset the tree</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="c1"># Rebuild the tree again from scratch, reinserting all the subclusters</span>
+        <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_leaf_bfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_BFSubcluster</span><span class="p">]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get the BitFeatures of the leaves&quot;&quot;&quot;</span>
+        <span class="n">bfs</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaves</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">leaf</span><span class="o">.</span><span class="n">_subclusters</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+            <span class="c1"># Sort the BitFeatures by the number of samples in the cluster</span>
+            <span class="n">bfs</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bfs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_bf_to_np_refine</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span>
+        <span class="n">initial_mol</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">n_largest</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare numpy bufs (&#39;np&#39;) for BitFeatures, splitting the biggest n clusters</span>
+
+<span class="sd">        The largest clusters are split into singletons. In order to perform this split,</span>
+<span class="sd">        the *original* fingerprint array used to fit the tree (X) has to be provided,</span>
+<span class="sd">        together with the index associated with the first fingerprint.</span>
+
+<span class="sd">        The split is only performed for the returned &#39;np&#39; buffers, the clusters in the</span>
+<span class="sd">        tree itself are not modified</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_largest</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_largest must be &gt;= 1&quot;</span><span class="p">)</span>
+
+        <span class="n">bfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaf_bfs</span><span class="p">()</span>
+        <span class="n">largest</span> <span class="o">=</span> <span class="n">bfs</span><span class="p">[:</span><span class="n">n_largest</span><span class="p">]</span>
+        <span class="n">rest</span> <span class="o">=</span> <span class="n">bfs</span><span class="p">[</span><span class="n">n_largest</span><span class="p">:]</span>
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">largest</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">n_features</span>
+
+        <span class="n">dtypes_to_fp</span><span class="p">,</span> <span class="n">dtypes_to_mols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_bf_to_buffer_dicts</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span>
+        <span class="c1"># Add X and mol indices of the &quot;big&quot; cluster</span>
+        <span class="k">if</span> <span class="n">input_is_packed</span><span class="p">:</span>
+            <span class="n">unpack_or_copy</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">_unpack_fingerprints</span><span class="p">(</span>
+                <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">x</span><span class="p">),</span> <span class="n">n_features</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unpack_or_copy</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">big_bf</span> <span class="ow">in</span> <span class="n">largest</span><span class="p">:</span>
+            <span class="n">full_arr_idxs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">idx</span> <span class="o">-</span> <span class="n">initial_mol</span><span class="p">)</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">big_bf</span><span class="o">.</span><span class="n">mol_indices</span><span class="p">]</span>
+            <span class="n">_X</span><span class="p">:</span> <span class="n">_Input</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+                <span class="c1"># Only load the specific required mol idxs</span>
+                <span class="n">_X</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">))[</span><span class="n">full_arr_idxs</span><span class="p">]</span>
+                <span class="n">arr_idxs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_X</span><span class="p">)))</span>
+                <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">big_bf</span><span class="o">.</span><span class="n">mol_indices</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Path</span><span class="p">):</span>
+                <span class="c1"># Only load the specific required mol idxs</span>
+                <span class="n">sort_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">full_arr_idxs</span><span class="p">)</span>
+                <span class="n">_X</span> <span class="o">=</span> <span class="n">_get_fingerprints_from_file_seq</span><span class="p">(</span>
+                    <span class="n">cast</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">X</span><span class="p">),</span>
+                    <span class="p">[</span><span class="n">full_arr_idxs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sort_idxs</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="n">arr_idxs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_X</span><span class="p">)))</span>
+                <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">big_bf</span><span class="o">.</span><span class="n">mol_indices</span>
+                <span class="n">mol_idxs</span> <span class="o">=</span> <span class="p">[</span><span class="n">mol_idxs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sort_idxs</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Index the full array / list</span>
+                <span class="n">_X</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">_Input</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+                <span class="n">arr_idxs</span> <span class="o">=</span> <span class="n">full_arr_idxs</span>
+                <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">big_bf</span><span class="o">.</span><span class="n">mol_indices</span>
+
+            <span class="k">for</span> <span class="n">mol_idx</span><span class="p">,</span> <span class="n">arr_idx</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">mol_idxs</span><span class="p">,</span> <span class="n">arr_idxs</span><span class="p">):</span>
+                <span class="n">buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n_features</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                <span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">unpack_or_copy</span><span class="p">(</span><span class="n">_X</span><span class="p">[</span><span class="n">arr_idx</span><span class="p">])</span>
+                <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">dtypes_to_fp</span><span class="p">[</span><span class="s2">&quot;uint8&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+                <span class="n">dtypes_to_mols</span><span class="p">[</span><span class="s2">&quot;uint8&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">mol_idx</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">dtypes_to_fp</span><span class="p">,</span> <span class="n">dtypes_to_mols</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_bf_to_np</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare numpy buffers (&#39;np&#39;) for BitFeatures of all clusters&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_bf_to_buffer_dicts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_leaf_bfs</span><span class="p">())</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_bf_to_buffer_dicts</span><span class="p">(</span>
+        <span class="n">bfs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;_BFSubcluster&quot;</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]]:</span>
+        <span class="c1"># Helper function used when returning lists of subclusters</span>
+        <span class="n">dtypes_to_fp</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="n">dtypes_to_mols</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">bf</span> <span class="ow">in</span> <span class="n">bfs</span><span class="p">:</span>
+            <span class="n">dtypes_to_fp</span><span class="p">[</span><span class="n">bf</span><span class="o">.</span><span class="n">dtype_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bf</span><span class="o">.</span><span class="n">_buffer</span><span class="p">)</span>
+            <span class="n">dtypes_to_mols</span><span class="p">[</span><span class="n">bf</span><span class="o">.</span><span class="n">dtype_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bf</span><span class="o">.</span><span class="n">mol_indices</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dtypes_to_fp</span><span class="p">,</span> <span class="n">dtypes_to_mols</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;threshold=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;branching_factor=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;merge_criterion=&#39;</span><span class="si">{</span><span class="n">fn</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">fn</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">BUILTIN_MERGES</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">fn</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tolerance=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+
+<span class="c1"># There are 4 cases here:</span>
+<span class="c1"># (1) The input is a scipy.sparse array</span>
+<span class="c1"># (2) The input is a list of dense arrays (nothing required)</span>
+<span class="c1"># (3) The input is a packed array or list of packed arrays (unpack required)</span>
+<span class="c1"># (4) The input is a dense array (copy required)</span>
+<span class="c1"># NOTE: Sparse iteration hack is taken from sklearn</span>
+<span class="c1"># It returns a densified row when iterating over a sparse matrix, instead</span>
+<span class="c1"># of constructing a sparse matrix for every row that is expensive.</span>
+<span class="c1">#</span>
+<span class="c1"># Output is *always* of dtype uint8, but input (if unpacked) can be of arbitrary dtype</span>
+<span class="c1"># It is most efficient for input to be uint8 to prevent copies</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_array_iterable</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span><span class="p">,</span>
+    <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]:</span>
+    <span class="k">if</span> <span class="n">input_is_packed</span><span class="p">:</span>
+        <span class="c1"># Unpacking copies the fingerprints, so no extra copy required</span>
+        <span class="c1"># NOTE: cast seems to have a very small overhead in this loop for some reason</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">_unpack_fingerprints</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">X</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="c1"># No copy is required here unless the dtype is not uint8</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">X</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="c1"># A copy is required here to avoid keeping a ref to the full array alive</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">X</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_iter_sparse</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+
+<span class="c1"># NOTE: In practice this branch is never used, it could probably safely be deleted</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_iter_sparse</span><span class="p">(</span><span class="n">X</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]]:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.sparse</span>  <span class="c1"># Hide this import since scipy is heavy</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="si">}</span><span class="s2"> is not supported&quot;</span><span class="p">)</span>
+    <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_features</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">X_indices</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">indices</span>
+    <span class="n">X_data</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">X_indptr</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">indptr</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_features</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+        <span class="n">startptr</span><span class="p">,</span> <span class="n">endptr</span> <span class="o">=</span> <span class="n">X_indptr</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">X_indptr</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">nonzero_indices</span> <span class="o">=</span> <span class="n">X_indices</span><span class="p">[</span><span class="n">startptr</span><span class="p">:</span><span class="n">endptr</span><span class="p">]</span>
+        <span class="n">a</span><span class="p">[</span><span class="n">nonzero_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_data</span><span class="p">[</span><span class="n">startptr</span><span class="p">:</span><span class="n">endptr</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">a</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025  The Miranda-Quintana Lab and other BitBirch developers.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
