@@ -14,7 +14,7 @@ from bblean._merges import (
     ToleranceMerge,
     ToleranceToughMerge,
 )
-from bblean.fingerprints import make_fake_fingerprints, calc_centroid
+from bblean.fingerprints import make_fake_fingerprints, centroid_from_sum
 
 # Cases to test for all merges:
 # low|high tolerance
@@ -72,7 +72,7 @@ def test_non_tolerance() -> None:
                 old_n = len(old)
                 nom_n = len(nom)
                 new_n = old_n + nom_n
-                cent = calc_centroid(new_ls, new_n, pack=False)
+                cent = centroid_from_sum(new_ls, new_n, pack=False)
                 val_expect = fn_expect(
                     thresh, new_ls, cent, new_n, old_ls, nom_ls, old_n, nom_n
                 )
@@ -122,7 +122,7 @@ def test_tolerance() -> None:
                     old_n = len(old)
                     nom_n = len(nom)
                     new_n = old_n + nom_n
-                    cent = calc_centroid(new_ls, new_n, pack=False)
+                    cent = centroid_from_sum(new_ls, new_n, pack=False)
                     val_expect = fn_expect(
                         thresh, new_ls, cent, new_n, old_ls, nom_ls, old_n, nom_n, tol
                     )

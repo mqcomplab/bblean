@@ -45,6 +45,10 @@
 // CPU) like jt_sim_packed
 namespace py = pybind11;
 
+template <typename T>
+using CArrayForcecast =
+    py::array_t<T, py::array::c_style | py::array::forcecast>;
+
 auto is_8byte_aligned(const py::array_t<uint8_t>& a) -> bool {
     // Convert between ptr and integer requires reinterpret
     return reinterpret_cast<std::uintptr_t>(a.data()) % alignof(uint64_t) == 0;
@@ -92,9 +96,7 @@ uint32_t _popcount_1d(const py::array_t<uint8_t>& arr) {
 // TODO: Currently this is pretty slow unless hitting the "uint64_t" branch,
 // maybe two pass approach? first compute all popcounts, then sum (Numpy does
 // this). Maybe the additions could be auto-vec?
-py::array_t<uint32_t> _popcount_2d(
-    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
-        arr) {
+py::array_t<uint32_t> _popcount_2d(const CArrayForcecast<uint8_t>& arr) {
     if (arr.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
@@ -155,9 +157,8 @@ constexpr std::array<std::array<uint8_t, 8>, 256> makeByteToBitsLookupTable() {
 constexpr auto BYTE_TO_BITS = makeByteToBitsLookupTable();
 
 py::array_t<uint8_t> _nochecks_unpack_fingerprints_1d(
-    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
-        packed_fps,
-    std::optional<py::ssize_t> n_features_opt) {
+    const CArrayForcecast<uint8_t>& packed_fps,
+    std::optional<py::ssize_t> n_features_opt = std::nullopt) {
     py::ssize_t n_bytes = packed_fps.shape(0);
     py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
     if (n_features % 8 != 0) {
@@ -174,9 +175,8 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_1d(
 }
 
 py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
-    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
-        packed_fps,
-    std::optional<py::ssize_t> n_features_opt) {
+    const CArrayForcecast<uint8_t>& packed_fps,
+    std::optional<py::ssize_t> n_features_opt = std::nullopt) {
     py::ssize_t n_samples = packed_fps.shape(0);
     py::ssize_t n_bytes = packed_fps.shape(1);
     py::ssize_t n_features = n_features_opt.value_or(n_bytes * 8);
@@ -202,9 +202,8 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
 
 // Wrapper over _nochecks_unpack_fingerprints that performs ndim checks
 py::array_t<uint8_t> unpack_fingerprints(
-    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
-        packed_fps,
-    std::optional<py::ssize_t> n_features_opt) {
+    const CArrayForcecast<uint8_t>& packed_fps,
+    std::optional<py::ssize_t> n_features_opt = std::nullopt) {
     if (packed_fps.ndim() == 1) {
         return _nochecks_unpack_fingerprints_1d(packed_fps, n_features_opt);
     }
@@ -215,9 +214,8 @@ py::array_t<uint8_t> unpack_fingerprints(
 }
 
 template <typename T>
-py::array_t<uint8_t> calc_centroid(
-    const py::array_t<T, py::array::c_style | py::array::forcecast>& linear_sum,
-    int64_t n_samples, bool pack = true) {
+py::array_t<uint8_t> centroid_from_sum(const CArrayForcecast<T>& linear_sum,
+                                       int64_t n_samples, bool pack = true) {
     if (linear_sum.ndim() != 1) {
         throw std::runtime_error("linear_sum must be 1-dimensional");
     }
@@ -272,10 +270,8 @@ py::array_t<uint8_t> calc_centroid(
     return centroid_packed;
 }
 
-double jt_isim(
-    const py::array_t<uint64_t, py::array::c_style | py::array::forcecast>&
-        linear_sum,
-    int64_t n_objects) {
+double jt_isim_from_sum(const CArrayForcecast<uint64_t>& linear_sum,
+                        int64_t n_objects) {
     if (n_objects < 2) {
         PyErr_WarnEx(PyExc_RuntimeWarning,
                      "Invalid n_objects in isim. Expected n_objects >= 2", 1);
@@ -383,8 +379,7 @@ py::array_t<double> jt_sim_packed(const py::array_t<uint8_t>& arr,
 // NOTE: This is only *slightly* faster for C++ than numpy, **only if the
 // array is uint8_t** if the array is uint64 already, it is slower
 template <typename T>
-py::array_t<uint64_t> add_rows(
-    const py::array_t<T, py::array::c_style | py::array::forcecast>& arr) {
+py::array_t<uint64_t> add_rows(const CArrayForcecast<T>& arr) {
     if (arr.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
@@ -404,9 +399,20 @@ py::array_t<uint64_t> add_rows(
     return out;
 }
 
+double jt_isim_unpacked_u8(const CArrayForcecast<uint8_t>& arr) {
+    return jt_isim_from_sum(add_rows<uint8_t>(arr), arr.shape(0));
+}
+
+double jt_isim_packed_u8(
+    const CArrayForcecast<uint8_t>& arr,
+    std::optional<py::ssize_t> n_features_opt = std::nullopt) {
+    return jt_isim_from_sum(add_rows<uint8_t>(unpack_fingerprints(arr, n_features_opt)),
+                            arr.shape(0));
+}
+
 py::tuple jt_most_dissimilar_packed(
-    py::array_t<uint8_t, py::array::c_style | py::array::forcecast> fps_packed,
-    std::optional<py::ssize_t> n_features_opt) {
+    CArrayForcecast<uint8_t> fps_packed,
+    std::optional<py::ssize_t> n_features_opt = std::nullopt) {
     if (fps_packed.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
@@ -431,7 +437,8 @@ py::tuple jt_most_dissimilar_packed(
         }
     }
 
-    auto centroid_packed = calc_centroid<uint64_t>(linear_sum, n_samples, true);
+    auto centroid_packed =
+        centroid_from_sum<uint64_t>(linear_sum, n_samples, true);
     auto cardinalities = _popcount_2d(fps_packed);
 
     auto sims_cent = jt_sim_packed_precalc_cardinalities(
@@ -486,16 +493,23 @@ PYBIND11_MODULE(_cpp_similarity, m) {
     // needed, and slightly slower if casts are needed so it is not useful
     // outside the C++ code, and it should not be exposed by default in any
     // module (only for internal use and debugging)
-    m.def("calc_centroid", &calc_centroid<uint64_t>, "centroid calculation",
-          py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
+    m.def("centroid_from_sum", &centroid_from_sum<uint64_t>,
+          "centroid calculation", py::arg("linear_sum"), py::arg("n_samples"),
+          py::arg("pack") = true);
 
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
     m.def("add_rows", &add_rows<uint8_t>, "add_rows", py::arg("arr"));
 
     // API
-    m.def("jt_isim", &jt_isim, "iSIM Tanimoto calculation", py::arg("c_total"),
+    m.def("jt_isim_from_sum", &jt_isim_from_sum,
+          "iSIM Tanimoto calculation from sum", py::arg("c_total"),
           py::arg("n_objects"));
+    m.def("jt_isim_packed_u8", &jt_isim_packed_u8, "iSIM Tanimoto calculation",
+          py::arg("arr"), py::arg("n_features") = std::nullopt);
+    m.def("jt_isim_unpacked_u8", &jt_isim_unpacked_u8,
+          "iSIM Tanimoto calculation", py::arg("arr"));
+
     m.def("jt_sim_packed", &jt_sim_packed,
           "Tanimoto similarity between a matrix of packed fps and a single "
           "packed fp",

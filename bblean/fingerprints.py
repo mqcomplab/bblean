@@ -1,5 +1,6 @@
 r"""Utilites for manipulating fingerprints and fingerprint files"""
 
+import warnings
 import dataclasses
 from pathlib import Path
 from numpy.typing import NDArray, DTypeLike
@@ -16,11 +17,11 @@ __all__ = [
     "fps_from_smiles",
     "pack_fingerprints",
     "unpack_fingerprints",
-    "calc_centroid",
+    "centroid_from_sum",
 ]
 
 
-def calc_centroid(
+def centroid_from_sum(
     linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
 ) -> NDArray[np.uint8]:
     """Calculates centroid
@@ -49,6 +50,15 @@ def calc_centroid(
     if pack:
         return np.packbits(centroid, axis=-1)
     return centroid
+
+
+def calc_centroid(
+    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
+) -> NDArray[np.uint8]:
+    warnings.warn(
+        "Please use centroid_from_sum(...) instead", DeprecationWarning, stacklevel=2
+    )
+    return centroid_from_sum(linear_sum, n_samples, pack=pack)
 
 
 def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
