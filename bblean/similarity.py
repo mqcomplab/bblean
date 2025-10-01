@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 import numpy as np
 
 # NOTE: The most expensive calculation is *jt_sim_packed*, followed by _popcount_2d,
-# calc_centroid, packing and unpacking
+# centroid_from_sum, packing and unpacking
 # TODO: Packing and unpacking *should be done in C++ using a lookup table*
 __all__ = ["jt_isim_from_sum", "jt_sim_packed", "jt_most_dissimilar_packed"]
 

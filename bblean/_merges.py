@@ -3,7 +3,7 @@ r"""Merging criteria for BitBIRCH clustering"""
 from numpy.typing import NDArray
 import numpy as np
 
-from bblean.fingerprints import calc_centroid
+from bblean.fingerprints import centroid_from_sum
 from bblean.similarity import jt_isim_from_sum
 
 BUILTIN_MERGES = ["radius", "diameter", "tolerance", "tolerance_tough"]
@@ -45,7 +45,7 @@ class RadiusMerge(MergeAcceptFunction):
     ) -> bool:
         # NOTE: Use uint64 sum since jt_isim_from_sum casts to uint64 internally
         # This prevents multiple casts
-        new_unpacked_centroid = calc_centroid(new_ls, new_n, pack=False)
+        new_unpacked_centroid = centroid_from_sum(new_ls, new_n, pack=False)
         new_ls_1 = np.add(new_ls, new_unpacked_centroid, dtype=np.uint64)
         new_n_1 = new_n + 1
         new_jt = jt_isim_from_sum(new_ls, new_n)

@@ -215,7 +215,7 @@ py::array_t<uint8_t> unpack_fingerprints(
 }
 
 template <typename T>
-py::array_t<uint8_t> calc_centroid(
+py::array_t<uint8_t> centroid_from_sum(
     const py::array_t<T, py::array::c_style | py::array::forcecast>& linear_sum, int64_t n_samples,
     bool pack = true) {
     if (linear_sum.ndim() != 1) {
@@ -407,7 +407,7 @@ py::tuple jt_most_dissimilar_packed(
         }
     }
 
-    auto centroid_packed = calc_centroid<uint64_t>(linear_sum, n_samples, true);
+    auto centroid_packed = centroid_from_sum<uint64_t>(linear_sum, n_samples, true);
     auto cardinalities = _popcount_2d(fps_packed);
 
     auto sims_cent = jt_sim_packed_precalc_cardinalities(
@@ -462,7 +462,7 @@ PYBIND11_MODULE(_cpp_similarity, m) {
     // and slightly slower if casts are needed
     // so it is not useful outside the C++ code, and it should not be exposed by default
     // in any module (only for internal use and debugging)
-    m.def("calc_centroid", &calc_centroid<uint64_t>, "centroid calculation",
+    m.def("centroid_from_sum", &centroid_from_sum<uint64_t>, "centroid calculation",
           py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
 
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));

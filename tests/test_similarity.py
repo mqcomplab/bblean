@@ -16,7 +16,7 @@ except ImportError:
     CSIM_AVAIL = False
 from bblean.fingerprints import (
     make_fake_fingerprints,
-    calc_centroid,
+    centroid_from_sum,
     unpack_fingerprints,
 )
 
@@ -99,11 +99,11 @@ def test_cpp_centroid() -> None:
     fps = make_fake_fingerprints(10, seed=17408390758220920002, pack=False)
     _sum = fps.sum(0)
     num = len(fps)
-    centroid = csim.calc_centroid(_sum, num, pack=False)
-    expect_centroid = calc_centroid(_sum, num, pack=False)
+    centroid = csim.centroid_from_sum(_sum, num, pack=False)
+    expect_centroid = centroid_from_sum(_sum, num, pack=False)
     assert (centroid == expect_centroid).all()
-    centroid = csim.calc_centroid(_sum, num, pack=True)
-    expect_centroid = calc_centroid(_sum, num, pack=True)
+    centroid = csim.centroid_from_sum(_sum, num, pack=True)
+    expect_centroid = centroid_from_sum(_sum, num, pack=True)
     assert (centroid == expect_centroid).all()
 
 
