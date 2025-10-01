@@ -90,7 +90,7 @@ jobs:
 
   upload-docs-and-badges-to-gh-pages:
     runs-on: ubuntu-latest
-    needs: tests
+    needs: [tests, docs]
     if: (github.ref == 'refs/heads/main') || (github.event_name == "release" && github.event.release.prerelease == false)
     permissions:
       contents: write
@@ -105,7 +105,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docs
-          path: ${{ github.event_name == 'release' && './site/docs/stable' || './devdocs' }}
+          path: ${{ github.event_name == 'release' && './site/docs/stable' || './site/devdocs' }}
 
       - name: fetch-coverage-report
         uses: actions/download-artifact@v4
