@@ -216,8 +216,8 @@ py::array_t<uint8_t> unpack_fingerprints(
 
 template <typename T>
 py::array_t<uint8_t> calc_centroid(
-    const py::array_t<T, py::array::c_style | py::array::forcecast>& linear_sum, int64_t n_samples,
-    bool pack = true) {
+    const py::array_t<T, py::array::c_style | py::array::forcecast>& linear_sum,
+    int64_t n_samples, bool pack = true) {
     if (linear_sum.ndim() != 1) {
         throw std::runtime_error("linear_sum must be 1-dimensional");
     }
@@ -256,8 +256,8 @@ py::array_t<uint8_t> calc_centroid(
     std::memset(centroid_packed_ptr, 0, centroid_packed.nbytes());
 
     // Slower than numpy, due to lack of SIMD
-    // The following loop is *marginally slower* (benchmkd') than the implemented one:
-    // for (int i{0}; i != n_features; ++i) {
+    // The following loop is *marginally slower* (benchmkd') than the
+    // implemented one: for (int i{0}; i != n_features; ++i) {
     //    if (centroid_unpacked_cptr[i]) {
     //        centroid_packed_ptr[i / 8] |= (1 << (7 - (i % 8)));
     //    }
@@ -380,9 +380,11 @@ py::array_t<double> jt_sim_packed(const py::array_t<uint8_t>& arr,
     return jt_sim_packed_precalc_cardinalities(arr, vec, _popcount_2d(arr));
 }
 
-// NOTE: This is only *slightly* faster for C++ than numpy, and only if the array
-// is uint8_t
-py::array_t<uint64_t> add_rows(const py::array_t<uint8_t, py::array::c_style>& arr) {
+// NOTE: This is only *slightly* faster for C++ than numpy, **only if the
+// array is uint8_t** if the array is uint64 already, it is slower
+template <typename T>
+py::array_t<uint64_t> add_rows(
+    const py::array_t<T, py::array::c_style | py::array::forcecast>& arr) {
     if (arr.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
@@ -472,24 +474,24 @@ PYBIND11_MODULE(_cpp_similarity, m) {
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
 
-    // NOTE: There are some gains from using this fn but only ~3%, so don't warn for now
-    // if this fails, and don't expose it
+    // NOTE: There are some gains from using this fn but only ~3%, so don't warn
+    // for now if this fails, and don't expose it
     m.def("unpack_fingerprints", &unpack_fingerprints,
           "Unpack packed fingerprints", py::arg("a"),
           py::arg("n_features") = std::nullopt);
 
     // NOTE: pybind11's dynamic dispatch is *significantly* more
     // expensive than casting to uint64_t always
-    // still this function is *barely* faster than python if no casts are needed,
-    // and slightly slower if casts are needed
-    // so it is not useful outside the C++ code, and it should not be exposed by default
-    // in any module (only for internal use and debugging)
+    // still this function is *barely* faster than python if no casts are
+    // needed, and slightly slower if casts are needed so it is not useful
+    // outside the C++ code, and it should not be exposed by default in any
+    // module (only for internal use and debugging)
     m.def("calc_centroid", &calc_centroid<uint64_t>, "centroid calculation",
           py::arg("linear_sum"), py::arg("n_samples"), py::arg("pack") = true);
 
     m.def("_popcount_2d", &_popcount_2d, "2D popcount", py::arg("a"));
     m.def("_popcount_1d", &_popcount_1d, "1D popcount", py::arg("a"));
-    m.def("add_rows", &add_rows, "add_rows", py::arg("arr"));
+    m.def("add_rows", &add_rows<uint8_t>, "add_rows", py::arg("arr"));
 
     // API
     m.def("jt_isim", &jt_isim, "iSIM Tanimoto calculation", py::arg("c_total"),
