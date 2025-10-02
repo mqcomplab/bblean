@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=22cc9a0c"></script>
+    <script src="../_static/documentation_options.js?v=cf09c6d6"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -389,13 +389,35 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.smiles.load_smiles" title="bblean.smiles.load_smiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_smiles</span></code></a></p></td>
 <td><p>Simple utility to load smiles from a <code class="docutils literal notranslate"><span class="pre">*.smi</span></code> file</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.smiles.calc_num_smiles" title="bblean.smiles.calc_num_smiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calc_num_smiles</span></code></a></p></td>
+<td><p>Get the total number of smiles in a sequene of paths</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.smiles.iter_smiles_from_paths" title="bblean.smiles.iter_smiles_from_paths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iter_smiles_from_paths</span></code></a></p></td>
+<td><p>Iterate over smiles in a sequence of smiles paths</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="bblean.smiles.load_smiles">
-<span class="sig-prename descclassname"><span class="pre">bblean.smiles.</span></span><span class="sig-name descname"><span class="pre">load_smiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/smiles.html#load_smiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.smiles.load_smiles" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bblean.smiles.</span></span><span class="sig-name descname"><span class="pre">load_smiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smiles_paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/smiles.html#load_smiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.smiles.load_smiles" title="Link to this definition">#</a></dt>
 <dd><p>Simple utility to load smiles from a <code class="docutils literal notranslate"><span class="pre">*.smi</span></code> file</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.smiles.calc_num_smiles">
+<span class="sig-prename descclassname"><span class="pre">bblean.smiles.</span></span><span class="sig-name descname"><span class="pre">calc_num_smiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smiles_paths</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/smiles.html#calc_num_smiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.smiles.calc_num_smiles" title="Link to this definition">#</a></dt>
+<dd><p>Get the total number of smiles in a sequene of paths</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.smiles.iter_smiles_from_paths">
+<span class="sig-prename descclassname"><span class="pre">bblean.smiles.</span></span><span class="sig-name descname"><span class="pre">iter_smiles_from_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smiles_paths</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/smiles.html#iter_smiles_from_paths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.smiles.iter_smiles_from_paths" title="Link to this definition">#</a></dt>
+<dd><p>Iterate over smiles in a sequence of smiles paths</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -450,6 +472,8 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.smiles.load_smiles"><code class="docutils literal notranslate"><span class="pre">load_smiles()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.smiles.calc_num_smiles"><code class="docutils literal notranslate"><span class="pre">calc_num_smiles()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.smiles.iter_smiles_from_paths"><code class="docutils literal notranslate"><span class="pre">iter_smiles_from_paths()</span></code></a></li>
 </ul>
   </nav></div>
 

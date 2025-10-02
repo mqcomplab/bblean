@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=22cc9a0c"></script>
+    <script src="../../_static/documentation_options.js?v=cf09c6d6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -405,15 +405,17 @@
 <span class="c1"># program. This copy can be located at the root of this repository, under</span>
 <span class="c1"># ./LICENSES/GPL-3.0-only.txt.  If not, see &lt;http://www.gnu.org/licenses/gpl-3.0.html&gt;.</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Multi-round BitBirch workflow for clustering huge datasets in parallel&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tp</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">Console</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rich.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">Console</span>
+
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._console</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_console</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._timer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Timer</span>
@@ -427,7 +429,9 @@
 
 <span class="c1"># Save a list of numpy arrays into a single array in a streaming fashion, avoiding</span>
 <span class="c1"># stacking them in memory</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_numpy_streaming_save</span><span class="p">(</span><span class="n">fp_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]],</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_numpy_streaming_save</span><span class="p">(</span>
+    <span class="n">fp_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]]</span> <span class="o">|</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">first_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">fp_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">header</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">header_data_from_array_1_0</span><span class="p">(</span><span class="n">first_arr</span><span class="p">)</span>
     <span class="n">header</span><span class="p">[</span><span class="s2">&quot;shape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fp_list</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">first_arr</span><span class="p">))</span>
@@ -684,6 +688,7 @@
     <span class="n">only_first_round</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">mp_context</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Timer</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Perform (possibly parallel) multi-round BitBirch clustering</span>
 
@@ -692,6 +697,8 @@
 <span class="sd">        The functionality provided by this function is stable, but its API</span>
 <span class="sd">        (the arguments it takes and its return values) may change in the future.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">mp_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mp_context</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;forkserver&quot;</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
     <span class="c1"># Returns timing and for the different rounds</span>
     <span class="c1"># TODO: Also return peak-rss</span>
     <span class="n">console</span> <span class="o">=</span> <span class="n">get_console</span><span class="p">(</span><span class="n">silent</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">)</span>
@@ -737,7 +744,7 @@
             <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">files_range_tuples</span><span class="p">:</span>
                 <span class="n">initial_fn</span><span class="p">(</span><span class="n">tup</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span>
+            <span class="k">with</span> <span class="n">mp_context</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span>
                 <span class="n">processes</span><span class="o">=</span><span class="n">num_ps</span><span class="p">,</span> <span class="n">maxtasksperchild</span><span class="o">=</span><span class="n">max_tasks_per_process</span>
             <span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
                 <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">initial_fn</span><span class="p">,</span> <span class="n">files_range_tuples</span><span class="p">)</span>
@@ -771,7 +778,7 @@
                 <span class="k">for</span> <span class="n">batch_info</span> <span class="ow">in</span> <span class="n">batches</span><span class="p">:</span>
                     <span class="n">merging_fn</span><span class="p">(</span><span class="n">batch_info</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">with</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span>
+                <span class="k">with</span> <span class="n">mp_context</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span>
                     <span class="n">processes</span><span class="o">=</span><span class="n">num_ps</span><span class="p">,</span> <span class="n">maxtasksperchild</span><span class="o">=</span><span class="n">max_tasks_per_process</span>
                 <span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
                     <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">merging_fn</span><span class="p">,</span> <span class="n">batches</span><span class="p">)</span>

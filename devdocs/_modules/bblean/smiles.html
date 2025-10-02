@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=22cc9a0c"></script>
+    <script src="../../_static/documentation_options.js?v=cf09c6d6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -365,29 +365,69 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;load_smiles&quot;</span><span class="p">]</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">batched</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;load_smiles&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;calc_num_smiles&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;iter_smiles_from_paths&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">SmilesPaths</span> <span class="o">=</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span>
 
 
 <div class="viewcode-block" id="load_smiles">
 <a class="viewcode-back" href="../../_api_autogen/bblean.smiles.html#bblean.smiles.load_smiles">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_smiles</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_smiles</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span> <span class="n">max_num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Simple utility to load smiles from a ``*.smi`` file&quot;&quot;&quot;</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
     <span class="n">smiles</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rt&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">smi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">max_num</span><span class="p">:</span>
-                <span class="k">break</span>
-            <span class="n">smiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">smi</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">smi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">max_num</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">smiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">smi</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">smiles</span><span class="p">)</span></div>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<div class="viewcode-block" id="calc_num_smiles">
+<a class="viewcode-back" href="../../_api_autogen/bblean.smiles.html#bblean.smiles.calc_num_smiles">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_num_smiles</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get the total number of smiles in a sequene of paths&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="iter_smiles_from_paths">
+<a class="viewcode-back" href="../../_api_autogen/bblean.smiles.html#bblean.smiles.iter_smiles_from_paths">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">iter_smiles_from_paths</span><span class="p">(</span>
+    <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Iterate over smiles in a sequence of smiles paths&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">,</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+        <span class="n">smiles_paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">smiles_paths</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">smi_path</span> <span class="ow">in</span> <span class="n">smiles_paths</span><span class="p">:</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">smi_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rt&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">smi</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-                <span class="k">yield</span> <span class="n">smi</span>
+                <span class="k">yield</span> <span class="n">smi</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_iter_ranges_and_smiles_batches</span><span class="p">(</span>
+    <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span>
+    <span class="n">num_per_batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]:</span>
+    <span class="n">start_idx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batched</span><span class="p">(</span><span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">),</span> <span class="n">num_per_batch</span><span class="p">):</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">end_idx</span> <span class="o">=</span> <span class="n">start_idx</span> <span class="o">+</span> <span class="n">size</span>
+        <span class="k">yield</span> <span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">),</span> <span class="n">batch</span>
+        <span class="n">start_idx</span> <span class="o">=</span> <span class="n">end_idx</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_iter_idxs_and_smiles_batches</span><span class="p">(</span>
+    <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span> <span class="n">num_per_batch</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]:</span>
+    <span class="k">yield from</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batched</span><span class="p">(</span><span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">),</span> <span class="n">num_per_batch</span><span class="p">))</span>
 </pre></div>
 
                 </article>
