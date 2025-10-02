@@ -26,7 +26,8 @@ The [documentation](https://mqcomplab.github.io/bblean/devdocs) of the developer
 
 ## Installation
 
-From source, editable mode, using a conda environment:
+BitBIRCH-Lean requires Python 3.11. To build from source, editable mode, using a conda
+environment:
 
 ```bash
 conda env create --file ./environment.yaml
