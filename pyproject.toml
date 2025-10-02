@@ -21,10 +21,12 @@ dependencies = [
     "psutil",
     "matplotlib",
     "colorcet",
-    "opentsne",
     "scikit-learn",
     "rich",
     "typer",
+    # visualization only
+    "opentsne",
+    "umap-learn",
 ]
 classifiers=[
   "Intended Audience :: Science/Research",
