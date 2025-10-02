@@ -24,9 +24,10 @@ dependencies = [
     "scikit-learn",
     "rich",
     "typer",
-    # visualization only
+    # Dimensionality reduction
     "opentsne",
     "umap-learn",
+    "pynndescent",  # makes umap faster
 ]
 classifiers=[
   "Intended Audience :: Science/Research",

@@ -27,6 +27,7 @@ dependencies:
   # Dimensionality reduction
   - opentsne
   - umap-learn
+  - pynndescent  # makes umap faster
 
   # Dev dependencies: linters / checkers / tests / CI / profilers
   - pre-commit  # Runs pre commit/push hooks
