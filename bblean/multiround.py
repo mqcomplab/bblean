@@ -432,8 +432,11 @@ def run_multiround_bitbirch(
 
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
+    # Remove intermediate files
     if cleanup:
         for f in out_dir.glob("round-*.npy"):
+            f.unlink()
+        for f in out_dir.glob("round-*.pkl"):
             f.unlink()
     console.print()
     timer.end_timing("total", console, indent=False)
