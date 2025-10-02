@@ -322,11 +322,11 @@ def run_multiround_bitbirch(
     split_largest_after_each_midsection_round: bool = False,
     midsection_merge_criterion: str = "tolerance",
     final_merge_criterion: str = "tolerance",
+    mp_context: tp.Any = None,
     # Debug
-    only_first_round: bool = False,
     max_fps: int | None = None,
     verbose: bool = False,
-    mp_context: tp.Any = None,
+    cleanup: bool = True,
 ) -> Timer:
     r"""Perform (possibly parallel) multi-round BitBirch clustering
 
@@ -390,10 +390,6 @@ def run_multiround_bitbirch(
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
 
-    if only_first_round:  # Early exit for debugging
-        timer.end_timing("total")
-        return timer
-
     # Mid-section "Tree-Merging" rounds of clustering
     for _ in range(num_midsection_rounds):
         round_idx += 1
@@ -436,7 +432,9 @@ def run_multiround_bitbirch(
 
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
-
+    if cleanup:
+        for f in out_dir.glob("round-*.npy"):
+            f.unlink()
     console.print()
     timer.end_timing("total", console, indent=False)
     return timer
