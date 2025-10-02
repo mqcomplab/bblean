@@ -1138,6 +1138,7 @@ def _split_fps(
 
     stem = input_.name.split(".")[0]
     with console.status("[italic]Splitting fingerprints...[/italic]", spinner="dots"):
+        i = -1
         for i, batch in enumerate(batched(fps, num_per_batch)):
             suffixes = input_.suffixes
             name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
@@ -1149,10 +1150,13 @@ def _split_fps(
             out_dir = out_dir.resolve()
 
             np.save(out_dir / name, batch)
-        else:
+
+        if i == -1:
             console.print("Warning: No fingerprints written", style="yellow")
             return
-    console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
+    console.print(
+        f"Finished. Outputs written to {str(tp.cast(Path, out_dir) / stem)}.<idx>.npy"
+    )
 
 
 @app.command("fps-shuffle", rich_help_panel="Fingerprints")
