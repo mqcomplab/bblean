@@ -1,6 +1,5 @@
 r"""Command line interface entrypoints"""
 
-import typing_extensions as tpx
 import typing as tp
 import math
 import shutil
@@ -115,6 +114,10 @@ def _tsne_plot(
         int,
         Option("--top"),
     ] = 20,
+    metric: Annotated[
+        str,
+        Option("--metric", help="Metric to use in the t-SNE source space"),
+    ] = "euclidean",
     dof: Annotated[
         float,
         Option("-d", "--dof", rich_help_panel="Advanced"),
@@ -232,6 +235,7 @@ def _tsne_plot(
             exaggeration=exaggeration,
             seed=seed,
             dof=dof,
+            metric=metric,
             workers=workers,
             scaling=scaling,
             do_pca_init=do_pca_init,
@@ -457,7 +461,7 @@ def _run(
             hidden=True,
         ),
     ] = "lean",
-    copy_inputs: tpx.Annotated[
+    copy_inputs: Annotated[
         bool,
         Option(
             "--copy/--no-copy",
@@ -745,7 +749,7 @@ def _multiround(
         int | None,
         Option(help="Max num. files to read", rich_help_panel="Debug", hidden=True),
     ] = None,
-    copy_inputs: tpx.Annotated[
+    copy_inputs: Annotated[
         bool,
         Option(
             "--copy/--no-copy",
