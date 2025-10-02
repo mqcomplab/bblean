@@ -2,7 +2,6 @@ r"""Misc. utility functions"""
 
 from pathlib import Path
 import itertools
-import numpy as np
 import typing as tp
 import sys
 import subprocess
@@ -10,6 +9,7 @@ import platform
 import importlib
 
 import psutil
+import numpy as np
 
 __all__ = ["batched", "min_safe_uint"]
 

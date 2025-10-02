@@ -8,6 +8,7 @@ import sys
 import pickle
 import uuid
 import multiprocessing as mp
+import multiprocessing.shared_memory as shmem
 from typing import Annotated
 from pathlib import Path
 
@@ -1004,7 +1005,9 @@ def _multiround(
         console.print("'fork' is only available on Linux", style="red")
         raise Abort()
     if sys.platform == "linux":
-        mp.set_start_method("fork" if fork else "forkserver")
+        mp_context = mp.get_context("fork" if fork else "forkserver")
+    else:
+        mp_context = mp.get_context()
 
     # Collect inputs:
     # If not passed, input dir is bb_inputs/
@@ -1058,6 +1061,7 @@ def _multiround(
         only_first_round=only_first_round,
         max_fps=max_fps,
         verbose=verbose,
+        mp_context=mp_context,
     )
     timer.dump(out_dir / "timings.json")
     # TODO: Also dump peak-rss.json
@@ -1129,7 +1133,7 @@ def _fps_from_smiles(
         int | None,
         Option(
             "-m",
-            "--max-fps",
+            "--max-fps-per-file",
             help="Max. number of fps per file. Mutually exclusive with --num-parts",
             show_default=False,
         ),
@@ -1159,38 +1163,34 @@ def _fps_from_smiles(
     num_ps: Annotated[
         int | None,
         Option(
+            "--ps",
             "--processes",
-            help="Num. processes for multprocess generation"
-            " (Currently only implemented when generating multiple files)",
+            help=(
+                "Num. processes for multprocess generation."
+                " One process per file is used for multi-file generation"
+            ),
         ),
     ] = None,
 ) -> None:
     r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
-    In order to use the memory efficient BitBIRCH u8 algorithm you should keep the
-    defaults: --dtype=uint8 and --pack
+    By default this function runs in parallel and uses all available CPUs. In order to
+    use the memory efficient BitBIRCH u8 algorithm you should keep the defaults:
+    --dtype=uint8 and --pack
     """
-    from rdkit import Chem
-    from rdkit.Chem import MolFromSmiles
+    import numpy as np
 
     from bblean._console import get_console
     from bblean.utils import _num_avail_cpus
-    from bblean.fingerprints import _FingerprintFileCreator
-    from bblean.smiles import iter_smiles_from_paths
+    from bblean.fingerprints import _FingerprintFileCreator, _FingerprintArrayFiller
+    from bblean.smiles import (
+        calc_num_smiles,
+        _iter_ranges_and_smiles_batches,
+        _iter_idxs_and_smiles_batches,
+    )
 
     # Force forkserver since rdkit may use threads, and fork is unsafe with threads
     mp_context = mp.get_context("forkserver" if sys.platform == "linux" else None)
-
-    def iter_mols_from_paths(
-        smiles_paths: tp.Iterable[Path], skip_bad_smiles: bool = False
-    ) -> tp.Iterator[Chem.Mol]:
-        for smi in iter_smiles_from_paths(smiles_paths):
-            mol = MolFromSmiles(smi)
-            if mol is None:
-                if not skip_bad_smiles:
-                    console.print(f"Could not parse smiles {smi}")
-                    raise Abort()
-            yield mol
 
     console = get_console(silent=not verbose)
 
@@ -1200,31 +1200,37 @@ def _fps_from_smiles(
         console.print("No *.smi files found", style="red")
         raise Abort()
 
-    # Pass 1: check the total number of smiles
-    smiles_num = 0
-    for smi_path in smiles_paths:
-        with open(smi_path, mode="rt", encoding="utf-8") as f:
-            for _ in f:
-                smiles_num += 1
+    smiles_num = calc_num_smiles(smiles_paths)
 
-    digits: int | None
-    if parts is not None and max_fps_per_file is None:
-        num_per_batch = math.ceil(smiles_num / parts)
-        digits = len(str(parts))
-    elif parts is None and max_fps_per_file is not None:
-        num_per_batch = max_fps_per_file
-        parts = math.ceil(smiles_num / max_fps_per_file)
-        digits = len(str(parts))
-    elif parts is None and max_fps_per_file is None:
-        parts = 1
-        num_per_batch = math.ceil(smiles_num / parts)
-        digits = None
-    else:
-        console.print(
-            "One and only one of '--max-fps' and '--num-parts' required", style="red"
+    def parse_num_per_batch(
+        smiles_num: int, parts: int | None, max_fps_per_file: int | None
+    ) -> tuple[int, int, int | None]:
+        digits: int | None
+        if parts is not None and max_fps_per_file is None:
+            num_per_batch = math.ceil(smiles_num / parts)
+            digits = len(str(parts))
+        elif parts is None and max_fps_per_file is not None:
+            num_per_batch = max_fps_per_file
+            parts = math.ceil(smiles_num / max_fps_per_file)
+            digits = len(str(parts))
+        elif parts is None and max_fps_per_file is None:
+            parts = 1
+            num_per_batch = math.ceil(smiles_num / parts)
+            digits = None
+        else:
+            raise ValueError("parts and max_fps_per_file are mutually exclusive")
+        return parts, num_per_batch, digits
+
+    try:
+        parts, num_per_batch, digits = parse_num_per_batch(
+            smiles_num, parts, max_fps_per_file
         )
-        raise Abort()
-
+    except ValueError:
+        console.print(
+            "'--max-fps-per-file' and '--num-parts' are mutually exclusive",
+            style="red",
+        )
+        raise Abort() from None
     if out_dir is None:
         out_dir = Path.cwd()
     out_dir.mkdir(exist_ok=True)
@@ -1240,40 +1246,73 @@ def _fps_from_smiles(
         if out_name.endswith(".npy"):
             out_name = out_name[:-4]
 
-    if parts > 1 and num_ps is None:
+    if num_ps is None:
         # Get the number of cores *available for use for this process*
         # bound by the number of parts to avoid spawning useless processes
-        num_ps = min(_num_avail_cpus(), parts)
+        if parts == 1:
+            num_ps = _num_avail_cpus()
+        else:
+            num_ps = min(_num_avail_cpus(), parts)
     create_fp_file = _FingerprintFileCreator(
         dtype, out_dir, out_name, digits, pack, kind, fp_size
     )
+    timer = Timer()
+    timer.init_timing("total")
     if parts > 1 and num_ps is not None and num_ps > 1:
-        # Multiprocessing version
-        # TODO: Currently only implemented for split files (parts > 1), it could be
-        # implemented for single-files using shmem
+        # Multiprocessing version, 1 process per file
         with console.status(
-            f"[italic]Generating fingerprints (parallel, {num_ps} procs.) ...[/italic]",
+            f"[italic]Generating fingerprints ({parts} files, parallel, {num_ps} procs.) ...[/italic]",  # noqa:E501
             spinner="dots",
         ):
-            idxs_batches = list(
-                enumerate(batched(iter_smiles_from_paths(smiles_paths), num_per_batch))
-            )
             with mp_context.Pool(processes=num_ps) as pool:
-                pool.map(create_fp_file, idxs_batches)
-    else:
-        # Serial version
-        with console.status(
-            "[italic]Generating fingerprints (serial) ...[/italic]", spinner="dots"
-        ):
-            for idx_batch in enumerate(
-                batched(iter_smiles_from_paths(smiles_paths), num_per_batch)
-            ):
-                create_fp_file(idx_batch)
-    if parts > 1:
+                pool.map(
+                    create_fp_file,
+                    _iter_idxs_and_smiles_batches(smiles_paths, num_per_batch),
+                )
+        timer.end_timing("total", console, indent=False)
         stem = out_name.split(".")[0]
         console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
-    else:
-        console.print(f"Finished. Outputs written to {str(out_dir / out_name)}.npy")
+        return
+
+    # Parallel or serial, single file version
+    msg = "parallel" if num_ps > 1 else "serial"
+    with console.status(
+        f"[italic]Generating fingerprints ({parts} files, {msg}, {num_ps} procs.) ...[/italic]",  # noqa:E501
+        spinner="dots",
+    ):
+        if pack:
+            out_dim = (fp_size + 7) // 8
+        else:
+            out_dim = fp_size
+        shmem_size = smiles_num * out_dim * np.dtype(dtype).itemsize
+        fps_shmem = shmem.SharedMemory(create=True, size=shmem_size)
+        fps_array_filler = _FingerprintArrayFiller(
+            shmem_name=fps_shmem.name,
+            kind=kind,
+            fp_size=fp_size,
+            num_smiles=smiles_num,
+            dtype=dtype,
+            pack=pack,
+        )
+        if num_ps > 1 and parts == 1:
+            # Split into batches anyways if we have a single batch but multiple
+            # processes
+            _, num_per_batch, _ = parse_num_per_batch(
+                smiles_num, num_ps, max_fps_per_file
+            )
+        with mp_context.Pool(processes=num_ps) as pool:
+            pool.starmap(
+                fps_array_filler,
+                _iter_ranges_and_smiles_batches(smiles_paths, num_per_batch),
+            )
+        np.save(
+            out_dir / out_name,
+            np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf),
+        )
+        # Cleanup
+        fps_shmem.unlink()
+    timer.end_timing("total", console, indent=False)
+    console.print(f"Finished. Outputs written to {str(out_dir / out_name)}.npy")
 
 
 @app.command("fps-split", rich_help_panel="Fingerprints")
