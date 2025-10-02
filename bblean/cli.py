@@ -714,14 +714,6 @@ def _multiround(
             hidden=True,
         ),
     ] = "lean",
-    only_first_round: Annotated[
-        bool,
-        Option(
-            help="Only do first round clustering and exit early",
-            rich_help_panel="Debug",
-            hidden=True,
-        ),
-    ] = False,
     monitor_rss: Annotated[
         bool,
         Option(
@@ -761,6 +753,10 @@ def _multiround(
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+    cleanup: Annotated[
+        bool,
+        Option("--cleanup/--no-cleanup", hidden=True),
     ] = True,
 ) -> None:
     r"""Run multi-round BitBIRCH clustering, optionally parallelize over `*.npy` files"""  # noqa:E501
@@ -828,10 +824,10 @@ def _multiround(
         num_midsection_rounds=num_midsection_rounds,
         split_largest_after_each_midsection_round=split_largest_after_midsection,
         # Debug
-        only_first_round=only_first_round,
         max_fps=max_fps,
         verbose=verbose,
         mp_context=mp_context,
+        cleanup=cleanup,
     )
     timer.dump(out_dir / "timings.json")
     # TODO: Also dump peak-rss.json
