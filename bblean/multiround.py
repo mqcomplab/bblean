@@ -51,9 +51,10 @@ import typing as tp
 import multiprocessing as mp
 from pathlib import Path
 
+from rich.console import Console
 import numpy as np
 from numpy.typing import NDArray
-from rich.console import Console
+
 
 from bblean._console import get_console
 from bblean._timer import Timer
@@ -67,7 +68,9 @@ __all__ = ["run_multiround_bitbirch"]
 
 # Save a list of numpy arrays into a single array in a streaming fashion, avoiding
 # stacking them in memory
-def _numpy_streaming_save(fp_list: list[NDArray[np.integer]], path: Path | str) -> None:
+def _numpy_streaming_save(
+    fp_list: list[NDArray[np.integer]] | NDArray[np.integer], path: Path | str
+) -> None:
     first_arr = np.ascontiguousarray(fp_list[0])
     header = np.lib.format.header_data_from_array_1_0(first_arr)
     header["shape"] = (len(fp_list), len(first_arr))
