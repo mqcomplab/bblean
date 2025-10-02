@@ -771,7 +771,9 @@ def _multiround(
         console.print("'fork' is only available on Linux", style="red")
         raise Abort()
     if sys.platform == "linux":
-        mp.set_start_method("fork" if fork else "forkserver")
+        mp_context = mp.get_context("fork" if fork else "forkserver")
+    else:
+        mp_context = mp.get_context()
 
     # Collect inputs:
     # If not passed, input dir is bb_inputs/
@@ -825,6 +827,7 @@ def _multiround(
         only_first_round=only_first_round,
         max_fps=max_fps,
         verbose=verbose,
+        mp_context=mp_context,
     )
     timer.dump(out_dir / "timings.json")
     # TODO: Also dump peak-rss.json

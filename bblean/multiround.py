@@ -45,6 +45,7 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 r"""Multi-round BitBirch workflow for clustering huge datasets in parallel"""
+import sys
 import math
 import pickle
 import typing as tp
@@ -325,6 +326,7 @@ def run_multiround_bitbirch(
     only_first_round: bool = False,
     max_fps: int | None = None,
     verbose: bool = False,
+    mp_context: tp.Any = None,
 ) -> Timer:
     r"""Perform (possibly parallel) multi-round BitBirch clustering
 
@@ -333,6 +335,8 @@ def run_multiround_bitbirch(
         The functionality provided by this function is stable, but its API
         (the arguments it takes and its return values) may change in the future.
     """
+    if mp_context is None:
+        mp_context = mp.get_context("forkserver" if sys.platform == "linux" else None)
     # Returns timing and for the different rounds
     # TODO: Also return peak-rss
     console = get_console(silent=not verbose)
@@ -378,7 +382,7 @@ def run_multiround_bitbirch(
             for tup in files_range_tuples:
                 initial_fn(tup)
         else:
-            with mp.Pool(
+            with mp_context.Pool(
                 processes=num_ps, maxtasksperchild=max_tasks_per_process
             ) as pool:
                 pool.map(initial_fn, files_range_tuples)
@@ -412,7 +416,7 @@ def run_multiround_bitbirch(
                 for batch_info in batches:
                     merging_fn(batch_info)
             else:
-                with mp.Pool(
+                with mp_context.Pool(
                     processes=num_ps, maxtasksperchild=max_tasks_per_process
                 ) as pool:
                     pool.map(merging_fn, batches)
