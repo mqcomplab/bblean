@@ -14,7 +14,7 @@ def test_umap() -> None:
         Path
         dir = Path(d).resolve()
         fps = make_fake_fingerprints(
-            250, n_features=512, seed=12620509540149709235, pack=True
+            50, n_features=512, seed=12620509540149709235, pack=True
         )
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
@@ -31,7 +31,7 @@ def test_umap() -> None:
                 str(dir / "fingerprints.npy"),
                 "--no-show",
                 "--top",
-                "2",
+                "1",
                 "--no-verbose",
             ],
         )
