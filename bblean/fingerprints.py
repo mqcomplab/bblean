@@ -6,6 +6,7 @@ from pathlib import Path
 from numpy.typing import NDArray, DTypeLike
 import numpy as np
 import typing as tp
+import multiprocessing.shared_memory as shmem
 
 from rich.console import Console
 from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles
@@ -307,3 +308,34 @@ class _FingerprintFileCreator:
         if self.digits is not None:
             out_name = f"{out_name}.{str(file_idx).zfill(self.digits)}"
         np.save(self.out_dir / out_name, fps)
+
+
+@dataclasses.dataclass
+class _FingerprintArrayFiller:
+    shmem_name: str
+    kind: str
+    fp_size: int
+    pack: bool
+    dtype: str
+    num_smiles: int
+
+    def __call__(self, idx_range: tuple[int, int], batch: tp.Sequence[str]) -> None:
+        fpg = _get_generator(self.kind, self.fp_size)
+        (idx0, idx1) = idx_range
+        fps_shmem = shmem.SharedMemory(name=self.shmem_name)
+        if self.pack:
+            out_dim = (self.fp_size + 7) // 8
+        else:
+            out_dim = self.fp_size
+        fps = np.ndarray(
+            (self.num_smiles, out_dim), dtype=self.dtype, buffer=fps_shmem.buf
+        )
+        for i, smi in zip(range(idx0, idx1), batch):
+            mol = MolFromSmiles(smi)
+            if mol is None:
+                raise ValueError(f"Could not parse smile {smi}")
+            fp = fpg.GetFingerprintAsNumPy(mol)
+            if self.pack:
+                fp = pack_fingerprints(fp)
+            fps[i, :] = fp
+        fps_shmem.close()
