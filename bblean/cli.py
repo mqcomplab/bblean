@@ -74,8 +74,238 @@ def _main(
     pass
 
 
+@app.command("plot-umap", rich_help_panel="Analysis")
+def _plot_umap(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    top: Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    scaling: Annotated[
+        str,
+        Option("--scaling", rich_help_panel="Advanced"),
+    ] = "normalize",
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
+    deterministic: Annotated[
+        bool,
+        Option("--deterministic/--no-deterministic"),
+    ] = False,
+    neighbors: Annotated[
+        int,
+        Option("-n", "--neighbors"),
+    ] = 15,
+    min_dist: Annotated[
+        float,
+        Option("-d", "--min-dist"),
+    ] = 0.1,
+    metric: Annotated[
+        str,
+        Option("--metric"),
+    ] = "euclidean",
+    densmap: Annotated[
+        bool,
+        Option("--densmap/--no-densmap"),
+    ] = False,
+    workers: Annotated[
+        int | None,
+        Option(
+            "-w",
+            "--workers",
+            help="Num. cores to use for parallel processing",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+) -> None:
+    r"""UMAP visualization of the clustering results"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        import matplotlib.pyplot as plt
+
+        from bblean.analysis import cluster_analysis
+        from bblean.plotting import umap_plot
+
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        with open(clusters_path, mode="rb") as f:
+            clusters = pickle.load(f)
+        if fps_path is None:
+            input_fps_path = clusters_path.parent / "input-fps"
+            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+                fps_path = input_fps_path
+            else:
+                console.print(
+                    "Could not find input fingerprints. Please use --fps-path",
+                    style="red",
+                )
+                raise Abort()
+        if fps_path.is_dir():
+            fps_paths = sorted(fps_path.glob("*.npy"))
+        else:
+            fps_paths = [fps_path]
+        ca = cluster_analysis(
+            clusters,
+            fps_paths,
+            smiles=(),
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+        )
+        umap_plot(
+            ca,
+            title,
+            metric=metric,
+            densmap=densmap,
+            deterministic=deterministic,
+            n_neighbors=neighbors,
+            workers=workers,
+            min_dist=min_dist,
+        )
+    if show:
+        plt.show()
+
+
+@app.command("plot-pca", rich_help_panel="Analysis")
+def _plot_pca(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    top: Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    scaling: Annotated[
+        str,
+        Option("--scaling", rich_help_panel="Advanced"),
+    ] = "normalize",
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
+    whiten: Annotated[
+        bool,
+        Option("--whiten/--no-whiten"),
+    ] = False,
+) -> None:
+    r"""PCA visualization of the clustering results"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        import matplotlib.pyplot as plt
+
+        from bblean.analysis import cluster_analysis
+        from bblean.plotting import pca_plot
+
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        with open(clusters_path, mode="rb") as f:
+            clusters = pickle.load(f)
+        if fps_path is None:
+            input_fps_path = clusters_path.parent / "input-fps"
+            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+                fps_path = input_fps_path
+            else:
+                console.print(
+                    "Could not find input fingerprints. Please use --fps-path",
+                    style="red",
+                )
+                raise Abort()
+        if fps_path.is_dir():
+            fps_paths = sorted(fps_path.glob("*.npy"))
+        else:
+            fps_paths = [fps_path]
+        ca = cluster_analysis(
+            clusters,
+            fps_paths,
+            smiles=(),
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+        )
+        pca_plot(
+            ca,
+            title,
+            whiten=whiten,
+        )
+    if show:
+        plt.show()
+
+
 @app.command("plot-tsne", rich_help_panel="Analysis")
-def _tsne_plot(
+def _plot_tsne(
     clusters_path: Annotated[
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
@@ -247,7 +477,7 @@ def _tsne_plot(
 
 
 @app.command("plot-summary", rich_help_panel="Analysis")
-def _summary_plot(
+def _plot_summary(
     clusters_path: Annotated[
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
