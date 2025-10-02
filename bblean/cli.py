@@ -1010,7 +1010,7 @@ def _fps_from_smiles(
     if out_name is None:
         unique_id = str(uuid.uuid4()).split("-")[0]
         # Save the fingerprints as a NumPy array
-        out_name = f"{'packed-' if pack else ''}fps-{dtype}-{unique_id}"
+        out_name = f"{'packed-' if pack else ''}fps-{dtype}-{kind}-{unique_id}"
     else:
         # Strip suffix
         if out_name.endswith(".npy"):
@@ -1140,16 +1140,22 @@ def _split_fps(
         )
         raise Abort()
 
-    if out_dir is None:
-        out_dir = Path.cwd()
-    out_dir.mkdir(exist_ok=True)
-    out_dir = out_dir.resolve()
     stem = input_.name.split(".")[0]
     with console.status("[italic]Splitting fingerprints...[/italic]", spinner="dots"):
         for i, batch in enumerate(batched(fps, num_per_batch)):
             suffixes = input_.suffixes
             name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
+
+            # Generate out dir when first fp file is being saved
+            if out_dir is None:
+                out_dir = Path.cwd() / stem
+            out_dir.mkdir(exist_ok=True)
+            out_dir = out_dir.resolve()
+
             np.save(out_dir / name, batch)
+        else:
+            console.print("Warning: No fingerprints written", style="yellow")
+            return
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
 
 
