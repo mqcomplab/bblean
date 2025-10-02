@@ -142,6 +142,7 @@ def tsne_plot(
     do_pca_init: bool = True,
     multiscale: bool = False,
     pca_reduce: int | None = None,
+    metric: str = "euclidean",
     dof: float = 1.0,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Create a t-SNE plot from a cluster analysis"""
