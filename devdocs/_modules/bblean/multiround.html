@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=2b9ab57e"></script>
+    <script src="../../_static/documentation_options.js?v=e56f9957"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -684,11 +684,11 @@
     <span class="n">split_largest_after_each_midsection_round</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">midsection_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;tolerance&quot;</span><span class="p">,</span>
     <span class="n">final_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;tolerance&quot;</span><span class="p">,</span>
+    <span class="n">mp_context</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="c1"># Debug</span>
-    <span class="n">only_first_round</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">mp_context</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cleanup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Timer</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Perform (possibly parallel) multi-round BitBirch clustering</span>
 
@@ -752,10 +752,6 @@
     <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">num_ps</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">only_first_round</span><span class="p">:</span>  <span class="c1"># Early exit for debugging</span>
-        <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">timer</span>
-
     <span class="c1"># Mid-section &quot;Tree-Merging&quot; rounds of clustering</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_midsection_rounds</span><span class="p">):</span>
         <span class="n">round_idx</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -798,7 +794,9 @@
 
     <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">num_ps</span><span class="p">)</span>
-
+    <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;round-*.npy&quot;</span><span class="p">):</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
     <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">timer</span></div>
