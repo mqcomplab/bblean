@@ -31,9 +31,7 @@ def test_umap() -> None:
                 str(dir / "fingerprints.npy"),
                 "--no-show",
                 "--top",
-                "5",
-                "--workers",
-                "1",
+                "2",
                 "--no-verbose",
             ],
         )
