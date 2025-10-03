@@ -69,7 +69,7 @@ This quick start guide follows the ``zram`` article on the ArchLinux wiki. See t
 
     A higher numeric value for priority (PRIO) means that Linux will use the ``zram0`` swap before the ``swapfile``.  
 
-#. Step 6:Disabling ``zram``
+#. Step 6: Disabling ``zram``
     If you need to disable ``zram``, you can stop the service and disable it:
 
     .. code-block:: bash
