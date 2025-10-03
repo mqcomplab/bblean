@@ -11,7 +11,7 @@
 Installing
 ==========
 
-From source, editable mode, using a conda environment:
+BitBIRCH-Lean requires Python 3.11 or newer. To install from source in editable mode using a conda environment:
 
 .. code-block:: bash
 
