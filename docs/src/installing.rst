@@ -2,10 +2,16 @@
 
 .. currentmodule:: bblean
 
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   linux_memory_setup
+
 Installing
 ==========
 
-From source, editable mode, using a conda environment:
+BitBIRCH-Lean requires Python 3.11 or newer. To install from source in editable mode using a conda environment:
 
 .. code-block:: bash
 
@@ -30,3 +36,7 @@ BitBIRCH-Lean or its classes are used. No need to do anything else.
 If you run into any issues when installing the extensions, please open a GitHub issue in
 the `issue Tracker <https://github.com/mqcomplab/bblean/issues>`_ and tag it with the
 ``C++`` label.
+
+Setting up memory management for Linux
+==================================
+Memory compression is not enabled by default on Linux. If you are running a system with limited RAM, enabling memory compression can help improve performance by compressing memory pages. See :ref:`linux-memory-setup` for instructions on how to enable memory compression.
