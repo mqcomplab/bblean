@@ -21,10 +21,13 @@ dependencies = [
     "psutil",
     "matplotlib",
     "colorcet",
-    "opentsne",
     "scikit-learn",
     "rich",
     "typer",
+    # Dimensionality reduction
+    "opentsne",
+    "umap-learn",
+    "pynndescent",  # makes umap faster
 ]
 classifiers=[
   "Intended Audience :: Science/Research",
