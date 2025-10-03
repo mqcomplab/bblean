@@ -94,7 +94,7 @@ To enable zswap, run:
 
     echo 1 | sudo tee /sys/module/zswap/parameters/enabled
 
-Changing ``zswap`` parameters is similart to enabling ``zswap`` For example, you can change the algorithm by:
+Changing ``zswap`` parameters is similar to enabling ``zswap`` For example, you can change the algorithm by:
 
 .. code-block:: bash
 
