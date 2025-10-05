@@ -1,11 +1,12 @@
-# BitBIRCH-Lean
+
 <div style="text-align: center;">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-dark-bw.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.png">
-  <img alt="BitBIRCH-Lean logo" src="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-dark-bw.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.svg">
+  <img alt="BitBIRCH-Lean logo" src="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.svg">
 </picture>
 </div>
+<br>
 
 [![DOI](https://zenodo.org/badge/1051268662.svg)](https://doi.org/10.5281/zenodo.17139445)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
