@@ -1,9 +1,9 @@
 # BitBIRCH-Lean
 <div style="text-align: center;">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/logo-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/logo-light.png">
-  <img alt="BitBIRCH-Lean logo" src="https://raw.githubusercontent.com/mqcomplab/bblean/main/logo-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-dark-bw.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.png">
+  <img alt="BitBIRCH-Lean logo" src="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.png">
 </picture>
 </div>
 
