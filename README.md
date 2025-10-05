@@ -1,11 +1,9 @@
-
-<div style="text-align: center;">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-dark-bw.svg">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.svg">
   <img alt="BitBIRCH-Lean logo" src="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.svg">
 </picture>
-</div>
+<br>
 <br>
 
 [![DOI](https://zenodo.org/badge/1051268662.svg)](https://doi.org/10.5281/zenodo.17139445)
