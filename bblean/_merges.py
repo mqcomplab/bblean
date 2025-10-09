@@ -6,7 +6,14 @@ import numpy as np
 from bblean.fingerprints import centroid_from_sum
 from bblean.similarity import jt_isim_from_sum
 
-BUILTIN_MERGES = ["radius", "diameter", "tolerance", "tolerance_tough"]
+BUILTIN_MERGES = [
+    "radius",
+    "diameter",
+    "tolerance",
+    "tolerance_tough",
+    "tolerance_diameter_adapt",
+    "tolerance_diameter",
+]
 
 
 class MergeAcceptFunction:
@@ -69,8 +76,51 @@ class DiameterMerge(MergeAcceptFunction):
         return jt_isim_from_sum(new_ls, new_n) >= threshold
 
 
-class ToleranceStrictMerge(MergeAcceptFunction):
-    name = "tolerance_strict"
+class ToleranceDiameterAdaptiveMerge(MergeAcceptFunction):
+    name = "tolerance-diameter-adapt"
+    # NOTE: The reliability of the estimate of the cluster should be a function of the
+    # size of the old cluster, so in this metric, tolerance is larger for small clusters
+
+    def __init__(
+        self, tolerance: float = 0.05, n_max: int = 10_000, decay: float = 1e-3
+    ) -> None:
+        self.tolerance = tolerance
+        self.decay = decay
+        self.offset = np.exp(-decay * n_max)
+        # tolerance = min{ alpha (offset - exp(-decay * N_old)), 0}
+        # offset = exp(-decay * n_max)
+
+    def __call__(
+        self,
+        threshold: float,
+        new_ls: NDArray[np.integer],
+        new_n: int,
+        old_ls: NDArray[np.integer],
+        nom_ls: NDArray[np.integer],
+        old_n: int,
+        nom_n: int,
+    ) -> bool:
+        # First two branches are equivalent to 'diameter'
+        new_d = jt_isim_from_sum(new_ls, new_n)
+        if new_d < threshold:
+            return False
+
+        # If the old n is 1 then merge directly (infinmin{ ite tolerance), since the
+        # old_d is undefined for a single fp
+        if old_n == 1:
+            return True
+        # Only merge if the new_d is greater or equal to the old, up to some tolerance,
+        # which decays with N
+        old_d = jt_isim_from_sum(old_ls, old_n)
+        tol = min(self.tolerance * (self.offset - np.exp(self.decay * old_n)), 0.0)
+        return new_d >= old_d - tol
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tolerance})"
+
+
+class ToleranceDiameterMerge(MergeAcceptFunction):
+    name = "tolerance-diameter"
 
     def __init__(self, tolerance: float = 0.05) -> None:
         self.tolerance = tolerance
@@ -89,6 +139,14 @@ class ToleranceStrictMerge(MergeAcceptFunction):
         new_d = jt_isim_from_sum(new_ls, new_n)
         if new_d < threshold:
             return False
+
+        # If the old n is 1 then just merge, since the old_d is undefined for a single
+        # fp
+        # TODO: The reliability of the estimate of the cluster should be a function
+        # of the size of the old cluster, so for small clusters the tolerance should
+        # be larger
+        if old_n == 1:
+            return True
         # Only merge if the new_d is greater or equal to the old, up to some tolerance
         old_d = jt_isim_from_sum(old_ls, old_n)
         return new_d >= old_d - self.tolerance
@@ -180,8 +238,10 @@ def get_merge_accept_fn(
         return DiameterMerge()
     elif merge_criterion == "tolerance":
         return ToleranceMerge(tolerance)
-    elif merge_criterion == "tolerance_strict":
-        return ToleranceStrictMerge(tolerance)
+    elif merge_criterion in ["tolerance-adapt", "tolerance-diameter-adapt"]:
+        return ToleranceDiameterAdaptiveMerge(tolerance)
+    elif merge_criterion == "tolerance-diameter":
+        return ToleranceDiameterMerge(tolerance)
     elif merge_criterion == "tolerance_tough":
         return ToleranceToughMerge(tolerance)
     raise ValueError(

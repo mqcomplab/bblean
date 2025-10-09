@@ -396,6 +396,10 @@ def _run(
         str,
         Option("--set-merge", "-m", help="Merge criterion for initial clustsering"),
     ] = "diameter",
+    refine_merge_criterion: Annotated[
+        str,
+        Option("--set-refine-merge", help="Merge criterion for refinement clustsering"),
+    ] = "tolerance",
     tolerance: Annotated[
         float,
         Option(help="BitBIRCH tolerance. For refinement and --set-merge 'tolerance'"),
@@ -547,7 +551,7 @@ def _run(
             )
 
         if refine_num > 0:
-            tree.set_merge("tolerance", tolerance=tolerance)
+            tree.set_merge(refine_merge_criterion, tolerance=tolerance)
             tree.refine_inplace(
                 file, input_is_packed=input_is_packed, n_largest=refine_num
             )
@@ -635,6 +639,13 @@ def _multiround(
             help="Initial merge criterion for round 1. ('diameter' recommended)",
         ),
     ] = DEFAULTS.merge_criterion,
+    mid_merge_criterion: Annotated[
+        str,
+        Option(
+            "--set-mid-merge",
+            help="Merge criterion for midsection rounds ('diameter' recommended)",
+        ),
+    ] = "tolerance",
     tolerance: Annotated[
         float,
         Option(
@@ -812,6 +823,7 @@ def _multiround(
         input_is_packed=input_is_packed,
         out_dir=out_dir,
         initial_merge_criterion=initial_merge_criterion,
+        midsection_merge_criterion=mid_merge_criterion,
         num_initial_processes=num_initial_processes,
         num_midsection_processes=num_midsection_processes,
         branching_factor=branching_factor,

@@ -321,7 +321,7 @@ def run_multiround_bitbirch(
     full_refinement_before_midsection: bool = True,
     split_largest_after_each_midsection_round: bool = False,
     midsection_merge_criterion: str = "tolerance",
-    final_merge_criterion: str = "tolerance",
+    final_merge_criterion: str | None = None,
     mp_context: tp.Any = None,
     # Debug
     max_fps: int | None = None,
@@ -335,6 +335,8 @@ def run_multiround_bitbirch(
         The functionality provided by this function is stable, but its API
         (the arguments it takes and its return values) may change in the future.
     """
+    if final_merge_criterion is None:
+        final_merge_criterion = midsection_merge_criterion
     if mp_context is None:
         mp_context = mp.get_context("forkserver" if sys.platform == "linux" else None)
     # Returns timing and for the different rounds
