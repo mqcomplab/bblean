@@ -69,6 +69,34 @@ class DiameterMerge(MergeAcceptFunction):
         return jt_isim_from_sum(new_ls, new_n) >= threshold
 
 
+class ToleranceStrictMerge(MergeAcceptFunction):
+    name = "tolerance_strict"
+
+    def __init__(self, tolerance: float = 0.05) -> None:
+        self.tolerance = tolerance
+
+    def __call__(
+        self,
+        threshold: float,
+        new_ls: NDArray[np.integer],
+        new_n: int,
+        old_ls: NDArray[np.integer],
+        nom_ls: NDArray[np.integer],
+        old_n: int,
+        nom_n: int,
+    ) -> bool:
+        # First two branches are equivalent to 'diameter'
+        new_d = jt_isim_from_sum(new_ls, new_n)
+        if new_d < threshold:
+            return False
+        # Only merge if the new_d is greater or equal to the old, up to some tolerance
+        old_d = jt_isim_from_sum(old_ls, old_n)
+        return new_d >= old_d - self.tolerance
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tolerance})"
+
+
 class ToleranceMerge(MergeAcceptFunction):
     name = "tolerance"
 
@@ -152,6 +180,8 @@ def get_merge_accept_fn(
         return DiameterMerge()
     elif merge_criterion == "tolerance":
         return ToleranceMerge(tolerance)
+    elif merge_criterion == "tolerance_strict":
+        return ToleranceStrictMerge(tolerance)
     elif merge_criterion == "tolerance_tough":
         return ToleranceToughMerge(tolerance)
     raise ValueError(
