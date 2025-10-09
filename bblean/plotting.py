@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler, normalize as normalize_feature
 from sklearn.decomposition import PCA
 from openTSNE.sklearn import TSNE
 from openTSNE.affinity import Multiscale
+import umap
 
 from bblean.utils import batched, _num_avail_cpus
 from bblean.analysis import ClusterAnalysis
@@ -128,6 +129,121 @@ def summary_plot(
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
     return fig, (ax, ax_isim)
+
+
+def umap_plot(
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+    scaling: str = "normalize",
+    n_neighbors: int = 15,
+    min_dist: float = 0.1,
+    metric: str = "euclidean",
+    densmap: bool = False,
+    workers: int | None = None,
+    deterministic: bool = False,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Create a UMAP plot from a cluster analysis"""
+    df = c.df
+    color_labels: list[int] = []
+    for num, label in zip(df["mol_num"], df["label"]):
+        color_labels.extend([label - 1] * num)  # color labels start with 0
+    num_clusters = c.num_clusters
+    if workers is None:
+        workers = _num_avail_cpus()
+
+    # I don't think these should be transformed, like this, only normalized
+    if scaling == "normalize":
+        fps_scaled = normalize_features(c.unpacked_fps)
+    elif scaling == "std":
+        scaler = StandardScaler()
+        fps_scaled = scaler.fit_transform(c.unpacked_fps)
+    elif scaling == "none":
+        fps_scaled = c.unpacked_fps
+    else:
+        raise ValueError(f"Unknown scaling {scaling}")
+    fps_umap = umap.UMAP(
+        densmap=densmap,
+        random_state=42 if deterministic else None,
+        n_components=2,
+        n_jobs=workers,
+        n_neighbors=n_neighbors,
+        min_dist=min_dist,
+        metric=metric,
+    ).fit_transform(fps_scaled)
+    fig, ax = plt.subplots(dpi=250, figsize=(4, 3.5))
+    scatter = ax.scatter(
+        fps_umap[:, 0],
+        fps_umap[:, 1],
+        c=color_labels,
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_clusters]),
+        edgecolors="none",
+        alpha=0.5,
+        s=2,
+    )
+    # t-SNE plots *must be square*
+    ax.set_aspect("equal", adjustable="box")
+    cbar = plt.colorbar(scatter, label="Cluster label")
+    cbar.set_ticks(list(range(num_clusters)))
+    cbar.set_ticklabels(list(map(str, range(1, num_clusters + 1))))
+    ax.set_xlabel("UMAP component 1")
+    ax.set_ylabel("UMAP component 2")
+    msg = f"UMAP of top {num_clusters} largest clusters"
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
+
+
+def pca_plot(
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+    scaling: str = "normalize",
+    whiten: bool = False,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Create a t-SNE plot from a cluster analysis"""
+    df = c.df
+    color_labels: list[int] = []
+    for num, label in zip(df["mol_num"], df["label"]):
+        color_labels.extend([label - 1] * num)  # color labels start with 0
+    num_clusters = c.num_clusters
+
+    # I don't think these should be transformed, like this, only normalized
+    if scaling == "normalize":
+        fps_scaled = normalize_features(c.unpacked_fps)
+    elif scaling == "std":
+        scaler = StandardScaler()
+        fps_scaled = scaler.fit_transform(c.unpacked_fps)
+    elif scaling == "none":
+        fps_scaled = c.unpacked_fps
+    else:
+        raise ValueError(f"Unknown scaling {scaling}")
+    fps_pca = PCA(n_components=2, whiten=whiten, random_state=1234).fit_transform(
+        fps_scaled
+    )
+    fig, ax = plt.subplots(dpi=250, figsize=(4, 3.5))
+    scatter = ax.scatter(
+        fps_pca[:, 0],
+        fps_pca[:, 1],
+        c=color_labels,
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_clusters]),
+        edgecolors="none",
+        alpha=0.5,
+        s=2,
+    )
+    # t-SNE plots *must be square*
+    ax.set_aspect("equal", adjustable="box")
+    cbar = plt.colorbar(scatter, label="Cluster label")
+    cbar.set_ticks(list(range(num_clusters)))
+    cbar.set_ticklabels(list(map(str, range(1, num_clusters + 1))))
+    ax.set_xlabel("PCA component 1")
+    ax.set_ylabel("PCA component 2")
+    msg = f"PCA of top {num_clusters} largest clusters"
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
 
 
 def tsne_plot(
