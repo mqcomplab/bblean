@@ -1,12 +1,12 @@
 r"""Command line interface entrypoints"""
 
+import random
 import typing as tp
 import math
 import shutil
 import json
 import sys
 import pickle
-import uuid
 import multiprocessing as mp
 import multiprocessing.shared_memory as shmem
 from typing import Annotated
@@ -243,6 +243,8 @@ def _tsne_plot(
             multiscale=multiscale,
             pca_reduce=pca_reduce,
         )
+    unique_id = format(random.getrandbits(32), "08x")
+    plt.savefig(Path.cwd() / f"./tsne-{unique_id}.pdf")
     if show:
         plt.show()
 
@@ -253,6 +255,14 @@ def _summary_plot(
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
     ],
+    out_dir: Annotated[
+        Path | None,
+        Option(
+            "-o",
+            "--out-dir",
+            show_default=False,
+        ),
+    ] = None,
     fps_path: Annotated[
         Path | None,
         Option(
@@ -308,6 +318,10 @@ def _summary_plot(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    name: Annotated[
+        str | None,
+        Option("-n", "--name", help="Name of output plot"),
+    ] = None,
     show: Annotated[
         bool,
         Option("--show/--no-show", hidden=True),
@@ -326,7 +340,10 @@ def _summary_plot(
         from bblean.plotting import summary_plot
 
         if clusters_path.is_dir():
+            clusters_dir = clusters_path
             clusters_path = clusters_path / "clusters.pkl"
+        else:
+            clusters_dir = clusters_path.parent
         with open(clusters_path, mode="rb") as f:
             clusters = pickle.load(f)
         if fps_path is None:
@@ -359,6 +376,10 @@ def _summary_plot(
             scaffold_fp_kind=scaffold_fp_kind,
         )
         summary_plot(ca, title, annotate=annotate)
+    if out_dir is None:
+        out_dir = clusters_dir
+    unique_id = format(random.getrandbits(32), "08x")
+    plt.savefig(out_dir / f"summary-{unique_id}.pdf")
     if show:
         plt.show()
 
@@ -392,14 +413,18 @@ def _run(
         float,
         Option("--threshold", "-t", help="Threshold for merge criterion"),
     ] = DEFAULTS.threshold,
+    refine_threshold_increase: Annotated[
+        float,
+        Option("--refine-threshold", help="Threshold for refinement criterion"),
+    ] = DEFAULTS.refine_threshold_increase,
     merge_criterion: Annotated[
         str,
         Option("--set-merge", "-m", help="Merge criterion for initial clustsering"),
-    ] = "diameter",
+    ] = DEFAULTS.merge_criterion,
     refine_merge_criterion: Annotated[
         str,
         Option("--set-refine-merge", help="Merge criterion for refinement clustsering"),
-    ] = "tolerance",
+    ] = DEFAULTS.refine_merge_criterion,
     tolerance: Annotated[
         float,
         Option(help="BitBIRCH tolerance. For refinement and --set-merge 'tolerance'"),
@@ -510,7 +535,7 @@ def _run(
         ]
     else:
         ctx.params["num_fps_loaded"] = ctx.params["num_fps_present"]
-    unique_id = str(uuid.uuid4()).split("-")[0]
+    unique_id = format(random.getrandbits(32), "08x")
     if out_dir is None:
         out_dir = Path.cwd() / "bb_run_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
@@ -551,7 +576,11 @@ def _run(
             )
 
         if refine_num > 0:
-            tree.set_merge(refine_merge_criterion, tolerance=tolerance)
+            tree.set_merge(
+                refine_merge_criterion,
+                tolerance=tolerance,
+                threshold=threshold + refine_threshold_increase,
+            )
             tree.refine_inplace(
                 file, input_is_packed=input_is_packed, n_largest=refine_num
             )
@@ -629,8 +658,12 @@ def _multiround(
     ] = DEFAULTS.branching_factor,
     threshold: Annotated[
         float,
-        Option("--threshold", "-t", help="Threshold for merge criterions (all stetps)"),
+        Option("--threshold", "-t", help="Thresh for merge criterion (initial step)"),
     ] = DEFAULTS.threshold,
+    mid_threshold_increase: Annotated[
+        float,
+        Option("--mid-threshold-increase", help="Increase in threshold for refinement"),
+    ] = DEFAULTS.refine_threshold_increase,
     initial_merge_criterion: Annotated[
         str,
         Option(
@@ -645,7 +678,7 @@ def _multiround(
             "--set-mid-merge",
             help="Merge criterion for midsection rounds ('diameter' recommended)",
         ),
-    ] = "tolerance",
+    ] = DEFAULTS.refine_merge_criterion,
     tolerance: Annotated[
         float,
         Option(
@@ -802,7 +835,7 @@ def _multiround(
 
     # Set up outputs:
     # If not passed, output dir is constructed as bb_multiround_outputs/<unique-id>/
-    unique_id = str(uuid.uuid4()).split("-")[0]
+    unique_id = format(random.getrandbits(32), "08x")
     if out_dir is None:
         out_dir = Path.cwd() / "bb_multiround_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
@@ -828,6 +861,7 @@ def _multiround(
         num_midsection_processes=num_midsection_processes,
         branching_factor=branching_factor,
         threshold=threshold,
+        midsection_threshold_increase=mid_threshold_increase,
         tolerance=tolerance,
         # Advanced
         bin_size=bin_size,
@@ -1016,7 +1050,7 @@ def _fps_from_smiles(
 
     # Pass 2: build the molecules
     if out_name is None:
-        unique_id = str(uuid.uuid4()).split("-")[0]
+        unique_id = format(random.getrandbits(32), "08x")
         # Save the fingerprints as a NumPy array
         out_name = f"{'packed-' if pack else ''}fps-{dtype}-{kind}-{unique_id}"
     else:

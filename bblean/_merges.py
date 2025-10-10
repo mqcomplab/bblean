@@ -87,7 +87,7 @@ class ToleranceDiameterAdaptiveMerge(MergeAcceptFunction):
         self.tolerance = tolerance
         self.decay = decay
         self.offset = np.exp(-decay * n_max)
-        # tolerance = min{ alpha (offset - exp(-decay * N_old)), 0}
+        # tolerance = max{ alpha (offset - exp(-decay * N_old)), 0}
         # offset = exp(-decay * n_max)
 
     def __call__(
@@ -112,7 +112,7 @@ class ToleranceDiameterAdaptiveMerge(MergeAcceptFunction):
         # Only merge if the new_d is greater or equal to the old, up to some tolerance,
         # which decays with N
         old_d = jt_isim_from_sum(old_ls, old_n)
-        tol = min(self.tolerance * (self.offset - np.exp(self.decay * old_n)), 0.0)
+        tol = max(self.tolerance * (np.exp(-self.decay * old_n) - self.offset), 0.0)
         return new_d >= old_d - tol
 
     def __repr__(self) -> str:
