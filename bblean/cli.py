@@ -983,6 +983,25 @@ def _fps_from_smiles(
             ),
         ),
     ] = None,
+    sanitize: Annotated[
+        str,
+        Option(
+            "--sanitize",
+            help="RDKit sanitization operations to perform ('all' or 'minimal')",
+        ),
+    ] = "all",
+    skip_invalid: Annotated[
+        bool,
+        Option(
+            "--skip-invalid/--no-skip-invalid",
+            help=(
+                "Skip invalid smiles."
+                " If False, an error is raised on invalid smiles. If True they are"
+                " silently skipped (this is be more memory intensive, especially for"
+                " parallel processing)"
+            ),
+        ),
+    ] = False,
 ) -> None:
     r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
@@ -1066,7 +1085,16 @@ def _fps_from_smiles(
         else:
             num_ps = min(_num_avail_cpus(), parts)
     create_fp_file = _FingerprintFileCreator(
-        dtype, out_dir, out_name, digits, pack, kind, fp_size
+        dtype,
+        out_dir,
+        out_name,
+        digits,
+        pack,
+        kind,
+        fp_size,
+        sanitize=sanitize,
+        skip_invalid=skip_invalid,
+        verbose=verbose,
     )
     timer = Timer()
     timer.init_timing("total")
@@ -1098,13 +1126,17 @@ def _fps_from_smiles(
             out_dim = fp_size
         shmem_size = smiles_num * out_dim * np.dtype(dtype).itemsize
         fps_shmem = shmem.SharedMemory(create=True, size=shmem_size)
+        invalid_mask_shmem = shmem.SharedMemory(create=True, size=smiles_num)
         fps_array_filler = _FingerprintArrayFiller(
             shmem_name=fps_shmem.name,
+            invalid_mask_shmem_name=invalid_mask_shmem.name,
             kind=kind,
             fp_size=fp_size,
             num_smiles=smiles_num,
             dtype=dtype,
             pack=pack,
+            sanitize=sanitize,
+            skip_invalid=skip_invalid,
         )
         if num_ps > 1 and parts == 1:
             # Split into batches anyways if we have a single batch but multiple
@@ -1117,12 +1149,23 @@ def _fps_from_smiles(
                 fps_array_filler,
                 _iter_ranges_and_smiles_batches(smiles_paths, num_per_batch),
             )
+        fps = np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf)
+        mask = np.ndarray((smiles_num,), dtype=np.bool, buffer=invalid_mask_shmem.buf)
+        if skip_invalid:
+            prev_num = len(fps)
+            fps = np.delete(fps, mask, axis=0)
+            new_num = len(fps)
+            console.print(f"Generated {new_num} fingerprints")
+            console.print(f"Skipped {prev_num - new_num} invalid smiles")
         np.save(
             out_dir / out_name,
-            np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf),
+            fps,
         )
+        del mask
+        del fps
         # Cleanup
         fps_shmem.unlink()
+        invalid_mask_shmem.unlink()
     timer.end_timing("total", console, indent=False)
     console.print(f"Finished. Outputs written to {str(out_dir / out_name)}.npy")
 
