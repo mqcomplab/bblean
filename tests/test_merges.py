@@ -92,9 +92,7 @@ def test_tolerance() -> None:
     )
     thresholds = (0.2, 0.2, 0.2, 0.2)
     tolerances = (0.05, 0.05, 0.90, 0.90)
-    for fn_expect, Fn, thresh, tol in zip(
-        legacy_fns, oop_fns, thresholds, tolerances
-    ):
+    for fn_expect, Fn, thresh, tol in zip(legacy_fns, oop_fns, thresholds, tolerances):
         fn = Fn(tol)
         fn._backwards_compat = True  # type: ignore
         for case in ("1, 1", "1, >1", ">1, 1", ">1, >1"):
