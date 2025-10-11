@@ -163,7 +163,9 @@ def test_run() -> None:
         )
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
-        result = runner.invoke(app, ["run", str(dir), "-o", str(out_dir), "-b", "50"])
+        result = runner.invoke(
+            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.65"]
+        )
         with open(out_dir / "clusters.pkl", mode="rb") as f:
             obj = pickle.load(f)
         assert result.exit_code == 0

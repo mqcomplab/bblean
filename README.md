@@ -30,6 +30,11 @@ we hit version 1.0
 
 The [documentation](https://mqcomplab.github.io/bblean/devdocs) of the developer version is a work in progress. Please let us know if you find any issues.
 
+⚠️  **Important**: In version 0.3 (beta) the default threshold was changed to 0.3 and the
+default fingerprint kind to *ecfp4*. We recommend setting `threshold` to 0.5-0.65 for
+*rdkit fingerprints* and 020-0.35 for *ecfp4* or *ecfp6* fingerprints (although you may
+need further tuning for your specific library / fingerprint set).
+
 ## Installation
 
 BitBIRCH-Lean requires Python 3.11. To build from source, editable mode, using a conda
