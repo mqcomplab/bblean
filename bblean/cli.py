@@ -94,6 +94,14 @@ def _tsne_plot(
         str | None,
         Option("--title", help="Plot title"),
     ] = None,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
+    ] = None,
     exaggeration: Annotated[
         float | None,
         Option("-e", "--exaggeration", rich_help_panel="Advanced"),
@@ -243,8 +251,11 @@ def _tsne_plot(
             multiscale=multiscale,
             pca_reduce=pca_reduce,
         )
-    unique_id = format(random.getrandbits(32), "08x")
-    plt.savefig(Path.cwd() / f"./tsne-{unique_id}.pdf")
+    if save:
+        if filename is None:
+            unique_id = format(random.getrandbits(32), "08x")
+            filename = f"tsne-{unique_id}.pdf"
+        plt.savefig(Path.cwd() / filename)
     if show:
         plt.show()
 
@@ -255,14 +266,6 @@ def _summary_plot(
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
     ],
-    out_dir: Annotated[
-        Path | None,
-        Option(
-            "-o",
-            "--out-dir",
-            show_default=False,
-        ),
-    ] = None,
     fps_path: Annotated[
         Path | None,
         Option(
@@ -272,6 +275,10 @@ def _summary_plot(
             show_default=False,
         ),
     ] = None,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
     smiles_path: Annotated[
         Path | None,
         Option(
@@ -284,6 +291,10 @@ def _summary_plot(
     title: Annotated[
         str | None,
         Option("--title"),
+    ] = None,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
     ] = None,
     top: Annotated[
         int,
@@ -340,10 +351,7 @@ def _summary_plot(
         from bblean.plotting import summary_plot
 
         if clusters_path.is_dir():
-            clusters_dir = clusters_path
             clusters_path = clusters_path / "clusters.pkl"
-        else:
-            clusters_dir = clusters_path.parent
         with open(clusters_path, mode="rb") as f:
             clusters = pickle.load(f)
         if fps_path is None:
@@ -376,10 +384,11 @@ def _summary_plot(
             scaffold_fp_kind=scaffold_fp_kind,
         )
         summary_plot(ca, title, annotate=annotate)
-    if out_dir is None:
-        out_dir = clusters_dir
-    unique_id = format(random.getrandbits(32), "08x")
-    plt.savefig(out_dir / f"summary-{unique_id}.pdf")
+    if save:
+        if filename is None:
+            unique_id = format(random.getrandbits(32), "08x")
+            filename = f"summary-{unique_id}.pdf"
+        plt.savefig(Path.cwd() / filename)
     if show:
         plt.show()
 
