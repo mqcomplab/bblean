@@ -1,12 +1,12 @@
 r"""Command line interface entrypoints"""
 
+import random
 import typing as tp
 import math
 import shutil
 import json
 import sys
 import pickle
-import uuid
 import multiprocessing as mp
 import multiprocessing.shared_memory as shmem
 from typing import Annotated
@@ -324,6 +324,14 @@ def _plot_tsne(
         str | None,
         Option("--title", help="Plot title"),
     ] = None,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
+    ] = None,
     exaggeration: Annotated[
         float | None,
         Option("-e", "--exaggeration", rich_help_panel="Advanced"),
@@ -473,6 +481,11 @@ def _plot_tsne(
             multiscale=multiscale,
             pca_reduce=pca_reduce,
         )
+    if save:
+        if filename is None:
+            unique_id = format(random.getrandbits(32), "08x")
+            filename = f"tsne-{unique_id}.pdf"
+        plt.savefig(Path.cwd() / filename)
     if show:
         plt.show()
 
@@ -492,6 +505,10 @@ def _plot_summary(
             show_default=False,
         ),
     ] = None,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
     smiles_path: Annotated[
         Path | None,
         Option(
@@ -504,6 +521,10 @@ def _plot_summary(
     title: Annotated[
         str | None,
         Option("--title"),
+    ] = None,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
     ] = None,
     top: Annotated[
         int,
@@ -589,6 +610,11 @@ def _plot_summary(
             scaffold_fp_kind=scaffold_fp_kind,
         )
         summary_plot(ca, title, annotate=annotate)
+    if save:
+        if filename is None:
+            unique_id = format(random.getrandbits(32), "08x")
+            filename = f"summary-{unique_id}.pdf"
+        plt.savefig(Path.cwd() / filename)
     if show:
         plt.show()
 
@@ -622,10 +648,18 @@ def _run(
         float,
         Option("--threshold", "-t", help="Threshold for merge criterion"),
     ] = DEFAULTS.threshold,
+    refine_threshold_increase: Annotated[
+        float,
+        Option("--refine-threshold", help="Threshold for refinement criterion"),
+    ] = DEFAULTS.refine_threshold_increase,
     merge_criterion: Annotated[
         str,
         Option("--set-merge", "-m", help="Merge criterion for initial clustsering"),
-    ] = "diameter",
+    ] = DEFAULTS.merge_criterion,
+    refine_merge_criterion: Annotated[
+        str,
+        Option("--set-refine-merge", help="Merge criterion for refinement clustsering"),
+    ] = DEFAULTS.refine_merge_criterion,
     tolerance: Annotated[
         float,
         Option(help="BitBIRCH tolerance. For refinement and --set-merge 'tolerance'"),
@@ -736,7 +770,7 @@ def _run(
         ]
     else:
         ctx.params["num_fps_loaded"] = ctx.params["num_fps_present"]
-    unique_id = str(uuid.uuid4()).split("-")[0]
+    unique_id = format(random.getrandbits(32), "08x")
     if out_dir is None:
         out_dir = Path.cwd() / "bb_run_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
@@ -777,7 +811,11 @@ def _run(
             )
 
         if refine_num > 0:
-            tree.set_merge("tolerance", tolerance=tolerance)
+            tree.set_merge(
+                refine_merge_criterion,
+                tolerance=tolerance,
+                threshold=threshold + refine_threshold_increase,
+            )
             tree.refine_inplace(
                 file, input_is_packed=input_is_packed, n_largest=refine_num
             )
@@ -855,8 +893,12 @@ def _multiround(
     ] = DEFAULTS.branching_factor,
     threshold: Annotated[
         float,
-        Option("--threshold", "-t", help="Threshold for merge criterions (all stetps)"),
+        Option("--threshold", "-t", help="Thresh for merge criterion (initial step)"),
     ] = DEFAULTS.threshold,
+    mid_threshold_increase: Annotated[
+        float,
+        Option("--mid-threshold-increase", help="Increase in threshold for refinement"),
+    ] = DEFAULTS.refine_threshold_increase,
     initial_merge_criterion: Annotated[
         str,
         Option(
@@ -865,6 +907,13 @@ def _multiround(
             help="Initial merge criterion for round 1. ('diameter' recommended)",
         ),
     ] = DEFAULTS.merge_criterion,
+    mid_merge_criterion: Annotated[
+        str,
+        Option(
+            "--set-mid-merge",
+            help="Merge criterion for midsection rounds ('diameter' recommended)",
+        ),
+    ] = DEFAULTS.refine_merge_criterion,
     tolerance: Annotated[
         float,
         Option(
@@ -944,14 +993,6 @@ def _multiround(
             hidden=True,
         ),
     ] = "lean",
-    only_first_round: Annotated[
-        bool,
-        Option(
-            help="Only do first round clustering and exit early",
-            rich_help_panel="Debug",
-            hidden=True,
-        ),
-    ] = False,
     monitor_rss: Annotated[
         bool,
         Option(
@@ -992,6 +1033,10 @@ def _multiround(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    cleanup: Annotated[
+        bool,
+        Option("--cleanup/--no-cleanup", hidden=True),
+    ] = True,
 ) -> None:
     r"""Run multi-round BitBIRCH clustering, optionally parallelize over `*.npy` files"""  # noqa:E501
     from bblean._console import get_console
@@ -1025,7 +1070,7 @@ def _multiround(
 
     # Set up outputs:
     # If not passed, output dir is constructed as bb_multiround_outputs/<unique-id>/
-    unique_id = str(uuid.uuid4()).split("-")[0]
+    unique_id = format(random.getrandbits(32), "08x")
     if out_dir is None:
         out_dir = Path.cwd() / "bb_multiround_outputs" / unique_id
     out_dir.mkdir(exist_ok=True, parents=True)
@@ -1046,10 +1091,12 @@ def _multiround(
         input_is_packed=input_is_packed,
         out_dir=out_dir,
         initial_merge_criterion=initial_merge_criterion,
+        midsection_merge_criterion=mid_merge_criterion,
         num_initial_processes=num_initial_processes,
         num_midsection_processes=num_midsection_processes,
         branching_factor=branching_factor,
         threshold=threshold,
+        midsection_threshold_increase=mid_threshold_increase,
         tolerance=tolerance,
         # Advanced
         bin_size=bin_size,
@@ -1058,10 +1105,10 @@ def _multiround(
         num_midsection_rounds=num_midsection_rounds,
         split_largest_after_each_midsection_round=split_largest_after_midsection,
         # Debug
-        only_first_round=only_first_round,
         max_fps=max_fps,
         verbose=verbose,
         mp_context=mp_context,
+        cleanup=cleanup,
     )
     timer.dump(out_dir / "timings.json")
     # TODO: Also dump peak-rss.json
@@ -1171,6 +1218,25 @@ def _fps_from_smiles(
             ),
         ),
     ] = None,
+    sanitize: Annotated[
+        str,
+        Option(
+            "--sanitize",
+            help="RDKit sanitization operations to perform ('all' or 'minimal')",
+        ),
+    ] = "all",
+    skip_invalid: Annotated[
+        bool,
+        Option(
+            "--skip-invalid/--no-skip-invalid",
+            help=(
+                "Skip invalid smiles."
+                " If False, an error is raised on invalid smiles. If True they are"
+                " silently skipped (this is be more memory intensive, especially for"
+                " parallel processing)"
+            ),
+        ),
+    ] = False,
 ) -> None:
     r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
@@ -1238,9 +1304,9 @@ def _fps_from_smiles(
 
     # Pass 2: build the molecules
     if out_name is None:
-        unique_id = str(uuid.uuid4()).split("-")[0]
+        unique_id = format(random.getrandbits(32), "08x")
         # Save the fingerprints as a NumPy array
-        out_name = f"{'packed-' if pack else ''}fps-{dtype}-{unique_id}"
+        out_name = f"{'packed-' if pack else ''}fps-{dtype}-{kind}-{unique_id}"
     else:
         # Strip suffix
         if out_name.endswith(".npy"):
@@ -1254,7 +1320,16 @@ def _fps_from_smiles(
         else:
             num_ps = min(_num_avail_cpus(), parts)
     create_fp_file = _FingerprintFileCreator(
-        dtype, out_dir, out_name, digits, pack, kind, fp_size
+        dtype,
+        out_dir,
+        out_name,
+        digits,
+        pack,
+        kind,
+        fp_size,
+        sanitize=sanitize,
+        skip_invalid=skip_invalid,
+        verbose=verbose,
     )
     timer = Timer()
     timer.init_timing("total")
@@ -1286,13 +1361,17 @@ def _fps_from_smiles(
             out_dim = fp_size
         shmem_size = smiles_num * out_dim * np.dtype(dtype).itemsize
         fps_shmem = shmem.SharedMemory(create=True, size=shmem_size)
+        invalid_mask_shmem = shmem.SharedMemory(create=True, size=smiles_num)
         fps_array_filler = _FingerprintArrayFiller(
             shmem_name=fps_shmem.name,
+            invalid_mask_shmem_name=invalid_mask_shmem.name,
             kind=kind,
             fp_size=fp_size,
             num_smiles=smiles_num,
             dtype=dtype,
             pack=pack,
+            sanitize=sanitize,
+            skip_invalid=skip_invalid,
         )
         if num_ps > 1 and parts == 1:
             # Split into batches anyways if we have a single batch but multiple
@@ -1305,12 +1384,23 @@ def _fps_from_smiles(
                 fps_array_filler,
                 _iter_ranges_and_smiles_batches(smiles_paths, num_per_batch),
             )
+        fps = np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf)
+        mask = np.ndarray((smiles_num,), dtype=np.bool, buffer=invalid_mask_shmem.buf)
+        if skip_invalid:
+            prev_num = len(fps)
+            fps = np.delete(fps, mask, axis=0)
+            new_num = len(fps)
+            console.print(f"Generated {new_num} fingerprints")
+            console.print(f"Skipped {prev_num - new_num} invalid smiles")
         np.save(
             out_dir / out_name,
-            np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf),
+            fps,
         )
+        del mask
+        del fps
         # Cleanup
         fps_shmem.unlink()
+        invalid_mask_shmem.unlink()
     timer.end_timing("total", console, indent=False)
     console.print(f"Finished. Outputs written to {str(out_dir / out_name)}.npy")
 
@@ -1370,17 +1460,27 @@ def _split_fps(
         )
         raise Abort()
 
-    if out_dir is None:
-        out_dir = Path.cwd()
-    out_dir.mkdir(exist_ok=True)
-    out_dir = out_dir.resolve()
     stem = input_.name.split(".")[0]
     with console.status("[italic]Splitting fingerprints...[/italic]", spinner="dots"):
+        i = -1
         for i, batch in enumerate(batched(fps, num_per_batch)):
             suffixes = input_.suffixes
             name = f"{stem}{''.join(suffixes[:-1])}.{str(i).zfill(digits)}.npy"
+
+            # Generate out dir when first fp file is being saved
+            if out_dir is None:
+                out_dir = Path.cwd() / stem
+            out_dir.mkdir(exist_ok=True)
+            out_dir = out_dir.resolve()
+
             np.save(out_dir / name, batch)
-    console.print(f"Finished. Outputs written to {str(out_dir / stem)}.<idx>.npy")
+
+        if i == -1:
+            console.print("Warning: No fingerprints written", style="yellow")
+            return
+    console.print(
+        f"Finished. Outputs written to {str(tp.cast(Path, out_dir) / stem)}.<idx>.npy"
+    )
 
 
 @app.command("fps-shuffle", rich_help_panel="Fingerprints")

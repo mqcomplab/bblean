@@ -149,6 +149,8 @@ class _InitialRound:
         tolerance: float,
         out_dir: Path | str,
         full_refinement_before_midsection: bool,
+        refine_threshold_increase: float,
+        refine_merge_criterion: str,
         n_features: int | None = None,
         max_fps: int | None = None,
         merge_criterion: str = DEFAULTS.merge_criterion,
@@ -162,7 +164,9 @@ class _InitialRound:
         self.out_dir = Path(out_dir)
         self.max_fps = max_fps
         self.merge_criterion = merge_criterion
+        self.refine_merge_criterion = refine_merge_criterion
         self.input_is_packed = input_is_packed
+        self.refine_threshold_increase = refine_threshold_increase
 
     def __call__(self, file_info: tuple[str, Path, int, int]) -> None:
         file_label, fp_file, start_idx, end_idx = file_info
@@ -190,7 +194,11 @@ class _InitialRound:
         if self.full_refinement_before_midsection:
             # Finish the first refinement step internally in this round
             tree.reset()
-            tree.set_merge("tolerance", tolerance=self.tolerance)
+            tree.set_merge(
+                self.refine_merge_criterion,
+                tolerance=self.tolerance,
+                threshold=self.threshold + self.refine_threshold_increase,
+            )
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
                 tree._fit_np(bufs, reinsert_index_seqs=mol_idxs)
                 del mol_idxs
@@ -313,6 +321,7 @@ def run_multiround_bitbirch(
     initial_merge_criterion: str = DEFAULTS.merge_criterion,
     branching_factor: int = DEFAULTS.branching_factor,
     threshold: float = DEFAULTS.threshold,
+    midsection_threshold_increase: float = DEFAULTS.refine_threshold_increase,
     tolerance: float = DEFAULTS.tolerance,
     # Advanced
     num_midsection_rounds: int = 1,
@@ -320,21 +329,23 @@ def run_multiround_bitbirch(
     max_tasks_per_process: int = 1,
     full_refinement_before_midsection: bool = True,
     split_largest_after_each_midsection_round: bool = False,
-    midsection_merge_criterion: str = "tolerance",
-    final_merge_criterion: str = "tolerance",
+    midsection_merge_criterion: str = DEFAULTS.refine_merge_criterion,
+    final_merge_criterion: str | None = None,
+    mp_context: tp.Any = None,
     # Debug
-    only_first_round: bool = False,
     max_fps: int | None = None,
     verbose: bool = False,
-    mp_context: tp.Any = None,
+    cleanup: bool = True,
 ) -> Timer:
     r"""Perform (possibly parallel) multi-round BitBirch clustering
 
-    ..  warning::
+    .. warning::
 
         The functionality provided by this function is stable, but its API
         (the arguments it takes and its return values) may change in the future.
     """
+    if final_merge_criterion is None:
+        final_merge_criterion = midsection_merge_criterion
     if mp_context is None:
         mp_context = mp.get_context("forkserver" if sys.platform == "linux" else None)
     # Returns timing and for the different rounds
@@ -351,7 +362,6 @@ def run_multiround_bitbirch(
     # Common params to all rounds BitBIRCH
     common_kwargs: dict[str, tp.Any] = dict(
         branching_factor=branching_factor,
-        threshold=threshold,
         tolerance=tolerance,
         out_dir=out_dir,
     )
@@ -373,6 +383,9 @@ def run_multiround_bitbirch(
         max_fps=max_fps,
         merge_criterion=initial_merge_criterion,
         input_is_packed=input_is_packed,
+        threshold=threshold,
+        refine_merge_criterion=midsection_merge_criterion,
+        refine_threshold_increase=midsection_threshold_increase,
         **common_kwargs,
     )
     num_ps = min(num_initial_processes, num_files)
@@ -390,10 +403,6 @@ def run_multiround_bitbirch(
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
 
-    if only_first_round:  # Early exit for debugging
-        timer.end_timing("total")
-        return timer
-
     # Mid-section "Tree-Merging" rounds of clustering
     for _ in range(num_midsection_rounds):
         round_idx += 1
@@ -407,6 +416,7 @@ def run_multiround_bitbirch(
             all_fp_paths=input_files,
             split_largest_cluster=split_largest_after_each_midsection_round,
             criterion=midsection_merge_criterion,
+            threshold=threshold + midsection_threshold_increase,
             **common_kwargs,
         )
         num_ps = min(num_midsection_processes, len(batches))
@@ -430,13 +440,22 @@ def run_multiround_bitbirch(
     console.print(f"(Final) Round {round_idx}: Final round of clustering")
     file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
-    final_fn = _FinalTreeMergingRound(criterion=final_merge_criterion, **common_kwargs)
+    final_fn = _FinalTreeMergingRound(
+        criterion=final_merge_criterion,
+        threshold=threshold + midsection_threshold_increase,
+        **common_kwargs,
+    )
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         final_fn(("", file_pairs))
 
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(num_ps)
-
+    # Remove intermediate files
+    if cleanup:
+        for f in out_dir.glob("round-*.npy"):
+            f.unlink()
+        for f in out_dir.glob("round-*.pkl"):
+            f.unlink()
     console.print()
     timer.end_timing("total", console, indent=False)
     return timer

@@ -86,3 +86,4 @@ timings*.json
 # Outputs from examples
 examples/*.png
 examples/*.csv
+*.pdf

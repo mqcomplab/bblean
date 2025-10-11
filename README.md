@@ -1,4 +1,10 @@
-# BitBIRCH-Lean
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-dark-bw.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.svg">
+  <img alt="BitBIRCH-Lean logo" src="https://raw.githubusercontent.com/mqcomplab/bblean/main/docs/src/_static/logo-light-bw.svg">
+</picture>
+<br>
+<br>
 
 [![DOI](https://zenodo.org/badge/1051268662.svg)](https://doi.org/10.5281/zenodo.17139445)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -24,9 +30,15 @@ we hit version 1.0
 
 The [documentation](https://mqcomplab.github.io/bblean/devdocs) of the developer version is a work in progress. Please let us know if you find any issues.
 
+⚠️  **Important**: In version 0.3 (beta) the default `threshold` was changed to 0.3 and the
+default fingerprint kind to *ecfp4*. We recommend setting `threshold` to 0.5-0.65 for
+*rdkit* fingerprints and 0.20-0.35 for *ecfp4* or *ecfp6* fingerprints (although you may
+need further tuning for your specific library / fingerprint set).
+
 ## Installation
 
-From source, editable mode, using a conda environment:
+BitBIRCH-Lean requires Python 3.11. To build from source, editable mode, using a conda
+environment:
 
 ```bash
 conda env create --file ./environment.yaml

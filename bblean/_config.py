@@ -17,9 +17,11 @@ from bblean.utils import _cpu_name
 
 @dataclasses.dataclass(slots=True)
 class BitBirchConfig:
-    threshold: float = 0.65
+    threshold: float = 0.30
     branching_factor: int = 254
     merge_criterion: str = "diameter"
+    refine_merge_criterion: str = "tolerance"
+    refine_threshold_increase: float = 0.0
     tolerance: float = 0.05
     n_features: int = 2048
     fp_kind: str = "ecfp4"
