@@ -329,10 +329,6 @@ def _summary_plot(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
-    name: Annotated[
-        str | None,
-        Option("-n", "--name", help="Name of output plot"),
-    ] = None,
     show: Annotated[
         bool,
         Option("--show/--no-show", hidden=True),
