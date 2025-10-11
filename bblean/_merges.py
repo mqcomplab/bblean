@@ -80,15 +80,14 @@ class ToleranceDiameterAdaptiveMerge(MergeAcceptFunction):
     name = "tolerance-diameter-adapt"
     # NOTE: The reliability of the estimate of the cluster should be a function of the
     # size of the old cluster, so in this metric, tolerance is larger for small clusters
+    # tolerance = max{ alpha * (exp(-decay * N_old) - offset), 0}
 
     def __init__(
-        self, tolerance: float = 0.05, n_max: int = 10_000, decay: float = 1e-3
+        self, tolerance: float = 0.05, n_max: int = 1000, decay: float = 1e-3
     ) -> None:
         self.tolerance = tolerance
         self.decay = decay
         self.offset = np.exp(-decay * n_max)
-        # tolerance = max{ alpha (offset - exp(-decay * N_old)), 0}
-        # offset = exp(-decay * n_max)
 
     def __call__(
         self,
