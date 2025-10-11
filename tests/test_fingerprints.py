@@ -19,6 +19,16 @@ def test_fps_from_smiles() -> None:
     assert actual == expect
 
 
+# NOTE: This is an acceptance test only
+def test_fps_from_smiles_invalid() -> None:
+    smiles = load_smiles(Path(__file__).parent / "chembl-sample-bad.smi")
+    fps_raw = fps_from_smiles(smiles, skip_invalid=True, sanitize="minimal").reshape(-1)
+    nonzero = fps_raw.nonzero()[0].reshape(-1)
+    actual = fps_raw[nonzero][:19].tolist()
+    expect = [2, 4, 32, 1, 2, 128, 4, 128, 32, 32, 80, 128, 64, 128, 1, 16, 64, 4, 16]
+    assert actual == expect
+
+
 def test_fingerprints_from_file_seq_empty() -> None:
     fps = make_fake_fingerprints(
         100, n_features=32, seed=12620509540149709235, pack=True

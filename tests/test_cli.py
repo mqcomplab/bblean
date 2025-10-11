@@ -82,6 +82,34 @@ def test_fps_from_smiles() -> None:
     assert actual == expect
 
 
+# NOTE: This is an acceptance test only
+def test_fps_from_smiles_invalid() -> None:
+    runner = CliRunner()
+    smiles_path = Path(__file__).parent / "chembl-sample-bad.smi"
+    with tempfile.TemporaryDirectory() as d:
+        dir = Path(d).resolve()
+        out_dir = dir / "output"
+        result = runner.invoke(
+            app,
+            [
+                "fps-from-smiles",
+                str(smiles_path),
+                "-o",
+                str(out_dir),
+                "--sanitize",
+                "minimal",
+                "--skip-invalid",
+            ],
+        )
+        assert result.exit_code == 0
+        file = list(out_dir.glob("*.npy"))[0]
+        fps_raw = np.load(file).reshape(-1)
+    nonzero = fps_raw.nonzero()[0].reshape(-1)
+    actual = fps_raw[nonzero][:19].tolist()
+    expect = [2, 4, 32, 1, 2, 128, 4, 128, 32, 32, 80, 128, 64, 128, 1, 16, 64, 4, 16]
+    assert actual == expect
+
+
 def test_info() -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
