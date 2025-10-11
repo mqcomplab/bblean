@@ -10,6 +10,7 @@ from bblean._merges import (
     RadiusMerge,
     DiameterMerge,
     ToleranceMerge,
+    ToleranceDiameterAdaptiveMerge,
 )
 from bblean.fingerprints import make_fake_fingerprints, centroid_from_sum
 
@@ -75,6 +76,43 @@ def test_non_tolerance() -> None:
                 )
                 val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
                 assert val == val_expect
+
+
+# These are designed to trip all cases of tolerance
+def test_tolerance_adapt() -> None:
+    fps = make_fake_fingerprints(
+        500, n_features=2048, seed=12620509540149709235, pack=False
+    )
+    tolerances = (0.00, 1e-8, 0.05, 0.05, 0.9, 0.5)
+
+    expect = [
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        True,
+        True,
+        True,
+        True,
+        True,
+    ]
+    idx = 0
+    for thresh in (0.23, 0.2):
+        for j, tol in enumerate(tolerances):
+            old, nom = get_old_and_nom(fps, j, ">1, >1")
+            old_ls = old.sum(0)
+            nom_ls = nom.sum(0)
+            new_ls = old_ls + nom_ls
+            old_n = len(old)
+            nom_n = len(nom)
+            new_n = old_n + nom_n
+            fn = ToleranceDiameterAdaptiveMerge(tolerance=tol)
+            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+            assert val == expect[idx]
+            idx += 1
 
 
 # These are designed to trip all cases of tolerance
