@@ -38,7 +38,7 @@ def test_umap() -> None:
     assert result.exit_code == 0
 
 
-def test_pca() -> None:
+def test_pops() -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         Path
@@ -69,7 +69,7 @@ def test_pca() -> None:
         assert result.exit_code == 0
 
 
-def test_pops() -> None:
+def test_pca() -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         Path
