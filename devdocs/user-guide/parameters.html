@@ -6,8 +6,9 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Overview: module code &#8212; BitBIRCH-Lean v0.0 (dev) Manual</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Tuning BitBIRCH parameters &#8212; BitBIRCH-Lean v0.0 (dev) Manual</title>
   
   
   
@@ -43,9 +44,11 @@
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/index';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user-guide/parameters';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Linux Memory Setup" href="linux_memory_setup.html" />
+    <link rel="prev" title="User guide" href="../user-guide.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0 (dev)" />
@@ -137,7 +140,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../user-guide.html">
     User guide
   </a>
@@ -226,10 +229,8 @@
       
       
       
-        
-      
       <dialog id="pst-primary-sidebar-modal"></dialog>
-      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -251,7 +252,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../user-guide.html">
     User guide
   </a>
@@ -309,6 +310,19 @@
     
   </div>
   
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Tuning BitBIRCH parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="linux_memory_setup.html">Linux Memory Setup</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
   </div>
@@ -337,7 +351,10 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Overview: module code</span></li>
+    
+    <li class="breadcrumb-item"><a href="../user-guide.html" class="nav-link">User guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Tuning BitBIRCH parameters</span></li>
   </ul>
 </nav>
 </div>
@@ -354,15 +371,85 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>All modules for which code is available</h1>
-<ul><li><a href="bblean/_py_similarity.html">bblean._py_similarity</a></li>
-<li><a href="bblean/analysis.html">bblean.analysis</a></li>
-<li><a href="bblean/bitbirch.html">bblean.bitbirch</a></li>
-<li><a href="bblean/fingerprints.html">bblean.fingerprints</a></li>
-<li><a href="bblean/multiround.html">bblean.multiround</a></li>
-<li><a href="bblean/plotting.html">bblean.plotting</a></li>
-<li><a href="bblean/smiles.html">bblean.smiles</a></li>
+  <section id="tuning-bitbirch-parameters">
+<span id="bblean-parameters"></span><h1>Tuning BitBIRCH parameters<a class="headerlink" href="#tuning-bitbirch-parameters" title="Link to this heading">#</a></h1>
+<p>BitBIRCH has a few parameters parameters that can be adjusted to modify the quality of
+the resulting clustering.</p>
+<section id="merge-criterion-and-tolerance">
+<h2>Merge criterion and tolerance<a class="headerlink" href="#merge-criterion-and-tolerance" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">merge_criterion</span></code> is used to determine whether two clusters can be merged inside a
+node in the BitBIRCH tree. The criteria may be asymetric (they consider differently
+clusters already in the tree, <em>old clusters</em>, and clusters that are being inserted, or
+<em>nominee clusters</em>). There are three main merge criteria implemented:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>radius</strong> (symmetric): The radius of the <em>resulting cluster</em></dt><dd><p>must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>diameter</strong> (symmetric): The diameter (equivalently, the average similarity) of the</dt><dd><p><em>resulting cluster</em> must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>tolerance-diameter</strong> (asymmetric): The <em>diameter</em> criteria must be satisfied <strong>and</strong></dt><dd><p>the diameter of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
+cluster</em> (unless the <em>old cluster</em> has a single fingerprint). Some slack can be
+provided with a value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>tolerance-radius</strong> (asymmetric): The <em>radius</em> criterion must be satisfied <strong>and</strong></dt><dd><p>the radius of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
+cluster</em> (unless the <em>old cluster</em> has a single fingerprint). Some slack can be
+provided with a value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
+<p>Both <strong>tolerance-diameter</strong> and <strong>tolerance-radius</strong> reduce the <code class="docutils literal notranslate"><span class="pre">tolerance</span></code> slack
+exponentially as the cluster gets larger. This behaviour is usually desirable, but can
+be turned off with <code class="docutils literal notranslate"><span class="pre">adaptive=False</span></code>.</p>
+<p>Currently we recommend the <em>diameter</em> criteria for the initial build of the tree, and
+the corresponding <em>tolerance-diameter</em> criteria for refinement and tree-combining. The
+default slack value for tolerance (0.05) is good for most purposes, although you may
+want no slack (tolerance=0) if it is important to maintain the average Tanimoto values
+after refinement. Using a very large value for tolerance will flatten the diameter
+distribution of the clusters.</p>
+</section>
+<section id="threshold">
+<h2>Threshold<a class="headerlink" href="#threshold" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">threshold</span></code> determines the minimum metric acceptable within a given cluster.
+If adding a new molecule to a cluster would result in a lower average similarity than
+<code class="docutils literal notranslate"><span class="pre">threshold</span></code>, BitBIRCH will instead create a new cluster. High threshold values may
+result in <em>many small, compact clusters</em>. Low threshold may result in <em>few large,
+diffuse clusters</em>.</p>
+<p>The clustering results for a given threshold value will depend <strong>on the kind of
+fingerprint used</strong>. Sparse fingerprints (e. g. ECFPs) typically have lower pairwise
+Jaccard-Tanimoto similarities, which means you will want a low threshold to recover
+meaningful structure. Denser fingerprints (e. g. the default <a class="reference external" href="https://www.rdkit.org/docs/source/rdkit.html#module-rdkit" title="(in The RDKit v2025.03)"><code class="xref any docutils literal notranslate"><span class="pre">rdkit</span></code></a>
+fingerprints) require larger threshold.</p>
+<p>A typical recommendation is to use a threshold in the range of <em>0.2-0.35</em> for ECFP4 or
+ECFP6, and a threshold in the range of <strong>0.5-0.65</strong> for <a class="reference external" href="https://www.rdkit.org/docs/source/rdkit.html#module-rdkit" title="(in The RDKit v2025.03)"><code class="xref any docutils literal notranslate"><span class="pre">rdkit</span></code></a> fingerprints. Within
+these ranges the method is not very sensitive to the threshold value chosen, but
+choosing the wrong range for a given fingerprint kind may be <strong>very disadvantageous</strong>.</p>
+</section>
+<section id="branching-factor">
+<h2>Branching factor<a class="headerlink" href="#branching-factor" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">branching_factor</span></code> determines how many clusters each node of the BitBIRCH tree
+can hold before splitting into new nodes. A high branching factor will result in fewer
+nodes, which means tree insertions will better approximate a thorough search over the
+full fingerprint set, and memory usage will be lower. However, a very high branching
+factor, may also incurr in a higher computational cost.</p>
+<p>A recommended branching factor that performs well in terms of memory use and compute
+cost is 254. Higher branching factors may be useful to reduce memory usage when
+clustering hundreds of millions of molecules, at the cost of some speed (for example you
+may want 1000 for 100M-200M molecules).</p>
+<p>The clustering results depend on the <code class="docutils literal notranslate"><span class="pre">branching_factor</span></code>, but only very weakly. Most of
+the effect is limited to performance and memory usage.</p>
+</section>
+</section>
+
 
                 </article>
               
@@ -373,6 +460,24 @@
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="../user-guide.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">User guide</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="linux_memory_setup.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Linux Memory Setup</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
