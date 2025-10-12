@@ -984,7 +984,7 @@ class BitBirch:
 
     def refine_inplace(
         self,
-        X: _Input | Path | str,
+        X: _Input | Path | str | tp.Sequence[Path],
         initial_mol: int = 0,
         input_is_packed: bool = True,
         n_largest: int = 1,
