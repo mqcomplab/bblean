@@ -849,16 +849,19 @@ def _run(
                 input_files, input_is_packed=input_is_packed, n_largest=refine_num
             )
         # TODO: Fix peak memory stats
-        cluster_mol_ids = tree.get_cluster_mol_ids()
     timer.end_timing("total", console, indent=False)
+    tree.delete_internal_nodes()
     stats = get_peak_memory(1)
     if stats is None:
         console.print("[Peak memory stats not tracked for non-Unix systems]")
     else:
         console.print_peak_mem_raw(stats, indent=False)
     # Dump outputs (peak memory, timings, config, cluster ids)
+    output = tree.get_centroids_mol_ids()
     with open(out_dir / "clusters.pkl", mode="wb") as f:
-        pickle.dump(cluster_mol_ids, f)
+        pickle.dump(output["mol_ids"], f)
+    with open(out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
+        pickle.dump(output["centroids"], f)
 
     collect_system_specs_and_dump_config(ctx.params)
     timer.dump(out_dir / "timings.json")

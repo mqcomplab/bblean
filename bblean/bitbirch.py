@@ -1035,6 +1035,9 @@ class BitBirch:
         The split is only performed for the returned 'np' buffers, the clusters in the
         tree itself are not modified
         """
+        if n_largest == 0:
+            return self._bf_to_np()
+
         if n_largest < 1:
             raise ValueError("n_largest must be >= 1")
 

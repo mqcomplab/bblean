@@ -288,9 +288,11 @@ class _FinalTreeMergingRound(_TreeMergingRound):
 
         # Save clusters and exit
         tree.delete_internal_nodes()
-        cluster_mol_ids = tree.get_cluster_mol_ids()
+        output = tree.get_centroids_mol_ids()
         with open(self.out_dir / "clusters.pkl", mode="wb") as f:
-            pickle.dump(cluster_mol_ids, f)
+            pickle.dump(output["mol_ids"], f)
+        with open(self.out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
+            pickle.dump(output["centroids"], f)
 
 
 # Create a list of tuples of labels, file paths and start-end idxs
