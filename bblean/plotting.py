@@ -28,11 +28,9 @@ def pops_plot(
     /,
     title: str | None = None,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
-    # Compute KDE
+    r"""Distrubution of cluster populations using KDE"""
     fig, ax = plt.subplots()
     cluster_sizes = c.df["mol_num"]
-
-    # Plot
     sns.kdeplot(
         ax=ax,
         data=cluster_sizes,
@@ -41,10 +39,6 @@ def pops_plot(
         gridsize=len(cluster_sizes) // 5,
         fill=True,
     )
-    # kde = gaussian_kde(cluster_sizes, bw_method=0.3)
-    # x = np.linspace(0, cluster_sizes[0], cluster_sizes[0])
-    # ax.plot(x, kde(x), linewidth=1.5, color="tab:purple")
-    # ax.hist(cluster_sizes, bins="auto", alpha=0.3, color="tab:purple", density=True)
     ax.set_xlabel("Density")
     ax.set_xlabel("Cluster size")
     ax.legend()

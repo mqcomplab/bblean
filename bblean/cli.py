@@ -675,9 +675,6 @@ def _run(
             merge_criterion=merge_criterion,
             tolerance=tolerance,
         )
-    if len(input_files) > 1 and refine_num > 0:
-        console.print("Refine currently only supported for single files", style="red")
-        raise Abort()
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
         for file in input_files:
             # Fitting a file uses mmap internally, and releases memory in a smart way
@@ -695,7 +692,7 @@ def _run(
                 threshold=threshold + refine_threshold_increase,
             )
             tree.refine_inplace(
-                file, input_is_packed=input_is_packed, n_largest=refine_num
+                input_files, input_is_packed=input_is_packed, n_largest=refine_num
             )
         # TODO: Fix peak memory stats
         cluster_mol_ids = tree.get_cluster_mol_ids()
