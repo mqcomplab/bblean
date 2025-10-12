@@ -68,6 +68,7 @@ If you find this software useful please cite the following articles:
 
     def print_config(self, config: dict[str, tp.Any]) -> None:
         num_fps_loaded = np.array(config["num_fps_loaded"])
+        total_fps_num = num_fps_loaded.sum()
         with np.printoptions(formatter={"int": "{:,}".format}, threshold=10):
             num_fps_str = str(num_fps_loaded)[1:-1]
             self.print(
@@ -77,18 +78,31 @@ If you find this software useful please cite the following articles:
                 f"- Threshold: {config['threshold']}\n"
                 f"- Num. files loaded: {len(config['input_files']):,}\n"
                 f"- Num. fingerprints loaded for each file: {num_fps_str}\n"
+                f"- Total num. fingerprints: {total_fps_num:,}\n"
                 f"- Output directory: {config['out_dir']}\n",
                 end="",
             )
         bb_variant = config.get("bitbirch_variant", "lean")
         max_files = config.get("max_files", None)
         max_fps = config.get("max_fps", None)
-        if config["refine_num"] > 0:
-            self.print(
-                f"- Will Refine largest {config['refine_num']} clusters\n", end=""
-            )
         if "tolerance" in config["merge_criterion"]:
             self.print(f"- Tolerance: {config['tolerance']}\n", end="")
+        if config["refine_num"] > 0:
+            self.print(
+                f"- Will refine largest {config['refine_num']} clusters\n", end=""
+            )
+            self.print(f"- Num. clusters to refine: {config['refine_num']}\n", end="")
+            self.print(
+                "- Refine criterion: "
+                f"[yellow]{config['refine_merge_criterion']}[/yellow]\n",
+                end="",
+            )
+            if "tolerance" in config["refine_merge_criterion"]:
+                self.print(f"- Refine tolerance: {config['tolerance']}\n", end="")
+            self.print(
+                f"- Refine threshold increase: {config['refine_threshold_increase']}\n",
+                end="",
+            )
         if bb_variant != "lean":
             self.print(
                 "- [bold]DEBUG:[/bold] Using bitbirch version: {variant}\n", end=""
@@ -112,6 +126,7 @@ If you find this software useful please cite the following articles:
         )
         desc = f"multi-round, {extra_desc}"
         num_fps_loaded = np.array(config["num_fps_loaded"])
+        total_fps_num = num_fps_loaded.sum()
         with np.printoptions(formatter={"int": "{:,}".format}, threshold=10):
             num_fps_str = str(num_fps_loaded)[1:-1]
             self.print(
@@ -122,6 +137,7 @@ If you find this software useful please cite the following articles:
                 f"- Tolerance: {config['tolerance']}\n"
                 f"- Num. files loaded: {len(config['input_files']):,}\n"
                 f"- Num. fingerprints loaded for each file: {num_fps_str}\n"
+                f"- Total num. fingerprints: {total_fps_num:,}\n"
                 f"- Output directory: {config['out_dir']}\n",
                 end="",
             )

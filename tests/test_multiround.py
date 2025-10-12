@@ -20,6 +20,7 @@ def test_multiround_bitbirch_parallel() -> None:
             num_initial_processes=10,
             bin_size=2,
             threshold=0.65,
+            midsection_merge_criterion="tolerance",
         )
         with open(out_dir / "clusters.pkl", mode="rb") as f:
             clusters = pickle.load(f)
@@ -40,6 +41,7 @@ def test_multiround_bitbirch() -> None:
             num_initial_processes=1,
             bin_size=2,
             threshold=0.65,
+            midsection_merge_criterion="tolerance",
         )
         with open(out_dir / "clusters.pkl", mode="rb") as f:
             clusters = pickle.load(f)
