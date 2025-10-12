@@ -29,15 +29,16 @@ clusters already in the tree, *old clusters*, and clusters that are being insert
     cluster* (unless the *old cluster* has a single fingerprint). Some slack can be
     provided with a value of ``tolerance``.
 
-Both **tolerance-diameter** and **tolerance-radius** have an optional *adaptive*
-variant, which reduces the ``tolerance`` slack exponentially as the cluster gets larger.
+Both **tolerance-diameter** and **tolerance-radius** reduce the ``tolerance`` slack
+exponentially as the cluster gets larger. This behaviour is usually desirable, but can
+be turned off with ``adaptive=False``.
 
 Currently we recommend the *diameter* criteria for the initial build of the tree, and
-the *tolerance-diameter-adaptive* criteria for refinement and tree-combining. The
+the corresponding *tolerance-diameter* criteria for refinement and tree-combining. The
 default slack value for tolerance (0.05) is good for most purposes, although you may
 want no slack (tolerance=0) if it is important to maintain the average Tanimoto values
 after refinement. Using a very large value for tolerance will flatten the diameter
-distribution of the clusters, making all roughly similar and close to the threshold.
+distribution of the clusters.
 
 Threshold
 ---------

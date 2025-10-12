@@ -9,8 +9,9 @@ from bblean.similarity import jt_isim_from_sum
 BUILTIN_MERGES = [
     "radius",
     "diameter",
+    "tolerance-diameter",
+    "tolerance-radius",
     "tolerance",
-    "tolerance-adapt",
 ]
 
 
@@ -35,6 +36,17 @@ class MergeAcceptFunction:
         return f"{self.__class__.__name__}()"
 
 
+def _jt_isim_radius(ls: NDArray[np.integer], n: int) -> float:
+    # NOTE: Use uint64 sum since jt_isim_from_sum casts to uint64 internally
+    # This prevents multiple casts
+    new_unpacked_centroid = centroid_from_sum(ls, n, pack=False)
+    new_ls_1 = np.add(ls, new_unpacked_centroid, dtype=np.uint64)
+    new_n_1 = n + 1
+    new_jt = jt_isim_from_sum(ls, n)
+    new_jt_1 = jt_isim_from_sum(new_ls_1, new_n_1)
+    return (new_jt_1 * new_n_1 - new_jt * (n - 1)) / 2
+
+
 class RadiusMerge(MergeAcceptFunction):
     name = "radius"
 
@@ -48,14 +60,7 @@ class RadiusMerge(MergeAcceptFunction):
         old_n: int,
         nom_n: int,
     ) -> bool:
-        # NOTE: Use uint64 sum since jt_isim_from_sum casts to uint64 internally
-        # This prevents multiple casts
-        new_unpacked_centroid = centroid_from_sum(new_ls, new_n, pack=False)
-        new_ls_1 = np.add(new_ls, new_unpacked_centroid, dtype=np.uint64)
-        new_n_1 = new_n + 1
-        new_jt = jt_isim_from_sum(new_ls, new_n)
-        new_jt_1 = jt_isim_from_sum(new_ls_1, new_n_1)
-        return new_jt_1 * new_n_1 - new_jt * (new_n - 1) >= threshold * 2
+        return _jt_isim_radius(new_ls, new_n) >= threshold
 
 
 class DiameterMerge(MergeAcceptFunction):
@@ -74,18 +79,25 @@ class DiameterMerge(MergeAcceptFunction):
         return jt_isim_from_sum(new_ls, new_n) >= threshold
 
 
-class ToleranceDiameterAdaptiveMerge(MergeAcceptFunction):
-    name = "tolerance-adapt"
+class ToleranceDiameterMerge(MergeAcceptFunction):
+    name = "tolerance-diameter"
     # NOTE: The reliability of the estimate of the cluster should be a function of the
     # size of the old cluster, so in this metric, tolerance is larger for small clusters
     # tolerance = max{ alpha * (exp(-decay * N_old) - offset), 0}
 
     def __init__(
-        self, tolerance: float = 0.05, n_max: int = 1000, decay: float = 1e-3
+        self,
+        tolerance: float = 0.05,
+        n_max: int = 1000,
+        decay: float = 1e-3,
+        adaptive: bool = True,
     ) -> None:
         self.tolerance = tolerance
         self.decay = decay
         self.offset = np.exp(-decay * n_max)
+        if not adaptive:
+            self.decay = 0.0
+            self.offset = 0.0
 
     def __call__(
         self,
@@ -97,12 +109,10 @@ class ToleranceDiameterAdaptiveMerge(MergeAcceptFunction):
         old_n: int,
         nom_n: int,
     ) -> bool:
-        # First two branches are equivalent to 'diameter'
         new_d = jt_isim_from_sum(new_ls, new_n)
         if new_d < threshold:
             return False
-
-        # If the old n is 1 then merge directly (infinmin{ ite tolerance), since the
+        # If the old n is 1 then merge directly (infinite tolerance), since the
         # old_d is undefined for a single fp
         if old_n == 1:
             return True
@@ -111,6 +121,32 @@ class ToleranceDiameterAdaptiveMerge(MergeAcceptFunction):
         old_d = jt_isim_from_sum(old_ls, old_n)
         tol = max(self.tolerance * (np.exp(-self.decay * old_n) - self.offset), 0.0)
         return new_d >= old_d - tol
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tolerance})"
+
+
+class ToleranceRadiusMerge(ToleranceDiameterMerge):
+    name = "tolerance-radius"
+
+    def __call__(
+        self,
+        threshold: float,
+        new_ls: NDArray[np.integer],
+        new_n: int,
+        old_ls: NDArray[np.integer],
+        nom_ls: NDArray[np.integer],
+        old_n: int,
+        nom_n: int,
+    ) -> bool:
+        new_r = _jt_isim_radius(new_ls, new_n)
+        if new_r < threshold:
+            return False
+        if old_n == 1:
+            return True
+        old_r = _jt_isim_radius(old_ls, old_n)
+        tol = max(self.tolerance * (np.exp(-self.decay * old_n) - self.offset), 0.0)
+        return new_r >= old_r - tol
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.tolerance})"
@@ -155,9 +191,11 @@ def get_merge_accept_fn(
         return DiameterMerge()
     elif merge_criterion == "tolerance":
         return ToleranceMerge(tolerance)
-    elif merge_criterion in "tolerance-adapt":
-        return ToleranceDiameterAdaptiveMerge(tolerance)
+    elif merge_criterion in "tolerance-diameter":
+        return ToleranceDiameterMerge(tolerance)
+    elif merge_criterion in "tolerance-radius":
+        return ToleranceRadiusMerge(tolerance)
     raise ValueError(
         f"Unknown merge criterion {merge_criterion} "
-        "Valid criteria are: radius|diameter|tolerance|tolerance-adapt"
+        "Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius"
     )
