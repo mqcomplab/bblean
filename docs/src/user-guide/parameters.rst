@@ -16,15 +16,19 @@ node in the BitBIRCH tree. The criteria may be asymetric (they consider differen
 clusters already in the tree, *old clusters*, and clusters that are being inserted, or
 *nominee clusters*). There are three main merge criteria implemented:
 
-- **radius** (symmetric): The radius of the *resulting cluster*
+- radius (symmetric):
+    The radius of the *resulting cluster*
     must be less or equal than the ``threshold`` value.
-- **diameter** (symmetric): The diameter (equivalently, the average similarity) of the
+- diameter (symmetric):
+    The diameter (equivalently, the average similarity) of the
     *resulting cluster* must be less or equal than the ``threshold`` value.
-- **tolerance-diameter** (asymmetric): The *diameter* criteria must be satisfied **and**
+- tolerance-diameter (asymmetric):
+    The *diameter* criteria must be satisfied **and**
     the diameter of the *resulting cluster* must be larger or equal to that of the *old
     cluster* (unless the *old cluster* has a single fingerprint). Some slack can be
     provided with a value of ``tolerance``.
-- **tolerance-radius** (asymmetric): The *radius* criterion must be satisfied **and**
+- tolerance-radius (asymmetric):
+    The *radius* criterion must be satisfied **and**
     the radius of the *resulting cluster* must be larger or equal to that of the *old
     cluster* (unless the *old cluster* has a single fingerprint). Some slack can be
     provided with a value of ``tolerance``.
