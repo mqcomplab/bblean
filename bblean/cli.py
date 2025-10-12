@@ -75,6 +75,114 @@ def _main(
     pass
 
 
+@app.command("plot-pops", rich_help_panel="Analysis")
+def _pops_plot(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    min_size: Annotated[
+        int,
+        Option("-m", "--min-size"),
+    ] = 0,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
+    top: Annotated[
+        int | None,
+        Option("--top"),
+    ] = None,
+) -> None:
+    r"""t-SNE visualization of the clustering results"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        import matplotlib.pyplot as plt
+
+        from bblean.analysis import cluster_analysis
+        from bblean.plotting import pops_plot
+
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        with open(clusters_path, mode="rb") as f:
+            clusters = pickle.load(f)
+        if fps_path is None:
+            input_fps_path = clusters_path.parent / "input-fps"
+            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+                fps_path = input_fps_path
+            else:
+                console.print(
+                    "Could not find input fingerprints. Please use --fps-path",
+                    style="red",
+                )
+                raise Abort()
+        if fps_path.is_dir():
+            fps_paths = sorted(fps_path.glob("*.npy"))
+        else:
+            fps_paths = [fps_path]
+        ca = cluster_analysis(
+            clusters,
+            fps_paths,
+            smiles=(),
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            min_size=min_size,
+        )
+        pops_plot(
+            ca,
+        )
+    if save:
+        if filename is None:
+            unique_id = format(random.getrandbits(32), "08x")
+            filename = f"pops-{unique_id}.pdf"
+        plt.savefig(Path.cwd() / filename)
+    if show:
+        plt.show()
+
+
 @app.command("plot-tsne", rich_help_panel="Analysis")
 def _tsne_plot(
     clusters_path: Annotated[
@@ -139,6 +247,16 @@ def _tsne_plot(
         bool,
         Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
     ] = True,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
     scaling: Annotated[
         str,
         Option("--scaling", rich_help_panel="Advanced"),
@@ -181,16 +299,6 @@ def _tsne_plot(
             help="Use multiscale perplexities (WARNING: Can be very slow!)",
         ),
     ] = False,
-    n_features: Annotated[
-        int | None,
-        Option(
-            "--n-features",
-            help="Number of features in the fingerprints."
-            " Only for packed inputs *if it is not a multiple of 8*."
-            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
-            rich_help_panel="Advanced",
-        ),
-    ] = None,
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
