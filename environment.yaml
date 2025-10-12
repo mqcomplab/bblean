@@ -19,6 +19,7 @@ dependencies:
   - psutil
   - matplotlib
   - colorcet
+  - seaborn
   - scikit-learn
   - opentsne
   # CLI
@@ -48,6 +49,5 @@ dependencies:
 
 #  Required for example dataset_splitting notebook only
 # - tqdm
-# - seaborn
 # - statsmodels
 # - useful_rdkit_utils

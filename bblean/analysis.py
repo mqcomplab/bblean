@@ -43,6 +43,7 @@ class ClusterAnalysis:
     fps: NDArray[np.uint8]
     fps_are_packed: bool = True
     n_features: int | None = None
+    min_size: int | None = None
 
     @property
     def unpacked_fps(self) -> NDArray[np.uint8]:
@@ -82,10 +83,11 @@ def cluster_analysis(
     fps: NDArray[np.integer] | Path | tp.Sequence[Path],
     smiles: tp.Iterable[str] = (),
     n_features: int | None = None,
-    top: int = 20,
+    top: int | None = 20,
     assume_sorted: bool = True,
     scaffold_fp_kind: str = DEFAULTS.fp_kind,
     input_is_packed: bool = True,
+    min_size: int = 0,
 ) -> ClusterAnalysis:
     r"""Perform a cluster analysis starting from clusters, smiles, and fingerprints"""
     if isinstance(smiles, str):
@@ -95,7 +97,15 @@ def cluster_analysis(
     if not assume_sorted:
         # Largest first
         clusters = sorted(clusters, key=lambda x: len(x), reverse=True)
-    clusters = clusters[:top]
+    # Filter by min size
+    _clusters = []
+    for i, c in enumerate(clusters):
+        if len(c) < min_size:
+            break
+        if top is not None and i > top:
+            break
+        _clusters.append(c)
+    clusters = _clusters
 
     info: dict[str, list[tp.Any]] = defaultdict(list)
     fps_provider: tp.Union[_FingerprintFileSequence, NDArray[np.uint8]]
@@ -132,4 +142,5 @@ def cluster_analysis(
         selected,
         fps_are_packed=input_is_packed,
         n_features=n_features,
+        min_size=min_size,
     )
