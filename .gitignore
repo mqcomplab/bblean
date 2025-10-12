@@ -78,6 +78,7 @@ timings*.json
 
 # Shell and python scripts
 *.script.sh
+*.script.bash
 *.script.py
 
 # Jupyter checkpoints
