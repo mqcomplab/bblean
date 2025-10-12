@@ -38,10 +38,10 @@ def pops_plot(
         bw_adjust=0.25,
         gridsize=len(cluster_sizes) // 5,
         fill=True,
+        warn_singular=False,
     )
     ax.set_xlabel("Density")
     ax.set_xlabel("Cluster size")
-    ax.legend()
     msg = f"Populations for top {c.num_clusters} largest clusters"
     if c.min_size is not None:
         msg = f"{msg} (min. size = {c.min_size})"
