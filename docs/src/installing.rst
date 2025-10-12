@@ -2,12 +2,6 @@
 
 .. currentmodule:: bblean
 
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-
-   linux_memory_setup
-
 Installing
 ==========
 
@@ -38,5 +32,9 @@ the `issue Tracker <https://github.com/mqcomplab/bblean/issues>`_ and tag it wit
 ``C++`` label.
 
 Setting up memory management for Linux
-==================================
-Memory compression is not enabled by default on Linux. If you are running a system with limited RAM, enabling memory compression can help improve performance by compressing memory pages. See :ref:`linux-memory-setup` for instructions on how to enable memory compression.
+======================================
+
+Memory compression is not enabled by default on Linux. If you are running a system with
+limited RAM, enabling memory compression can help improve performance by compressing
+memory pages. See :ref:`linux-memory-setup` for instructions on how to enable memory
+compression.

@@ -42,6 +42,7 @@ napoleon_numpy_docstring = True
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "rdkit": ("https://www.rdkit.org/docs/", None),
 }
 
 
@@ -72,7 +73,7 @@ htmlhelp_basename = "bblean-docs"
 html_sidebars = {
     "index": [],
     "installing": [],
-    "user-guide": [],
+    "user-guide": ["sidebar-nav-bs"],
     "linux_memory_setup": [],
     "api-reference": ["sidebar-nav-bs"],
     "api_autogen/*": ["sidebar-nav-bs"],
