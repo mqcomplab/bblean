@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=89c3c14e"></script>
+    <script src="../_static/documentation_options.js?v=07800178"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -383,24 +383,28 @@ clusters already in the tree, <em>old clusters</em>, and clusters that are being
 <em>nominee clusters</em>). There are three main merge criteria implemented:</p>
 <ul class="simple">
 <li><dl class="simple">
-<dt><strong>radius</strong> (symmetric): The radius of the <em>resulting cluster</em></dt><dd><p>must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
+<dt>radius (symmetric):</dt><dd><p>The radius of the <em>resulting cluster</em>
+must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>diameter</strong> (symmetric): The diameter (equivalently, the average similarity) of the</dt><dd><p><em>resulting cluster</em> must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
+<dt>diameter (symmetric):</dt><dd><p>The diameter (equivalently, the average similarity) of the
+<em>resulting cluster</em> must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>tolerance-diameter</strong> (asymmetric): The <em>diameter</em> criteria must be satisfied <strong>and</strong></dt><dd><p>the diameter of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
+<dt>tolerance-diameter (asymmetric):</dt><dd><p>The <em>diameter</em> criteria must be satisfied <strong>and</strong>
+the diameter of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
 cluster</em> (unless the <em>old cluster</em> has a single fingerprint). Some slack can be
 provided with a value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>tolerance-radius</strong> (asymmetric): The <em>radius</em> criterion must be satisfied <strong>and</strong></dt><dd><p>the radius of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
+<dt>tolerance-radius (asymmetric):</dt><dd><p>The <em>radius</em> criterion must be satisfied <strong>and</strong>
+the radius of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
 cluster</em> (unless the <em>old cluster</em> has a single fingerprint). Some slack can be
 provided with a value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
 </dd>
