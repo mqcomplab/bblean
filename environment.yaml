@@ -17,14 +17,18 @@ dependencies:
   - numpy>=2.0
   - pandas
   - psutil
-  - matplotlib
-  - colorcet
-  - seaborn
   - scikit-learn
-  - opentsne
   # CLI
   - typer  # Handy cli library with support for type checking
   - rich  # Colorful styles and terminal outputs
+  # General visualization
+  - seaborn
+  - matplotlib
+  - colorcet
+  # Dimensionality reduction
+  - opentsne
+  - umap-learn
+  - pynndescent  # makes umap faster
 
   # Dev dependencies: linters / checkers / tests / CI / profilers
   - pre-commit  # Runs pre commit/push hooks

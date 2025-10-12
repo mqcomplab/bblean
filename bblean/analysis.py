@@ -102,7 +102,7 @@ def cluster_analysis(
     for i, c in enumerate(clusters):
         if len(c) < min_size:
             break
-        if top is not None and i > top:
+        if top is not None and i >= top:
             break
         _clusters.append(c)
     clusters = _clusters

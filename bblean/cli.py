@@ -17,7 +17,7 @@ from typer import Typer, Argument, Option, Abort, Context, Exit
 from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
 from bblean._timer import Timer
 from bblean._config import DEFAULTS, collect_system_specs_and_dump_config, TSNE_SEED
-from bblean.utils import _import_bitbirch_variant, batched, _has_files_or_valid_symlinks
+from bblean.utils import _import_bitbirch_variant, batched
 
 app = Typer(
     rich_markup_mode="markdown",
@@ -76,7 +76,7 @@ def _main(
 
 
 @app.command("plot-pops", rich_help_panel="Analysis")
-def _pops_plot(
+def _plot_pops(
     clusters_path: Annotated[
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
@@ -90,13 +90,21 @@ def _pops_plot(
             show_default=False,
         ),
     ] = None,
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    top: Annotated[
+        int | None,
+        Option("--top"),
+    ] = None,
     input_is_packed: Annotated[
         bool,
         Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
     ] = True,
     min_size: Annotated[
         int,
-        Option("-m", "--min-size"),
+        Option("--min-size"),
     ] = 0,
     n_features: Annotated[
         int | None,
@@ -107,10 +115,6 @@ def _pops_plot(
             " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
             rich_help_panel="Advanced",
         ),
-    ] = None,
-    title: Annotated[
-        str | None,
-        Option("--title", help="Plot title"),
     ] = None,
     save: Annotated[
         bool,
@@ -128,63 +132,35 @@ def _pops_plot(
         bool,
         Option("--show/--no-show", hidden=True),
     ] = True,
-    top: Annotated[
-        int | None,
-        Option("--top"),
-    ] = None,
 ) -> None:
-    r"""t-SNE visualization of the clustering results"""
+    r"""Population plot of the clustering results"""
     from bblean._console import get_console
 
     console = get_console(silent=not verbose)
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
-        import matplotlib.pyplot as plt
+        from bblean.plotting import _dispatch_visualization, pops_plot
 
-        from bblean.analysis import cluster_analysis
-        from bblean.plotting import pops_plot
-
-        if clusters_path.is_dir():
-            clusters_path = clusters_path / "clusters.pkl"
-        with open(clusters_path, mode="rb") as f:
-            clusters = pickle.load(f)
-        if fps_path is None:
-            input_fps_path = clusters_path.parent / "input-fps"
-            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
-                fps_path = input_fps_path
-            else:
-                console.print(
-                    "Could not find input fingerprints. Please use --fps-path",
-                    style="red",
-                )
-                raise Abort()
-        if fps_path.is_dir():
-            fps_paths = sorted(fps_path.glob("*.npy"))
-        else:
-            fps_paths = [fps_path]
-        ca = cluster_analysis(
-            clusters,
-            fps_paths,
-            smiles=(),
+        _dispatch_visualization(
+            clusters_path,
+            "pops",
+            pops_plot,
+            {},
+            min_size=min_size,
             top=top,
             n_features=n_features,
             input_is_packed=input_is_packed,
-            min_size=min_size,
+            fps_path=fps_path,
+            title=title,
+            filename=filename,
+            verbose=verbose,
+            save=save,
+            show=show,
         )
-        pops_plot(
-            ca,
-        )
-    if save:
-        if filename is None:
-            unique_id = format(random.getrandbits(32), "08x")
-            filename = f"pops-{unique_id}.pdf"
-        plt.savefig(Path.cwd() / filename)
-    if show:
-        plt.show()
 
 
-@app.command("plot-tsne", rich_help_panel="Analysis")
-def _tsne_plot(
+@app.command("plot-umap", rich_help_panel="Analysis")
+def _plot_umap(
     clusters_path: Annotated[
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
@@ -206,6 +182,227 @@ def _tsne_plot(
         bool,
         Option("--save/--no-save"),
     ] = True,
+    top: Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    scaling: Annotated[
+        str,
+        Option("--scaling", rich_help_panel="Advanced"),
+    ] = "normalize",
+    min_size: Annotated[
+        int,
+        Option("--min-size"),
+    ] = 0,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
+    deterministic: Annotated[
+        bool,
+        Option("--deterministic/--no-deterministic"),
+    ] = False,
+    n_neighbors: Annotated[
+        int,
+        Option("-n", "--neighbors"),
+    ] = 15,
+    min_dist: Annotated[
+        float,
+        Option("-d", "--min-dist"),
+    ] = 0.5,
+    metric: Annotated[
+        str,
+        Option("--metric"),
+    ] = "euclidean",
+    densmap: Annotated[
+        bool,
+        Option("--densmap/--no-densmap"),
+    ] = False,
+    workers: Annotated[
+        int | None,
+        Option(
+            "-w",
+            "--workers",
+            help="Num. cores to use for parallel processing",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+) -> None:
+    r"""UMAP visualization of the clustering results"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        from bblean.plotting import _dispatch_visualization, umap_plot
+
+        kwargs = dict(
+            metric=metric,
+            densmap=densmap,
+            deterministic=deterministic,
+            n_neighbors=n_neighbors,
+            workers=workers,
+            min_dist=min_dist,
+        )
+        _dispatch_visualization(
+            clusters_path,
+            "umap",
+            umap_plot,
+            kwargs,
+            min_size=min_size,
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            fps_path=fps_path,
+            title=title,
+            filename=filename,
+            verbose=verbose,
+            save=save,
+            show=show,
+        )
+
+
+@app.command("plot-pca", rich_help_panel="Analysis")
+def _plot_pca(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    top: Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    min_size: Annotated[
+        int,
+        Option("--min-size"),
+    ] = 0,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    scaling: Annotated[
+        str,
+        Option("--scaling", rich_help_panel="Advanced"),
+    ] = "normalize",
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
+    whiten: Annotated[
+        bool,
+        Option("--whiten/--no-whiten"),
+    ] = False,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
+    ] = None,
+) -> None:
+    r"""PCA visualization of the clustering results"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        from bblean.plotting import _dispatch_visualization, pca_plot
+
+        _dispatch_visualization(
+            clusters_path,
+            "pca",
+            pca_plot,
+            {"whiten": whiten},
+            min_size=min_size,
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            fps_path=fps_path,
+            title=title,
+            filename=filename,
+            verbose=verbose,
+            save=save,
+            show=show,
+        )
+
+
+@app.command("plot-tsne", rich_help_panel="Analysis")
+def _plot_tsne(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
+    min_size: Annotated[
+        int,
+        Option("--min-size"),
+    ] = 0,
     filename: Annotated[
         str | None,
         Option("--filename"),
@@ -314,62 +511,40 @@ def _tsne_plot(
     console = get_console(silent=not verbose)
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
-        import matplotlib.pyplot as plt
+        from bblean.plotting import _dispatch_visualization, tsne_plot
 
-        from bblean.analysis import cluster_analysis
-        from bblean.plotting import tsne_plot
-
-        if clusters_path.is_dir():
-            clusters_path = clusters_path / "clusters.pkl"
-        with open(clusters_path, mode="rb") as f:
-            clusters = pickle.load(f)
-        if fps_path is None:
-            input_fps_path = clusters_path.parent / "input-fps"
-            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
-                fps_path = input_fps_path
-            else:
-                console.print(
-                    "Could not find input fingerprints. Please use --fps-path",
-                    style="red",
-                )
-                raise Abort()
-        if fps_path.is_dir():
-            fps_paths = sorted(fps_path.glob("*.npy"))
-        else:
-            fps_paths = [fps_path]
-        ca = cluster_analysis(
-            clusters,
-            fps_paths,
-            smiles=(),
-            top=top,
-            n_features=n_features,
-            input_is_packed=input_is_packed,
-        )
-        tsne_plot(
-            ca,
-            title,
+        kwargs = dict(
+            metric=metric,
+            seed=seed,
             perplexity=perplexity,
             exaggeration=exaggeration,
-            seed=seed,
             dof=dof,
-            metric=metric,
             workers=workers,
             scaling=scaling,
             do_pca_init=do_pca_init,
             multiscale=multiscale,
             pca_reduce=pca_reduce,
         )
-    if save:
-        if filename is None:
-            unique_id = format(random.getrandbits(32), "08x")
-            filename = f"tsne-{unique_id}.pdf"
-        plt.savefig(Path.cwd() / filename)
-    if show:
-        plt.show()
+        _dispatch_visualization(
+            clusters_path,
+            "tsne",
+            tsne_plot,
+            kwargs,
+            min_size=min_size,
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            fps_path=fps_path,
+            title=title,
+            filename=filename,
+            verbose=verbose,
+            save=save,
+            show=show,
+        )
 
 
 @app.command("plot-summary", rich_help_panel="Analysis")
-def _summary_plot(
+def _plot_summary(
     clusters_path: Annotated[
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
@@ -387,6 +562,10 @@ def _summary_plot(
         bool,
         Option("--save/--no-save"),
     ] = True,
+    min_size: Annotated[
+        int,
+        Option("--min-size"),
+    ] = 0,
     smiles_path: Annotated[
         Path | None,
         Option(
@@ -448,53 +627,26 @@ def _summary_plot(
     console = get_console(silent=not verbose)
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
-        import matplotlib.pyplot as plt
-
+        from bblean.plotting import _dispatch_visualization, summary_plot
         from bblean.smiles import load_smiles
-        from bblean.analysis import cluster_analysis
-        from bblean.plotting import summary_plot
 
-        if clusters_path.is_dir():
-            clusters_path = clusters_path / "clusters.pkl"
-        with open(clusters_path, mode="rb") as f:
-            clusters = pickle.load(f)
-        if fps_path is None:
-            input_fps_path = clusters_path.parent / "input-fps"
-            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
-                fps_path = input_fps_path
-            else:
-                console.print(
-                    "Could not find input fingerprints. Please use --fps-path",
-                    style="red",
-                )
-                raise Abort()
-        if fps_path.is_dir():
-            fps_paths = sorted(fps_path.glob("*.npy"))
-        else:
-            fps_paths = [fps_path]
-        # fps = np.load(fps_path, mmap_mode="r")
-        smiles: tp.Iterable[str]
-        if smiles_path is not None:
-            smiles = load_smiles(smiles_path)
-        else:
-            smiles = ()
-        ca = cluster_analysis(
-            clusters,
-            fps_paths,
-            smiles,
+        _dispatch_visualization(
+            clusters_path,
+            "summary",
+            summary_plot,
+            {"annotate": annotate},
+            smiles=load_smiles(smiles_path) if smiles_path is not None else (),
+            min_size=min_size,
             top=top,
             n_features=n_features,
             input_is_packed=input_is_packed,
-            scaffold_fp_kind=scaffold_fp_kind,
+            fps_path=fps_path,
+            title=title,
+            filename=filename,
+            verbose=verbose,
+            save=save,
+            show=show,
         )
-        summary_plot(ca, title, annotate=annotate)
-    if save:
-        if filename is None:
-            unique_id = format(random.getrandbits(32), "08x")
-            filename = f"summary-{unique_id}.pdf"
-        plt.savefig(Path.cwd() / filename)
-    if show:
-        plt.show()
 
 
 @app.command("run")
