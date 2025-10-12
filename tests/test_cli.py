@@ -55,6 +55,37 @@ def test_pca() -> None:
         result = runner.invoke(
             app,
             [
+                "plot-pops",
+                str(out_dir),
+                "-f",
+                str(dir / "fingerprints.npy"),
+                "--min-size",
+                "1",
+                "--top",
+                "2",
+                "--no-show",
+            ],
+        )
+        assert result.exit_code == 0
+
+
+def test_pops() -> None:
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        Path
+        dir = Path(d).resolve()
+        fps = make_fake_fingerprints(
+            250, n_features=512, seed=12620509540149709235, pack=True
+        )
+        np.save(dir / "fingerprints.npy", fps)
+        out_dir = dir / "output"
+        result = runner.invoke(
+            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.3"]
+        )
+        assert result.exit_code == 0
+        result = runner.invoke(
+            app,
+            [
                 "plot-pca",
                 str(out_dir),
                 "-f",
@@ -221,6 +252,8 @@ def test_multiround() -> None:
                 "--ps",
                 "1",
                 "--no-verbose",
+                "--set-mid-merge",
+                "tolerance",
             ],
         )
         with open(out_dir / "clusters.pkl", mode="rb") as f:

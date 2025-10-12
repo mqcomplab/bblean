@@ -114,9 +114,7 @@ An example usual workflow is as follows:
    a directory with multiple `*.npy` files, files will be clustered in parallel and
    sub-trees will be merged iteratively in intermediate rounds. For more information:
    `bb multiround --help`. Outputs are written by default to
-   `bb_multiround_outputs/<unique-id>/`. *Currently intermediate numpy files
-   are saved but please do not rely on this, it may change in the near future.*
-   
+   `bb_multiround_outputs/<unique-id>/`.
 
 4. **Visualize the results**: You can plot a summary of the largest clusters with
    `bb plot-summary <output-path> --top 20` (largest 20 clusters). Passing the optional `--smiles <path-to-file.smi>` argument
@@ -163,14 +161,16 @@ import bblean.analysis as analysis
 
 # Create the fingerprints and pack them into a numpy array, starting from a *.smi file
 smiles = bblean.load_smiles("./examples/chembl-smiles.smi")
-fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048)
+fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind="rdkit")
 
 # Fit the figerprints (by default all bblean functions take *packed* fingerprints)
+# A threhsold of 0.5-0.65 is good for rdkit fingerprints, a threshold of 0.2-0.35
+# is better for ECFPs
 tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion="diameter")
 tree.fit(fps)
 
 # Refine the tree (if needed)
-tree.set_merge(threshold=0.70, merge_criterion="tolerance", tolerance=0.05)
+tree.set_merge(merge_criterion="tolerance-diameter", tolerance=0.05)
 tree.refine_inplace(fps)
 
 # Visualize the results

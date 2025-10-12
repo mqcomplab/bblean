@@ -59,7 +59,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: "pytest ./tests -k 'not memory_regression'"
+        entry: "pytest ./tests -k 'not regression and not tsne'"
         # Don't generate a venv for the exe
         language: system
         types: [python]

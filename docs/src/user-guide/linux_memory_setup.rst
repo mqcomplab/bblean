@@ -1,12 +1,16 @@
 .. _linux-memory-setup:
 
 Linux Memory Setup
-====================
+==================
 
-On MacOS and Windows memory compression is enabled by default. However on Linux, memory compression (e.g. ``zram`` and ``zswap``) is not enabled. Usually this is not an issue, but if you are running a system with limited RAM, enabling these features can help improve performance by compressing memory pages. This document will provide a step-by-step guide to enable ``zram`` and ``zswap`` on a Linux system.
+On MacOS and Windows memory compression is enabled by default. However on Linux, memory
+compression (e.g. ``zram`` and ``zswap``) is not enabled. Usually this is not an issue,
+but if you are running a system with limited RAM, enabling these features can help
+improve performance by compressing memory pages. This document will provide a
+step-by-step guide to enable ``zram`` and ``zswap`` on a Linux system.
 
 ``Zram`` setup 
-----------------------
+--------------
 This quick start guide follows the ``zram`` article on the ArchLinux wiki. See the `article <https://wiki.archlinux.org/title/Zram>`_ for more information. 
 
 #. Step 1: Install Required Packages
@@ -77,7 +81,7 @@ This quick start guide follows the ``zram`` article on the ArchLinux wiki. See t
         sudo swapoff /dev/zram0
 
 ``Zswap`` setup
-----------------------
+---------------
 
 Zswap is usually preinstalled with Debian distributions. To check whether ``zswap`` is enabled, run:
 

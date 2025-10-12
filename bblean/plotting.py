@@ -1,10 +1,14 @@
 r"""Plotting and visualization convenience functions"""
 
+from pathlib import Path
+import pickle
+import random
 import typing as tp
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import seaborn as sns
 from rdkit import Chem
 from rdkit.Chem import Draw
 import colorcet
@@ -14,13 +18,46 @@ from openTSNE.sklearn import TSNE
 from openTSNE.affinity import Multiscale
 import umap
 
-from bblean.utils import batched, _num_avail_cpus
-from bblean.analysis import ClusterAnalysis
+from bblean.utils import batched, _num_avail_cpus, _has_files_or_valid_symlinks
+from bblean.analysis import ClusterAnalysis, cluster_analysis
 from bblean._config import TSNE_SEED
 
-__all__ = ["summary_plot", "tsne_plot", "dump_mol_images"]
+__all__ = [
+    "summary_plot",
+    "tsne_plot",
+    "umap_plot",
+    "pops_plot",
+    "pca_plot",
+    "dump_mol_images",
+]
 
-# TODO: Mol relocation plots?
+
+def pops_plot(
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Distrubution of cluster populations using KDE"""
+    fig, ax = plt.subplots()
+    cluster_sizes = c.df["mol_num"]
+    sns.kdeplot(
+        ax=ax,
+        data=cluster_sizes,
+        color="tab:purple",
+        bw_adjust=0.25,
+        gridsize=len(cluster_sizes) // 5,
+        fill=True,
+        warn_singular=False,
+    )
+    ax.set_xlabel("Density")
+    ax.set_xlabel("Cluster size")
+    msg = f"Populations for top {c.num_clusters} largest clusters"
+    if c.min_size is not None:
+        msg = f"{msg} (min. size = {c.min_size})"
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
 
 
 # Similar to "init_plot" in the original bitbirch
@@ -365,3 +402,56 @@ def dump_mol_images(
         img = Draw.MolsToGridImage(mols, molsPerRow=5)
         with open(f"cluster_{cluster_idx}_{i}.png", "wb") as f:
             f.write(img.data)
+
+
+# For internal use, dispatches a visualization workflow and optionally saves
+# plot to disk and/or displays it using mpl
+def _dispatch_visualization(
+    clusters_path: Path,
+    fn_name: str,
+    fn: tp.Callable[..., tp.Any],
+    fn_kwargs: tp.Any,
+    min_size: int = 0,
+    smiles: tp.Iterable[str] = (),
+    top: int | None = None,
+    n_features: int | None = None,
+    input_is_packed: bool = True,
+    fps_path: Path | None = None,
+    title: str | None = None,
+    filename: str | None = None,
+    verbose: bool = True,
+    save: bool = True,
+    show: bool = True,
+) -> None:
+    if clusters_path.is_dir():
+        clusters_path = clusters_path / "clusters.pkl"
+    with open(clusters_path, mode="rb") as f:
+        clusters = pickle.load(f)
+    if fps_path is None:
+        input_fps_path = clusters_path.parent / "input-fps"
+        if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+            fps_path = input_fps_path
+        else:
+            msg = "Could not find input fingerprints. Please use --fps-path"
+            raise RuntimeError(msg)
+    if fps_path.is_dir():
+        fps_paths = sorted(fps_path.glob("*.npy"))
+    else:
+        fps_paths = [fps_path]
+    ca = cluster_analysis(
+        clusters,
+        fps_paths,
+        smiles=smiles,
+        top=top,
+        n_features=n_features,
+        input_is_packed=input_is_packed,
+        min_size=min_size,
+    )
+    fn(ca, title=title, **fn_kwargs)
+    if save:
+        if filename is None:
+            unique_id = format(random.getrandbits(32), "08x")
+            filename = f"{fn_name}-{unique_id}.pdf"
+        plt.savefig(Path.cwd() / filename)
+    if show:
+        plt.show()

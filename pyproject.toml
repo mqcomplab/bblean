@@ -21,6 +21,8 @@ dependencies = [
     "psutil",
     "matplotlib",
     "colorcet",
+    "seaborn",
+    "opentsne",
     "scikit-learn",
     "rich",
     "typer",
