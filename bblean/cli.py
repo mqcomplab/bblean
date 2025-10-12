@@ -231,7 +231,7 @@ def _plot_umap(
     min_dist: Annotated[
         float,
         Option("-d", "--min-dist"),
-    ] = 0.1,
+    ] = 0.5,
     metric: Annotated[
         str,
         Option("--metric"),
