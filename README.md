@@ -114,9 +114,7 @@ An example usual workflow is as follows:
    a directory with multiple `*.npy` files, files will be clustered in parallel and
    sub-trees will be merged iteratively in intermediate rounds. For more information:
    `bb multiround --help`. Outputs are written by default to
-   `bb_multiround_outputs/<unique-id>/`. *Currently intermediate numpy files
-   are saved but please do not rely on this, it may change in the near future.*
-   
+   `bb_multiround_outputs/<unique-id>/`.
 
 4. **Visualize the results**: You can plot a summary of the largest clusters with
    `bb plot-summary <output-path> --top 20` (largest 20 clusters). Passing the optional `--smiles <path-to-file.smi>` argument
