@@ -528,7 +528,9 @@ def _run(
     ] = DEFAULTS.threshold,
     refine_threshold_increase: Annotated[
         float,
-        Option("--refine-threshold", help="Threshold for refinement criterion"),
+        Option(
+            "--refine-threshold-increase", help="Threshold for refinement criterion"
+        ),
     ] = DEFAULTS.refine_threshold_increase,
     merge_criterion: Annotated[
         str,
