@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=74336d3e"></script>
+    <script src="../../_static/documentation_options.js?v=60ff0e33"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -398,10 +398,10 @@
         <span class="n">bw_adjust</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
         <span class="n">gridsize</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cluster_sizes</span><span class="p">)</span> <span class="o">//</span> <span class="mi">5</span><span class="p">,</span>
         <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">warn_singular</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Density&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Cluster size&quot;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
     <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Populations for top </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">num_clusters</span><span class="si">}</span><span class="s2"> largest clusters&quot;</span>
     <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">min_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2"> (min. size = </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">min_size</span><span class="si">}</span><span class="s2">)&quot;</span>
