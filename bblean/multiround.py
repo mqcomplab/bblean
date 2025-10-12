@@ -266,10 +266,14 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         tolerance: float,
         criterion: str,
         out_dir: Path | str,
+        save_tree: bool,
+        save_centroids: bool,
     ) -> None:
         super().__init__(
             branching_factor, threshold, tolerance, -1, out_dir, False, criterion, ()
         )
+        self.save_tree = save_tree
+        self.save_centroids = save_centroids
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_path_pairs = batch_info[1]
@@ -287,12 +291,24 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             del mol_idxs
 
         # Save clusters and exit
+        if self.save_tree:
+            # TODO: BitBIRCH is highly recursive. pickling may crash python,
+            # an alternative solution would be better
+            _old_limit = sys.getrecursionlimit()
+            sys.setrecursionlimit(100_000)
+            with open(self.out_dir / "bitbirch.pkl", mode="wb") as f:
+                pickle.dump(tree, f)
+            sys.setrecursionlimit(_old_limit)
         tree.delete_internal_nodes()
-        output = tree.get_centroids_mol_ids()
-        with open(self.out_dir / "clusters.pkl", mode="wb") as f:
-            pickle.dump(output["mol_ids"], f)
-        with open(self.out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
-            pickle.dump(output["centroids"], f)
+        if self.save_centroids:
+            output = tree.get_centroids_mol_ids()
+            with open(self.out_dir / "clusters.pkl", mode="wb") as f:
+                pickle.dump(output["mol_ids"], f)
+            with open(self.out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
+                pickle.dump(output["centroids"], f)
+        else:
+            with open(self.out_dir / "clusters.pkl", mode="wb") as f:
+                pickle.dump(tree.get_cluster_mol_ids(), f)
 
 
 # Create a list of tuples of labels, file paths and start-end idxs
@@ -334,6 +350,8 @@ def run_multiround_bitbirch(
     midsection_merge_criterion: str = DEFAULTS.refine_merge_criterion,
     final_merge_criterion: str | None = None,
     mp_context: tp.Any = None,
+    save_tree: bool = False,
+    save_centroids: bool = True,
     # Debug
     max_fps: int | None = None,
     verbose: bool = False,
@@ -443,6 +461,8 @@ def run_multiround_bitbirch(
     file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
     final_fn = _FinalTreeMergingRound(
+        save_tree=save_tree,
+        save_centroids=save_centroids,
         criterion=final_merge_criterion,
         threshold=threshold + midsection_threshold_increase,
         **common_kwargs,

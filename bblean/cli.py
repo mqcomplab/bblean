@@ -684,6 +684,14 @@ def _run(
             "--refine-threshold-increase", help="Threshold for refinement criterion"
         ),
     ] = DEFAULTS.refine_threshold_increase,
+    save_tree: Annotated[
+        bool,
+        Option("--save-tree/--no-save-tree", rich_help_panel="Advanced"),
+    ] = False,
+    save_centroids: Annotated[
+        bool,
+        Option("--save-centroids/--no-save-centroids", rich_help_panel="Advanced"),
+    ] = True,
     merge_criterion: Annotated[
         str,
         Option("--set-merge", "-m", help="Merge criterion for initial clustsering"),
@@ -850,18 +858,30 @@ def _run(
             )
         # TODO: Fix peak memory stats
     timer.end_timing("total", console, indent=False)
-    tree.delete_internal_nodes()
     stats = get_peak_memory(1)
     if stats is None:
         console.print("[Peak memory stats not tracked for non-Unix systems]")
     else:
         console.print_peak_mem_raw(stats, indent=False)
+    if save_tree:
+        # TODO: BitBIRCH is highly recursive. pickling may crash python,
+        # an alternative solution would be better
+        _old_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(100_000)
+        with open(out_dir / "bitbirch.pkl", mode="wb") as f:
+            pickle.dump(tree, f)
+        sys.setrecursionlimit(_old_limit)
+    tree.delete_internal_nodes()
     # Dump outputs (peak memory, timings, config, cluster ids)
-    output = tree.get_centroids_mol_ids()
-    with open(out_dir / "clusters.pkl", mode="wb") as f:
-        pickle.dump(output["mol_ids"], f)
-    with open(out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
-        pickle.dump(output["centroids"], f)
+    if save_centroids:
+        output = tree.get_centroids_mol_ids()
+        with open(out_dir / "clusters.pkl", mode="wb") as f:
+            pickle.dump(output["mol_ids"], f)
+        with open(out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
+            pickle.dump(output["centroids"], f)
+    else:
+        with open(out_dir / "clusters.pkl", mode="wb") as f:
+            pickle.dump(tree.get_cluster_mol_ids(), f)
 
     collect_system_specs_and_dump_config(ctx.params)
     timer.dump(out_dir / "timings.json")
@@ -939,6 +959,14 @@ def _multiround(
             help="Initial merge criterion for round 1. ('diameter' recommended)",
         ),
     ] = DEFAULTS.merge_criterion,
+    save_tree: Annotated[
+        bool,
+        Option("--save-tree/--no-save-tree", rich_help_panel="Advanced"),
+    ] = False,
+    save_centroids: Annotated[
+        bool,
+        Option("--save-centroids/--no-save-centroids", rich_help_panel="Advanced"),
+    ] = True,
     mid_merge_criterion: Annotated[
         str,
         Option(
@@ -1131,6 +1159,8 @@ def _multiround(
         midsection_threshold_increase=mid_threshold_increase,
         tolerance=tolerance,
         # Advanced
+        save_tree=save_tree,
+        save_centroids=save_centroids,
         bin_size=bin_size,
         max_tasks_per_process=max_tasks_per_process,
         full_refinement_before_midsection=full_refinement_before_midsection,
