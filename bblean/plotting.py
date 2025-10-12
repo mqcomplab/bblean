@@ -5,6 +5,7 @@ import typing as tp
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import seaborn as sns
 from rdkit import Chem
 from rdkit.Chem import Draw
 import colorcet
@@ -20,6 +21,40 @@ from bblean._config import TSNE_SEED
 __all__ = ["summary_plot", "tsne_plot", "dump_mol_images"]
 
 # TODO: Mol relocation plots?
+
+
+def pops_plot(
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    # Compute KDE
+    fig, ax = plt.subplots()
+    cluster_sizes = c.df["mol_num"]
+
+    # Plot
+    sns.kdeplot(
+        ax=ax,
+        data=cluster_sizes,
+        color="tab:purple",
+        bw_adjust=0.25,
+        gridsize=len(cluster_sizes) // 5,
+        fill=True,
+    )
+    # kde = gaussian_kde(cluster_sizes, bw_method=0.3)
+    # x = np.linspace(0, cluster_sizes[0], cluster_sizes[0])
+    # ax.plot(x, kde(x), linewidth=1.5, color="tab:purple")
+    # ax.hist(cluster_sizes, bins="auto", alpha=0.3, color="tab:purple", density=True)
+    ax.set_xlabel("Density")
+    ax.set_xlabel("Cluster size")
+    ax.legend()
+    msg = f"Populations for top {c.num_clusters} largest clusters"
+    if c.min_size is not None:
+        msg = f"{msg} (min. size = {c.min_size})"
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
 
 
 # Similar to "init_plot" in the original bitbirch
