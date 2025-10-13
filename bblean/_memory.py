@@ -173,7 +173,9 @@ def monitor_rss_process(file: Path | str, interval_s: float, start_time: float) 
             cmdline = info["cmdline"]
             if cmdline is None:
                 continue
-            if Path(__file__).name in cmdline:
+            if any(arg.endswith("bb") for arg in cmdline) and (
+                "run" in cmdline or "multiround" in cmdline
+            ):
                 total_rss += info["memory_info"].rss
         return total_rss
 
