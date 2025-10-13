@@ -1139,7 +1139,7 @@ def _multiround(
 
     console.print_banner()
     console.print()
-    console.print_multiround_config(ctx.params)
+    console.print_multiround_config(ctx.params, mp_context)
 
     # Optinally start a separate process that tracks RAM usage
     if monitor_rss:

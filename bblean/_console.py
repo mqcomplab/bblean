@@ -117,7 +117,11 @@ If you find this software useful please cite the following articles:
             )
         self.print()
 
-    def print_multiround_config(self, config: dict[str, tp.Any]) -> None:
+    def print_multiround_config(
+        self, config: dict[str, tp.Any], mp_context: tp.Any = None
+    ) -> None:
+        if mp_context is None:
+            mp_context = mp.get_context()
         num_processes = config.get("num_initial_processes", 1)
         extra_desc = (
             f"parallel (max {num_processes:,} processes)"
@@ -152,7 +156,7 @@ If you find this software useful please cite the following articles:
             self.print(f"- Bin size for second round: {bin_size:,}\n", end="")
         if num_processes > 1:
             self.print(
-                f"- Multiprocessing method: [yellow]{mp.get_start_method()}[/yellow]\n",
+                f"- Multiprocessing method: [yellow]{mp_context._name}[/yellow]\n",
                 end="",
             )
         if not full_refinement_before_midsection:
