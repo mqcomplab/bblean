@@ -35,12 +35,12 @@ implemented:
     the *old cluster* (unless the *old cluster* has a single fingerprint). Some slack
     can be provided with a value of ``tolerance``.
 - tolerance-legacy (asymmetric):
-    The *diameter* criterion must be satisfied **and**
-    The value of :math:`(isim(X \cup new_fp)(N + 1) - isim(X)(N - 1)) / 2`
-    must be greater or equal to that of the *old cluster* (unless the *old cluster* has a
-    single fingerprint, or the new cluster has more than one fingerprint). Some slack
-    can be provided with a value of ``tolerance``. **This is providded for compatibility
-    with old BitBIRCH versions, but in general should be avoided**
+    **This is providded for compatibility with old BitBIRCH versions only, in general it
+    should be avoided.** The *diameter* criterion must be satisfied **and** The value of
+    :math:`(isim(X \cup new_fp)(N + 1) - isim(X)(N - 1)) / 2` must be greater or equal
+    to that of the *old cluster* (unless the *old cluster* has a single fingerprint, or
+    the new cluster has more than one fingerprint). Some slack can be provided with a
+    value of ``tolerance``.
 
 Both **tolerance-diameter** and **tolerance-radius** reduce the ``tolerance`` slack
 exponentially as the cluster gets larger. This behaviour is usually desirable, but can
