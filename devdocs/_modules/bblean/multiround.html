@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=de104891"></script>
+    <script src="../../_static/documentation_options.js?v=0db2caf3"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -783,7 +783,7 @@
                 <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">initial_fn</span><span class="p">,</span> <span class="n">files_range_tuples</span><span class="p">)</span>
 
     <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">num_ps</span><span class="p">)</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
 
     <span class="c1"># Mid-section &quot;Tree-Merging&quot; rounds of clustering</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_midsection_rounds</span><span class="p">):</span>
@@ -814,7 +814,7 @@
                     <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">merging_fn</span><span class="p">,</span> <span class="n">batches</span><span class="p">)</span>
 
         <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">num_ps</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
 
     <span class="c1"># Final &quot;Tree-Merging&quot; round of clustering</span>
     <span class="n">round_idx</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -833,7 +833,7 @@
         <span class="n">final_fn</span><span class="p">((</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">file_pairs</span><span class="p">))</span>
 
     <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">num_ps</span><span class="p">)</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
     <span class="c1"># Remove intermediate files</span>
     <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;round-*.npy&quot;</span><span class="p">):</span>
