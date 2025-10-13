@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=02b0d81f"></script>
+    <script src="../../_static/documentation_options.js?v=e026a816"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -626,10 +626,14 @@
         <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">criterion</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">out_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">save_tree</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">save_centroids</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">branching_factor</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="p">()</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_tree</span> <span class="o">=</span> <span class="n">save_tree</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_centroids</span> <span class="o">=</span> <span class="n">save_centroids</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">batch_path_pairs</span> <span class="o">=</span> <span class="n">batch_info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -647,10 +651,24 @@
             <span class="k">del</span> <span class="n">mol_idxs</span>
 
         <span class="c1"># Save clusters and exit</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_tree</span><span class="p">:</span>
+            <span class="c1"># TODO: BitBIRCH is highly recursive. pickling may crash python,</span>
+            <span class="c1"># an alternative solution would be better</span>
+            <span class="n">_old_limit</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getrecursionlimit</span><span class="p">()</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">100_000</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;bitbirch.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="n">_old_limit</span><span class="p">)</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
-        <span class="n">cluster_mol_ids</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">get_cluster_mol_ids</span><span class="p">()</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;clusters.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">cluster_mol_ids</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_centroids</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">get_centroids_mol_ids</span><span class="p">()</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;clusters.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;mol_ids&quot;</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;cluster-centroids-packed.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;centroids&quot;</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;clusters.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">get_cluster_mol_ids</span><span class="p">(),</span> <span class="n">f</span><span class="p">)</span>
 
 
 <span class="c1"># Create a list of tuples of labels, file paths and start-end idxs</span>
@@ -694,6 +712,8 @@
     <span class="n">midsection_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">refine_merge_criterion</span><span class="p">,</span>
     <span class="n">final_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">mp_context</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">save_tree</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">save_centroids</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="c1"># Debug</span>
     <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -803,6 +823,8 @@
     <span class="n">file_pairs</span> <span class="o">=</span> <span class="n">_get_prev_round_buf_and_mol_idxs_files</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">round_idx</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
 
     <span class="n">final_fn</span> <span class="o">=</span> <span class="n">_FinalTreeMergingRound</span><span class="p">(</span>
+        <span class="n">save_tree</span><span class="o">=</span><span class="n">save_tree</span><span class="p">,</span>
+        <span class="n">save_centroids</span><span class="o">=</span><span class="n">save_centroids</span><span class="p">,</span>
         <span class="n">criterion</span><span class="o">=</span><span class="n">final_merge_criterion</span><span class="p">,</span>
         <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span> <span class="o">+</span> <span class="n">midsection_threshold_increase</span><span class="p">,</span>
         <span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span>

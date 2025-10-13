@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=02b0d81f"></script>
+    <script src="../../_static/documentation_options.js?v=e026a816"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -1371,6 +1371,24 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_only_has_leaves</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span><span class="o">.</span><span class="n">_next_leaf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
 
+<div class="viewcode-block" id="BitBirch.recluster_inplace">
+<a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.recluster_inplace">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">recluster_inplace</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Re-fit all clusters in the tree.</span>
+
+<span class="sd">        Similar to `BitBirch.refine_inplace`, but doesn&#39;t break any clusters&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model has not been fitted yet.&quot;</span><span class="p">)</span>
+        <span class="c1"># Release the memory held by non-leaf nodes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
+        <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bf_to_np</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
 <div class="viewcode-block" id="BitBirch.refine_inplace">
 <a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.refine_inplace">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">refine_inplace</span><span class="p">(</span>
@@ -1427,6 +1445,9 @@
 <span class="sd">        The split is only performed for the returned &#39;np&#39; buffers, the clusters in the</span>
 <span class="sd">        tree itself are not modified</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_largest</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bf_to_np</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="n">n_largest</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_largest must be &gt;= 1&quot;</span><span class="p">)</span>
 
