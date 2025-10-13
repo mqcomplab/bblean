@@ -11,7 +11,7 @@ BUILTIN_MERGES = [
     "diameter",
     "tolerance-diameter",
     "tolerance-radius",
-    "tolerance",
+    "tolerance-legacy",
 ]
 
 
@@ -142,7 +142,7 @@ class ToleranceRadiusMerge(ToleranceDiameterMerge):
 
 
 class ToleranceMerge(MergeAcceptFunction):
-    name = "tolerance"
+    name = "tolerance-legacy"
 
     def __init__(self, tolerance: float = 0.05) -> None:
         self.tolerance = tolerance
@@ -178,7 +178,7 @@ def get_merge_accept_fn(
         return RadiusMerge()
     elif merge_criterion == "diameter":
         return DiameterMerge()
-    elif merge_criterion == "tolerance":
+    elif merge_criterion == "tolerance-legacy":
         return ToleranceMerge(tolerance)
     elif merge_criterion in "tolerance-diameter":
         return ToleranceDiameterMerge(tolerance)

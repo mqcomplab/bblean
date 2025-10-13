@@ -114,7 +114,10 @@ def test_random_fps_tolerance_consistency() -> None:
         500, n_features=2048, seed=12620509540149709235, pack=True
     )
     tree = BitBirch(
-        merge_criterion="tolerance", branching_factor=50, threshold=0.65, tolerance=0.05
+        merge_criterion="tolerance-legacy",
+        branching_factor=50,
+        threshold=0.65,
+        tolerance=0.05,
     )
     tree.fit(fps, n_features=2048)
     output = tree.get_cluster_mol_ids()
@@ -124,21 +127,24 @@ def test_random_fps_tolerance_consistency() -> None:
     # Check consistency with "upacked" bitbirch
     fps = unpack_fingerprints(fps, n_features=2048)
     tree = BitBirch(
-        merge_criterion="tolerance", branching_factor=50, threshold=0.65, tolerance=0.05
+        merge_criterion="tolerance-legacy",
+        branching_factor=50,
+        threshold=0.65,
+        tolerance=0.05,
     )
     tree.fit(fps, n_features=2048, input_is_packed=False)
     output = tree.get_cluster_mol_ids()
     assert output[:4] == ids_expect
 
     # Check consistency with "legacy" bitbirchs (uint8 and int64)
-    set_merge_uint8("tolerance", 0.05)
+    set_merge_uint8("tolerance-legacy", 0.05)
     tree = BitBirchUint8(threshold=0.65, branching_factor=50)
     tree.fit(fps, n_features=2048, input_is_packed=False)
     output = tree.get_cluster_mol_ids()
     assert output[:4] == ids_expect
 
     fps = fps.astype(np.int64)
-    set_merge_int64("tolerance", 0.05)
+    set_merge_int64("tolerance-legacy", 0.05)
     tree = BitBirchInt64(threshold=0.65, branching_factor=50)
     tree.fit(fps, n_features=2048, input_is_packed=False)
     output = tree.get_cluster_mol_ids()

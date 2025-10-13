@@ -253,7 +253,7 @@ def test_multiround() -> None:
                 "1",
                 "--no-verbose",
                 "--set-mid-merge",
-                "tolerance",
+                "tolerance-legacy",
             ],
         )
         with open(out_dir / "clusters.pkl", mode="rb") as f:
