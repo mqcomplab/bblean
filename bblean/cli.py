@@ -4,7 +4,6 @@ import random
 import typing as tp
 import math
 import shutil
-import json
 import sys
 import pickle
 import multiprocessing as mp
@@ -14,7 +13,7 @@ from pathlib import Path
 
 from typer import Typer, Argument, Option, Abort, Context, Exit
 
-from bblean._memory import launch_monitor_rss_daemon, get_peak_memory
+from bblean._memory import launch_monitor_rss_daemon
 from bblean._timer import Timer
 from bblean._config import DEFAULTS, collect_system_specs_and_dump_config, TSNE_SEED
 from bblean.utils import _import_bitbirch_variant, batched
@@ -737,19 +736,22 @@ def _run(
     monitor_rss: Annotated[
         bool,
         Option(
+            "--monitor-mem/--no-monitor-mem",
+            "--monitor-rss/--no-monitor-rss",
             help="Monitor RAM used by all processes",
             rich_help_panel="Advanced",
         ),
-    ] = False,
+    ] = True,
     monitor_rss_interval_s: Annotated[
         float,
         Option(
+            "--monitor-mem-seconds",
             "--monitor-rss-seconds",
-            help="Interval in seconds for RSS monitoring",
+            help="Interval in seconds for RAM monitoring",
             rich_help_panel="Debug",
             hidden=True,
         ),
-    ] = 0.01,
+    ] = 1.0,
     max_fps: Annotated[
         int | None,
         Option(
@@ -856,13 +858,8 @@ def _run(
             tree.refine_inplace(
                 input_files, input_is_packed=input_is_packed, n_largest=refine_num
             )
-        # TODO: Fix peak memory stats
     timer.end_timing("total", console, indent=False)
-    stats = get_peak_memory(1)
-    if stats is None:
-        console.print("[Peak memory stats not tracked for non-Unix systems]")
-    else:
-        console.print_peak_mem_raw(stats, indent=False)
+    console.print_peak_mem(out_dir, indent=False)
     if save_tree:
         # TODO: BitBIRCH is highly recursive. pickling may crash python,
         # an alternative solution would be better
@@ -885,14 +882,6 @@ def _run(
 
     collect_system_specs_and_dump_config(ctx.params)
     timer.dump(out_dir / "timings.json")
-
-    peak_rss_fpath = out_dir / "peak-rss.json"
-    with open(peak_rss_fpath, mode="wt", encoding="utf-8") as tf:
-        json.dump(
-            {"self_max_rss_gib": None if stats is None else stats.self_gib},
-            tf,
-            indent=4,
-        )
 
     # Symlink or copy fingerprint files
     input_fps_dir = (out_dir / "input-fps").resolve()
@@ -1056,19 +1045,22 @@ def _multiround(
     monitor_rss: Annotated[
         bool,
         Option(
+            "--monitor-mem",
+            "--monitor-rss",
             help="Monitor RAM used by all processes",
             rich_help_panel="Advanced",
         ),
-    ] = False,
+    ] = True,
     monitor_rss_interval_s: Annotated[
         float,
         Option(
+            "--monitor-mem-seconds",
             "--monitor-rss-seconds",
-            help="Interval in seconds for RSS monitoring",
+            help="Interval in seconds for RAM monitoring",
             rich_help_panel="Debug",
             hidden=True,
         ),
-    ] = 0.01,
+    ] = 1.0,
     max_fps: Annotated[
         int | None,
         Option(
