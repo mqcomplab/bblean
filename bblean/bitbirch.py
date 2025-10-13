@@ -982,6 +982,21 @@ class BitBirch:
     def _only_has_leaves(self) -> bool:
         return (self._root is None) and (self._dummy_leaf._next_leaf is not None)
 
+    def recluster_inplace(self) -> tpx.Self:
+        r"""Re-fit all clusters in the tree.
+
+        Similar to `BitBirch.refine_inplace`, but doesn't break any clusters"""
+
+        if not self.is_init:
+            raise ValueError("The model has not been fitted yet.")
+        # Release the memory held by non-leaf nodes
+        self.delete_internal_nodes()
+        fps_bfs, mols_bfs = self._bf_to_np()
+        self.reset()
+        for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
+            self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+        return self
+
     def refine_inplace(
         self,
         X: _Input | Path | str | tp.Sequence[Path],
@@ -1035,6 +1050,9 @@ class BitBirch:
         The split is only performed for the returned 'np' buffers, the clusters in the
         tree itself are not modified
         """
+        if n_largest == 0:
+            return self._bf_to_np()
+
         if n_largest < 1:
             raise ValueError("n_largest must be >= 1")
 
