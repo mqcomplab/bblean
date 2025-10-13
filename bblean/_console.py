@@ -1,5 +1,6 @@
 r"""Pretty printing"""
 
+from pathlib import Path
 import numpy as np
 import typing as tp
 import os
@@ -7,7 +8,7 @@ import multiprocessing as mp
 
 from rich.console import Console
 
-from bblean._memory import get_peak_memory, PeakMemoryStats
+from bblean._memory import get_peak_memory_gib
 
 
 class BBConsole(Console):
@@ -35,36 +36,12 @@ If you find this software useful please cite the following articles:
         TO-BE-ADDED"""  # noqa
         )
 
-    def print_peak_mem(self, num_processes: int, indent: bool = True) -> None:
-        stats = get_peak_memory(num_processes)
-        if stats is None:
-            self.print("[Peak RAM not tracked for non-Unix systems]")
+    def print_peak_mem(self, out_dir: Path, indent: bool = True) -> None:
+        peak_mem_gib = get_peak_memory_gib(out_dir)
+        if peak_mem_gib is None:
             return
-        return self.print_peak_mem_raw(stats, indent)
-
-    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent: bool = True) -> None:
-        if indent:
-            indent_str = " " * 4
-            indent_str_2 = 2 * indent_str
-        else:
-            indent_str = ""
-            indent_str_2 = " " * 4
-        self.print(
-            "".join(
-                (
-                    indent_str,
-                    "- Peak RAM use:\n",
-                    indent_str_2,
-                    f"- Main proc.: {stats.self_gib:.4f} GiB",
-                )
-            )
-        )
-        if stats.child_gib is not None:
-            self.print(
-                "".join(
-                    (indent_str_2, f"- Max of child procs.: {stats.child_gib:.4f} GiB")
-                )
-            )
+        indent_str = " " * 4 if indent else ""
+        self.print(f"{indent_str}- Peak RAM use: {peak_mem_gib:.4f} GiB")
 
     def print_config(self, config: dict[str, tp.Any]) -> None:
         num_fps_loaded = np.array(config["num_fps_loaded"])
@@ -183,10 +160,7 @@ class SilentConsole(BBConsole):
     def print(self, *args: tp.Any, **kwargs: tp.Any) -> None:
         pass
 
-    def print_peak_mem(self, num_processes: int, indent: bool = True) -> None:
-        pass
-
-    def print_peak_mem_raw(self, stats: PeakMemoryStats, indent: bool = True) -> None:
+    def print_peak_mem(self, out_dir: Path, indent: bool = True) -> None:
         pass
 
     def print_banner(self) -> None:

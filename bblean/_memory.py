@@ -165,33 +165,53 @@ def get_peak_memory(num_processes: int) -> PeakMemoryStats | None:
     return PeakMemoryStats(max_mem_gib_self, max_mem_gib_child)
 
 
-def monitor_rss_process(file: Path | str, interval_s: float, start_time: float) -> None:
+def get_peak_memory_gib(out_dir: Path) -> float | None:
+    file = out_dir / "max-rss.txt"
+    if not file.exists():
+        return None
+    with open(file, mode="r", encoding="utf-8") as f:
+        peak_mem_gib = float(f.read().strip())
+    return peak_mem_gib
+
+
+def monitor_rss_process(
+    file: Path | str, interval_s: float, start_time: float, parent_pid: int
+) -> None:
+    file = Path(file)
+    this_pid = os.getpid()
+    ps = psutil.Process(parent_pid)
+
     def total_rss() -> float:
-        total_rss = 0.0
-        for proc in psutil.process_iter(["pid", "name", "cmdline", "memory_info"]):
-            info = proc.info
-            cmdline = info["cmdline"]
-            if cmdline is None:
+        total_rss = ps.memory_info().rss
+        for proc in ps.children(recursive=True):
+            if proc.pid == this_pid:
                 continue
-            if any(arg.endswith("bb") for arg in cmdline) and (
-                "run" in cmdline or "multiround" in cmdline
-            ):
-                total_rss += info["memory_info"].rss
+            try:
+                total_rss += proc.memory_info().rss
+            except psutil.NoSuchProcess:
+                # Prevent race condition since process may have finished before it can
+                # be polled
+                continue
         return total_rss
 
-    t = start_time
     with open(file, mode="w", encoding="utf-8") as f:
         f.write("rss_gib,time_s\n")
         f.flush()
         os.fsync(f.fileno())
 
+    max_rss_gib = 0.0
     while True:
         total_rss_gib = total_rss() * _BYTES_TO_GIB
-        t = time.perf_counter() - start_time
         with open(file, mode="a", encoding="utf-8") as f:
-            f.write(f"{total_rss_gib},{t}\n")
+            f.write(f"{total_rss_gib},{time.perf_counter() - start_time}\n")
             f.flush()
             os.fsync(f.fileno())
+        if total_rss_gib > max_rss_gib:
+            max_rss_gib = total_rss_gib
+            with open(file.parent / "max-rss.txt", mode="w", encoding="utf-8") as f:
+                f.write(f"{max_rss_gib}\n")
+                f.flush()
+                os.fsync(f.fileno())
         time.sleep(interval_s)
 
 
@@ -206,6 +226,7 @@ def launch_monitor_rss_daemon(
             file=out_file,
             interval_s=interval_s,
             start_time=time.perf_counter(),
+            parent_pid=os.getpid(),
         ),
         daemon=True,
     ).start()

@@ -421,7 +421,7 @@ def run_multiround_bitbirch(
                 pool.map(initial_fn, files_range_tuples)
 
     timer.end_timing(f"round-{round_idx}", console)
-    console.print_peak_mem(num_ps)
+    console.print_peak_mem(out_dir)
 
     # Mid-section "Tree-Merging" rounds of clustering
     for _ in range(num_midsection_rounds):
@@ -452,7 +452,7 @@ def run_multiround_bitbirch(
                     pool.map(merging_fn, batches)
 
         timer.end_timing(f"round-{round_idx}", console)
-        console.print_peak_mem(num_ps)
+        console.print_peak_mem(out_dir)
 
     # Final "Tree-Merging" round of clustering
     round_idx += 1
@@ -471,7 +471,7 @@ def run_multiround_bitbirch(
         final_fn(("", file_pairs))
 
     timer.end_timing(f"round-{round_idx}", console)
-    console.print_peak_mem(num_ps)
+    console.print_peak_mem(out_dir)
     # Remove intermediate files
     if cleanup:
         for f in out_dir.glob("round-*.npy"):

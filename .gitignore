@@ -71,6 +71,7 @@ peak-rss*.json
 cluster-mol-ids*.json
 config*.json
 timings*.json
+max-rss.txt
 
 # Pickle
 *.pkl
