@@ -13,7 +13,8 @@ from bblean._merges import (
     ToleranceDiameterMerge,
     ToleranceRadiusMerge,
 )
-from bblean.fingerprints import make_fake_fingerprints, centroid_from_sum
+from bblean.fingerprints import make_fake_fingerprints
+from bblean.similarity import centroid_from_sum
 
 # Cases to test for all merges:
 # low|high tolerance

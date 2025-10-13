@@ -13,52 +13,24 @@ from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles, SanitizeFlags, San
 
 from bblean._config import DEFAULTS
 from bblean._console import get_console
+from bblean.similarity import centroid_from_sum
 
 __all__ = [
     "make_fake_fingerprints",
     "fps_from_smiles",
     "pack_fingerprints",
     "unpack_fingerprints",
-    "centroid_from_sum",
 ]
 
 
-def centroid_from_sum(
-    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
-) -> NDArray[np.uint8]:
-    """Calculates centroid
-
-    Parameters
-    ----------
-
-    linear_sum : np.ndarray
-                 Sum of the elements column-wise
-    n_samples : int
-                Number of samples
-    pack : bool
-        Whether to pack the resulting fingerprints
-
-    Returns
-    -------
-    centroid : np.ndarray[np.uint8]
-               Centroid fingerprints of the given set
-    """
-    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
-    # so this view is fully safe
-    if n_samples <= 1:
-        centroid = linear_sum.astype(np.uint8, copy=False)
-    else:
-        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
-    if pack:
-        return np.packbits(centroid, axis=-1)
-    return centroid
-
-
+# Deprecated
 def calc_centroid(
     linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
 ) -> NDArray[np.uint8]:
     warnings.warn(
-        "Please use centroid_from_sum(...) instead", DeprecationWarning, stacklevel=2
+        "Please use `bblean.similarity.centroid_from_sum(...)` instead",
+        DeprecationWarning,
+        stacklevel=2,
     )
     return centroid_from_sum(linear_sum, n_samples, pack=pack)
 
