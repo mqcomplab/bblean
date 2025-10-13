@@ -13,7 +13,6 @@ from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles, SanitizeFlags, San
 
 from bblean._config import DEFAULTS
 from bblean._console import get_console
-from bblean.similarity import centroid_from_sum
 
 __all__ = [
     "make_fake_fingerprints",
@@ -32,7 +31,16 @@ def calc_centroid(
         DeprecationWarning,
         stacklevel=2,
     )
-    return centroid_from_sum(linear_sum, n_samples, pack=pack)
+    if n_samples <= 1:
+        centroid = linear_sum.astype(np.uint8, copy=False)
+    else:
+        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
+    if pack:
+        return np.packbits(centroid, axis=-1)
+    return centroid
+
+
+centroid_from_sum = calc_centroid
 
 
 def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
