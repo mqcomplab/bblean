@@ -115,7 +115,7 @@ def set_merge(merge_criterion, tolerance=0.05):
                         jt_radius >= threshold
                     )
 
-    elif merge_criterion == "tolerance":
+    elif merge_criterion in ["tolerance", "tolerance-legacy"]:
 
         def merge_accept(
             threshold, new_ls, new_centroid, new_n, old_ls, nom_ls, old_n, nom_n

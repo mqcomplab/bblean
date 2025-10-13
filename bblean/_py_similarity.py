@@ -6,7 +6,40 @@ from numpy.typing import NDArray
 import numpy as np
 
 from bblean.utils import min_safe_uint
-from bblean.fingerprints import unpack_fingerprints, centroid_from_sum
+from bblean.fingerprints import unpack_fingerprints
+
+
+def centroid_from_sum(
+    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
+) -> NDArray[np.uint8]:
+    r"""Calculates the majority vote centroid from a sum of fingerprint values
+
+    The majority vote centroid is an good approximation of the Tanimoto centroid.
+
+    Parameters
+    ----------
+
+    linear_sum : np.ndarray
+                 Sum of the elements column-wise
+    n_samples : int
+                Number of samples
+    pack : bool
+        Whether to pack the resulting fingerprints
+
+    Returns
+    -------
+    centroid : np.ndarray[np.uint8]
+               Centroid fingerprints of the given set
+    """
+    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
+    # so this view is fully safe
+    if n_samples <= 1:
+        centroid = linear_sum.astype(np.uint8, copy=False)
+    else:
+        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
+    if pack:
+        return np.packbits(centroid, axis=-1)
+    return centroid
 
 
 # Requires numpy >= 2.0
@@ -105,6 +138,12 @@ def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:
     iSIM Tanimoto was first propsed in:
     https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
 
+    :math:`iSIM_{JT}(X)` is an excellent :math:`O(N)` approximation of the average
+    Tanimoto similarity of a set of fingerprints.
+
+    Also equivalent to the complement of the Tanimoto diameter
+    :math:`iSIM_{JT}(X) = 1 - D_{JT}(X)`.
+
     Parameters
     ----------
     fps : np.ndarray
@@ -130,6 +169,12 @@ def jt_isim_packed(fps: NDArray[np.integer], n_features: int | None = None) -> f
 
     iSIM Tanimoto was first propsed in:
     https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
+
+    :math:`iSIM_{JT}(X)` is an excellent :math:`O(N)` approximation of the average
+    Tanimoto similarity of a set of fingerprints.
+
+    Also equivalent to the complement of the Tanimoto diameter
+    :math:`iSIM_{JT}(X) = 1 - D_{JT}(X)`.
 
     Parameters
     ----------
@@ -161,6 +206,12 @@ def jt_isim_from_sum(linear_sum: NDArray[np.integer], n_objects: int) -> float:
 
     iSIM Tanimoto was first propsed in:
     https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
+
+    :math:`iSIM_{JT}(X)` is an excellent :math:`O(N)` approximation of the average
+    Tanimoto similarity of a set of fingerprints.
+
+    Also equivalent to the complement of the Tanimoto diameter
+    :math:`iSIM_{JT}(X) = 1 - D_{JT}(X)`.
 
     Parameters
     ----------

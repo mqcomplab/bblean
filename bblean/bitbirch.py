@@ -62,10 +62,13 @@ from bblean._merges import get_merge_accept_fn, MergeAcceptFunction, BUILTIN_MER
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import (
     pack_fingerprints,
-    centroid_from_sum,
     _get_fingerprints_from_file_seq,
 )
-from bblean.similarity import jt_sim_packed, jt_most_dissimilar_packed
+from bblean.similarity import (
+    jt_sim_packed,
+    jt_most_dissimilar_packed,
+    centroid_from_sum,
+)
 
 try:
     # NOTE: There are small gains from using this fn but only ~3%, so don't warn for now

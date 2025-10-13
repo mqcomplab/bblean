@@ -14,11 +14,8 @@ except ImportError:
     if os.getenv("BITBIRCH_CANT_SKIP_CPP_TESTS"):
         raise
     CSIM_AVAIL = False
-from bblean.fingerprints import (
-    make_fake_fingerprints,
-    centroid_from_sum,
-    unpack_fingerprints,
-)
+from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
+from bblean.similarity import centroid_from_sum
 
 
 def test_jt_most_dissimilar_packed() -> None:

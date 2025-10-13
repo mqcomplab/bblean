@@ -15,7 +15,12 @@ __all__ = [
     "jt_isim_unpacked",
     "jt_isim_packed",
     "jt_most_dissimilar_packed",
+    "jt_isim_radius_from_sum",
+    "jt_isim_radius_complement_from_sum",
+    "jt_isim_diameter_from_sum",
+    "centroid_from_sum",
 ]
+from bblean._py_similarity import centroid_from_sum
 
 if os.getenv("BITBIRCH_NO_EXTENSIONS"):
     from bblean._py_similarity import (
@@ -81,3 +86,28 @@ def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
         "Please use jt_isim_from_sum(...) instead", DeprecationWarning, stacklevel=2
     )
     return jt_isim_from_sum(c_total, n_objects)
+
+
+def jt_isim_radius_complement_from_sum(ls: NDArray[np.integer], n: int) -> float:
+    r"""Calculate the complement of the Tanimoto radius of a set of fingerprints"""
+    #  Calculates 1 - R = Rc
+    # NOTE: Use uint64 sum since jt_isim_from_sum casts to uint64 internally
+    # This prevents multiple casts
+    new_unpacked_centroid = centroid_from_sum(ls, n, pack=False)
+    new_ls_1 = np.add(ls, new_unpacked_centroid, dtype=np.uint64)
+    new_n_1 = n + 1
+    new_jt = jt_isim_from_sum(ls, n)
+    new_jt_1 = jt_isim_from_sum(new_ls_1, new_n_1)
+    return (new_jt_1 * new_n_1 - new_jt * (n - 1)) / 2
+
+
+def jt_isim_radius_from_sum(ls: NDArray[np.integer], n: int) -> float:
+    r"""Calculate the Tanimoto radius of a set of fingerprints"""
+    return 1 - jt_isim_radius_complement_from_sum(ls, n)
+
+
+def jt_isim_diameter_from_sum(ls: NDArray[np.integer], n: int) -> float:
+    r"""Calculate the Tanimoto diameter of a set of fingerprints.
+
+    Equivalent to ``1 - jt_isim_from_sum(ls, n)``"""
+    return 1 - jt_isim_from_sum(ls, n)

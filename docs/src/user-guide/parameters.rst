@@ -14,35 +14,44 @@ Merge criterion and tolerance
 The ``merge_criterion`` is used to determine whether two clusters can be merged inside a
 node in the BitBIRCH tree. The criteria may be asymetric (they consider differently
 clusters already in the tree, *old clusters*, and clusters that are being inserted, or
-*nominee clusters*). There are three main merge criteria implemented:
+*nominee clusters*). In the following, diameter-complement refers to :math:`1 - D_{JT}`
+and radius-complement to :math:`1 - R_{JT}`. There are three main merge criteria
+implemented:
 
 - radius (symmetric):
-    The radius of the *resulting cluster*
+    The radius-complement of the *resulting cluster*
     must be less or equal than the ``threshold`` value.
 - diameter (symmetric):
-    The diameter (equivalently, the average similarity) of the
+    The diameter-complement (equivalently, the average similarity) of the
     *resulting cluster* must be less or equal than the ``threshold`` value.
 - tolerance-diameter (asymmetric):
-    The *diameter* criteria must be satisfied **and**
-    the diameter of the *resulting cluster* must be larger or equal to that of the *old
-    cluster* (unless the *old cluster* has a single fingerprint). Some slack can be
-    provided with a value of ``tolerance``.
+    The *diameter* criteria must be satisfied **and** the diameter-commplement of the
+    *resulting cluster* must be greater or equal to that of the *old cluster* (unless the
+    *old cluster* has a single fingerprint). Some slack can be provided with a value of
+    ``tolerance``.
 - tolerance-radius (asymmetric):
     The *radius* criterion must be satisfied **and**
-    the radius of the *resulting cluster* must be larger or equal to that of the *old
-    cluster* (unless the *old cluster* has a single fingerprint). Some slack can be
-    provided with a value of ``tolerance``.
+    the radius-complement of the *resulting cluster* must be greater or equal to that of
+    the *old cluster* (unless the *old cluster* has a single fingerprint). Some slack
+    can be provided with a value of ``tolerance``.
+- tolerance-legacy (asymmetric):
+    **This is providded for compatibility with old BitBIRCH versions only, in general it
+    should be avoided.** The *diameter* criterion must be satisfied **and** The value of
+    :math:`(isim(X \cup new_fp)(N + 1) - isim(X)(N - 1)) / 2` must be greater or equal
+    to that of the *old cluster* (unless the *old cluster* has a single fingerprint, or
+    the new cluster has more than one fingerprint). Some slack can be provided with a
+    value of ``tolerance``.
 
 Both **tolerance-diameter** and **tolerance-radius** reduce the ``tolerance`` slack
 exponentially as the cluster gets larger. This behaviour is usually desirable, but can
 be turned off with ``adaptive=False``.
 
-Currently we recommend the *diameter* criteria for the initial build of the tree, and
-the corresponding *tolerance-diameter* criteria for refinement and tree-combining. The
+Currently we recommend the **diameter** criteria for the initial build of the tree, and
+the corresponding **tolerance-diameter** criteria for refinement and tree-combining. The
 default slack value for tolerance (0.05) is good for most purposes, although you may
 want no slack (tolerance=0) if it is important to maintain the average Tanimoto values
-after refinement. Using a very large value for tolerance will flatten the diameter
-distribution of the clusters.
+after refinement. Using a very large value for tolerance will flatten the isim
+distribution.
 
 Threshold
 ---------

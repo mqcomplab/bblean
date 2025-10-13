@@ -19,32 +19,18 @@ __all__ = [
     "fps_from_smiles",
     "pack_fingerprints",
     "unpack_fingerprints",
-    "centroid_from_sum",
 ]
 
 
-def centroid_from_sum(
+# Deprecated
+def calc_centroid(
     linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
 ) -> NDArray[np.uint8]:
-    """Calculates centroid
-
-    Parameters
-    ----------
-
-    linear_sum : np.ndarray
-                 Sum of the elements column-wise
-    n_samples : int
-                Number of samples
-    pack : bool
-        Whether to pack the resulting fingerprints
-
-    Returns
-    -------
-    centroid : np.ndarray[np.uint8]
-               Centroid fingerprints of the given set
-    """
-    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
-    # so this view is fully safe
+    warnings.warn(
+        "Please use `bblean.similarity.centroid_from_sum(...)` instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if n_samples <= 1:
         centroid = linear_sum.astype(np.uint8, copy=False)
     else:
@@ -54,13 +40,7 @@ def centroid_from_sum(
     return centroid
 
 
-def calc_centroid(
-    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
-) -> NDArray[np.uint8]:
-    warnings.warn(
-        "Please use centroid_from_sum(...) instead", DeprecationWarning, stacklevel=2
-    )
-    return centroid_from_sum(linear_sum, n_samples, pack=pack)
+centroid_from_sum = calc_centroid
 
 
 def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
