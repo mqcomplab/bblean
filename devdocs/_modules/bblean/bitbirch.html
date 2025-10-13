@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=0db2caf3"></script>
+    <script src="../../_static/documentation_options.js?v=07621693"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -422,10 +422,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">min_safe_uint</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">pack_fingerprints</span><span class="p">,</span>
-    <span class="n">centroid_from_sum</span><span class="p">,</span>
     <span class="n">_get_fingerprints_from_file_seq</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">jt_sim_packed</span><span class="p">,</span> <span class="n">jt_most_dissimilar_packed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">jt_sim_packed</span><span class="p">,</span>
+    <span class="n">jt_most_dissimilar_packed</span><span class="p">,</span>
+    <span class="n">centroid_from_sum</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="c1"># NOTE: There are small gains from using this fn but only ~3%, so don&#39;t warn for now</span>

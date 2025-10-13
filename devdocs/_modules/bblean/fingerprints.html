@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=0db2caf3"></script>
+    <script src="../../_static/documentation_options.js?v=07621693"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -379,51 +379,28 @@
     <span class="s2">&quot;fps_from_smiles&quot;</span><span class="p">,</span>
     <span class="s2">&quot;pack_fingerprints&quot;</span><span class="p">,</span>
     <span class="s2">&quot;unpack_fingerprints&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;centroid_from_sum&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="centroid_from_sum">
-<a class="viewcode-back" href="../../_api_autogen/bblean.fingerprints.html#bblean.fingerprints.centroid_from_sum">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">centroid_from_sum</span><span class="p">(</span>
+<span class="c1"># Deprecated</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_centroid</span><span class="p">(</span>
     <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates centroid</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-
-<span class="sd">    linear_sum : np.ndarray</span>
-<span class="sd">                 Sum of the elements column-wise</span>
-<span class="sd">    n_samples : int</span>
-<span class="sd">                Number of samples</span>
-<span class="sd">    pack : bool</span>
-<span class="sd">        Whether to pack the resulting fingerprints</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    centroid : np.ndarray[np.uint8]</span>
-<span class="sd">               Centroid fingerprints of the given set</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># NOTE: Numpy guarantees bools are stored as 0xFF -&gt; True and 0x00 -&gt; False,</span>
-    <span class="c1"># so this view is fully safe</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+        <span class="s2">&quot;Please use `bblean.similarity.centroid_from_sum(...)` instead&quot;</span><span class="p">,</span>
+        <span class="ne">DeprecationWarning</span><span class="p">,</span>
+        <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">n_samples</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">centroid</span> <span class="o">=</span> <span class="n">linear_sum</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">centroid</span> <span class="o">=</span> <span class="p">(</span><span class="n">linear_sum</span> <span class="o">&gt;=</span> <span class="n">n_samples</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">pack</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">packbits</span><span class="p">(</span><span class="n">centroid</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">centroid</span></div>
+    <span class="k">return</span> <span class="n">centroid</span>
 
 
-
-<span class="k">def</span><span class="w"> </span><span class="nf">calc_centroid</span><span class="p">(</span>
-    <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
-    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-        <span class="s2">&quot;Please use centroid_from_sum(...) instead&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">centroid_from_sum</span><span class="p">(</span><span class="n">linear_sum</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">pack</span><span class="o">=</span><span class="n">pack</span><span class="p">)</span>
+<span class="n">centroid_from_sum</span> <span class="o">=</span> <span class="n">calc_centroid</span>
 
 
 <div class="viewcode-block" id="pack_fingerprints">

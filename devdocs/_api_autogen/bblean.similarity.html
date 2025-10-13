@@ -40,10 +40,11 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=0db2caf3"></script>
+    <script src="../_static/documentation_options.js?v=07621693"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_api_autogen/bblean.similarity';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -401,6 +402,18 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_most_dissimilar_packed" title="bblean.similarity.jt_most_dissimilar_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed</span></code></a></p></td>
 <td><p>Finds two fps in a packed fp array that are the most Tanimoto-dissimilar</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius_from_sum" title="bblean.similarity.jt_isim_radius_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius_from_sum</span></code></a></p></td>
+<td><p>Calculate the Tanimoto radius of a set of fingerprints</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius_complement_from_sum" title="bblean.similarity.jt_isim_radius_complement_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius_complement_from_sum</span></code></a></p></td>
+<td><p>Calculate the complement of the Tanimoto radius of a set of fingerprints</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_diameter_from_sum" title="bblean.similarity.jt_isim_diameter_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_diameter_from_sum</span></code></a></p></td>
+<td><p>Calculate the Tanimoto diameter of a set of fingerprints.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.centroid_from_sum" title="bblean.similarity.centroid_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">centroid_from_sum</span></code></a></p></td>
+<td><p>Calculates the majority vote centroid from a sum of fingerprint values</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -410,6 +423,10 @@
 <dd><p>iSIM Tanimoto, from sum of rows of a fingerprint array and number of rows</p>
 <p>iSIM Tanimoto was first propsed in:
 <a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
+<p><span class="math notranslate nohighlight">\(iSIM_{JT}(X)\)</span> is an excellent <span class="math notranslate nohighlight">\(O(N)\)</span> approximation of the average
+Tanimoto similarity of a set of fingerprints.</p>
+<p>Also equivalent to the complement of the Tanimoto diameter
+<span class="math notranslate nohighlight">\(iSIM_{JT}(X) = 1 - D_{JT}(X)\)</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -442,6 +459,10 @@ n_objects = X.shape[0]</p></li>
 <dd><p>iSIM Tanimoto calculation, from unpacked fingerprints</p>
 <p>iSIM Tanimoto was first propsed in:
 <a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
+<p><span class="math notranslate nohighlight">\(iSIM_{JT}(X)\)</span> is an excellent <span class="math notranslate nohighlight">\(O(N)\)</span> approximation of the average
+Tanimoto similarity of a set of fingerprints.</p>
+<p>Also equivalent to the complement of the Tanimoto diameter
+<span class="math notranslate nohighlight">\(iSIM_{JT}(X) = 1 - D_{JT}(X)\)</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -465,6 +486,10 @@ n_objects = X.shape[0]</p></li>
 <dd><p>iSIM Tanimoto calculation, from packed fingerprints</p>
 <p>iSIM Tanimoto was first propsed in:
 <a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
+<p><span class="math notranslate nohighlight">\(iSIM_{JT}(X)\)</span> is an excellent <span class="math notranslate nohighlight">\(O(N)\)</span> approximation of the average
+Tanimoto similarity of a set of fingerprints.</p>
+<p>Also equivalent to the complement of the Tanimoto diameter
+<span class="math notranslate nohighlight">\(iSIM_{JT}(X) = 1 - D_{JT}(X)\)</span>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -502,6 +527,53 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.integer" title="(in NumPy v2.3)"><em>integer</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.integer" title="(in NumPy v2.3)"><em>integer</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, …], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.3)"><em>dtype</em></a>[<em>float64</em>]], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, …], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.3)"><em>dtype</em></a>[<em>float64</em>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_radius_from_sum">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_radius_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_radius_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_radius_from_sum" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the Tanimoto radius of a set of fingerprints</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_radius_complement_from_sum">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_radius_complement_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_radius_complement_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_radius_complement_from_sum" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the complement of the Tanimoto radius of a set of fingerprints</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_diameter_from_sum">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_diameter_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_diameter_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_diameter_from_sum" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the Tanimoto diameter of a set of fingerprints.</p>
+<p>Equivalent to <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">jt_isim_from_sum(ls,</span> <span class="pre">n)</span></code></p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.centroid_from_sum">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">centroid_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#centroid_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.centroid_from_sum" title="Link to this definition">#</a></dt>
+<dd><p>Calculates the majority vote centroid from a sum of fingerprint values</p>
+<p>The majority vote centroid is an good approximation of the Tanimoto centroid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>linear_sum</strong> (<em>np.ndarray</em>) – Sum of the elements column-wise</p></li>
+<li><p><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of samples</p></li>
+<li><p><strong>pack</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to pack the resulting fingerprints</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>centroid</strong> – Centroid fingerprints of the given set</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray[np.uint8]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -560,6 +632,10 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_unpacked"><code class="docutils literal notranslate"><span class="pre">jt_isim_unpacked()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_packed"><code class="docutils literal notranslate"><span class="pre">jt_isim_packed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_most_dissimilar_packed"><code class="docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_radius_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_radius_from_sum()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_radius_complement_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_radius_complement_from_sum()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_diameter_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_diameter_from_sum()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.centroid_from_sum"><code class="docutils literal notranslate"><span class="pre">centroid_from_sum()</span></code></a></li>
 </ul>
   </nav></div>
 

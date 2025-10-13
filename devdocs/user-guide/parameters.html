@@ -40,10 +40,11 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=0db2caf3"></script>
+    <script src="../_static/documentation_options.js?v=07621693"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user-guide/parameters';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -380,33 +381,45 @@ the resulting clustering.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">merge_criterion</span></code> is used to determine whether two clusters can be merged inside a
 node in the BitBIRCH tree. The criteria may be asymetric (they consider differently
 clusters already in the tree, <em>old clusters</em>, and clusters that are being inserted, or
-<em>nominee clusters</em>). There are three main merge criteria implemented:</p>
+<em>nominee clusters</em>). In the following, diameter-complement refers to <span class="math notranslate nohighlight">\(1 - D_{JT}\)</span>
+and radius-complement to <span class="math notranslate nohighlight">\(1 - R_{JT}\)</span>. There are three main merge criteria
+implemented:</p>
 <ul class="simple">
 <li><dl class="simple">
-<dt>radius (symmetric):</dt><dd><p>The radius of the <em>resulting cluster</em>
+<dt>radius (symmetric):</dt><dd><p>The radius-complement of the <em>resulting cluster</em>
 must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt>diameter (symmetric):</dt><dd><p>The diameter (equivalently, the average similarity) of the
+<dt>diameter (symmetric):</dt><dd><p>The diameter-complement (equivalently, the average similarity) of the
 <em>resulting cluster</em> must be less or equal than the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> value.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt>tolerance-diameter (asymmetric):</dt><dd><p>The <em>diameter</em> criteria must be satisfied <strong>and</strong>
-the diameter of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
-cluster</em> (unless the <em>old cluster</em> has a single fingerprint). Some slack can be
-provided with a value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
+<dt>tolerance-diameter (asymmetric):</dt><dd><p>The <em>diameter</em> criteria must be satisfied <strong>and</strong> the diameter-commplement of the
+<em>resulting cluster</em> must be greater or equal to that of the <em>old cluster</em> (unless the
+<em>old cluster</em> has a single fingerprint). Some slack can be provided with a value of
+<code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
 <dt>tolerance-radius (asymmetric):</dt><dd><p>The <em>radius</em> criterion must be satisfied <strong>and</strong>
-the radius of the <em>resulting cluster</em> must be larger or equal to that of the <em>old
-cluster</em> (unless the <em>old cluster</em> has a single fingerprint). Some slack can be
-provided with a value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
+the radius-complement of the <em>resulting cluster</em> must be greater or equal to that of
+the <em>old cluster</em> (unless the <em>old cluster</em> has a single fingerprint). Some slack
+can be provided with a value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>tolerance-legacy (asymmetric):</dt><dd><p><strong>This is providded for compatibility with old BitBIRCH versions only, in general it
+should be avoided.</strong> The <em>diameter</em> criterion must be satisfied <strong>and</strong> The value of
+<span class="math notranslate nohighlight">\((isim(X \cup new_fp)(N + 1) - isim(X)(N - 1)) / 2\)</span> must be greater or equal
+to that of the <em>old cluster</em> (unless the <em>old cluster</em> has a single fingerprint, or
+the new cluster has more than one fingerprint). Some slack can be provided with a
+value of <code class="docutils literal notranslate"><span class="pre">tolerance</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -414,12 +427,12 @@ provided with a value of <code class="docutils literal notranslate"><span class=
 <p>Both <strong>tolerance-diameter</strong> and <strong>tolerance-radius</strong> reduce the <code class="docutils literal notranslate"><span class="pre">tolerance</span></code> slack
 exponentially as the cluster gets larger. This behaviour is usually desirable, but can
 be turned off with <code class="docutils literal notranslate"><span class="pre">adaptive=False</span></code>.</p>
-<p>Currently we recommend the <em>diameter</em> criteria for the initial build of the tree, and
-the corresponding <em>tolerance-diameter</em> criteria for refinement and tree-combining. The
+<p>Currently we recommend the <strong>diameter</strong> criteria for the initial build of the tree, and
+the corresponding <strong>tolerance-diameter</strong> criteria for refinement and tree-combining. The
 default slack value for tolerance (0.05) is good for most purposes, although you may
 want no slack (tolerance=0) if it is important to maintain the average Tanimoto values
-after refinement. Using a very large value for tolerance will flatten the diameter
-distribution of the clusters.</p>
+after refinement. Using a very large value for tolerance will flatten the isim
+distribution.</p>
 </section>
 <section id="threshold">
 <h2>Threshold<a class="headerlink" href="#threshold" title="Link to this heading">#</a></h2>
