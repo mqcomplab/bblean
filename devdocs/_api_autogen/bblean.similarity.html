@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=4bcb52b8"></script>
+    <script src="../_static/documentation_options.js?v=d3be57ac"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -390,26 +390,32 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_from_sum" title="bblean.similarity.jt_isim_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_from_sum</span></code></a></p></td>
 <td><p>iSIM Tanimoto, from sum of rows of a fingerprint array and number of rows</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_sim_packed" title="bblean.similarity.jt_sim_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_sim_packed</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim" title="bblean.similarity.jt_isim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim</span></code></a></p></td>
+<td><p>Average Tanimoto, using iSIM</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_sim_packed" title="bblean.similarity.jt_sim_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_sim_packed</span></code></a></p></td>
 <td><p>Tanimoto similarity between a matrix of packed fps and a single packed fp</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_unpacked" title="bblean.similarity.jt_isim_unpacked"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_unpacked</span></code></a></p></td>
-<td><p>iSIM Tanimoto calculation, from unpacked fingerprints</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_packed" title="bblean.similarity.jt_isim_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_packed</span></code></a></p></td>
-<td><p>iSIM Tanimoto calculation, from packed fingerprints</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_most_dissimilar_packed" title="bblean.similarity.jt_most_dissimilar_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_most_dissimilar_packed" title="bblean.similarity.jt_most_dissimilar_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed</span></code></a></p></td>
 <td><p>Finds two fps in a packed fp array that are the most Tanimoto-dissimilar</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius_from_sum" title="bblean.similarity.jt_isim_radius_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius_from_sum</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius_from_sum" title="bblean.similarity.jt_isim_radius_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius_from_sum</span></code></a></p></td>
 <td><p>Calculate the Tanimoto radius of a set of fingerprints</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius_complement_from_sum" title="bblean.similarity.jt_isim_radius_complement_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius_complement_from_sum</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius_compl_from_sum" title="bblean.similarity.jt_isim_radius_compl_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius_compl_from_sum</span></code></a></p></td>
 <td><p>Calculate the complement of the Tanimoto radius of a set of fingerprints</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_diameter_from_sum" title="bblean.similarity.jt_isim_diameter_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_diameter_from_sum</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_diameter_from_sum" title="bblean.similarity.jt_isim_diameter_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_diameter_from_sum</span></code></a></p></td>
 <td><p>Calculate the Tanimoto diameter of a set of fingerprints.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius" title="bblean.similarity.jt_isim_radius"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius</span></code></a></p></td>
+<td><p>Calculate the Tanimoto radius of a set of fingerprints</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_radius_compl" title="bblean.similarity.jt_isim_radius_compl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_radius_compl</span></code></a></p></td>
+<td><p>Calculate the complement of the Tanimoto radius of a set of fingerprints</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_diameter" title="bblean.similarity.jt_isim_diameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_diameter</span></code></a></p></td>
+<td><p>Calculate the Tanimoto diameter of a set of fingerprints</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.centroid_from_sum" title="bblean.similarity.centroid_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">centroid_from_sum</span></code></a></p></td>
 <td><p>Calculates the majority vote centroid from a sum of fingerprint values</p></td>
@@ -446,64 +452,38 @@ n_objects = X.shape[0]</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim" title="Link to this definition">#</a></dt>
+<dd><p>Average Tanimoto, using iSIM</p>
+<p>iSIM Tanimoto was first propsed in:
+<a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
+<p><span class="math notranslate nohighlight">\(iSIM_{JT}(X)\)</span> is an excellent <span class="math notranslate nohighlight">\(O(N)\)</span> approximation of the average
+Tanimoto similarity of a set of fingerprints.</p>
+<p>Also equivalent to the complement of the Tanimoto diameter
+<span class="math notranslate nohighlight">\(iSIM_{JT}(X) = 1 - D_{JT}(X)\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>np.ndarray</em>) – 2D fingerprint array</p></li>
+<li><p><strong>input_is_packed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether the input array has packed fingerprints</p></li>
+<li><p><strong>n_features</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Number of features when unpacking fingerprints. Only required if
+not a multiple of 8</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>isim</strong> – iSIM Jaccard-Tanimoto value</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="bblean.similarity.jt_sim_packed">
 <span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_sim_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_sim_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_sim_packed" title="Link to this definition">#</a></dt>
 <dd><p>Tanimoto similarity between a matrix of packed fps and a single packed fp</p>
 <dl class="field-list simple">
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="bblean.similarity.jt_isim_unpacked">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_unpacked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_isim_unpacked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_unpacked" title="Link to this definition">#</a></dt>
-<dd><p>iSIM Tanimoto calculation, from unpacked fingerprints</p>
-<p>iSIM Tanimoto was first propsed in:
-<a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
-<p><span class="math notranslate nohighlight">\(iSIM_{JT}(X)\)</span> is an excellent <span class="math notranslate nohighlight">\(O(N)\)</span> approximation of the average
-Tanimoto similarity of a set of fingerprints.</p>
-<p>Also equivalent to the complement of the Tanimoto diameter
-<span class="math notranslate nohighlight">\(iSIM_{JT}(X) = 1 - D_{JT}(X)\)</span>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fps</strong> (<em>np.ndarray</em>) – 2D <em>unpacked</em> fingerprint array</p></li>
-<li><p><strong>n_objects</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of elements
-n_objects = X.shape[0]</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>isim</strong> – iSIM Jaccard-Tanimoto value</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="bblean.similarity.jt_isim_packed">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_isim_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_packed" title="Link to this definition">#</a></dt>
-<dd><p>iSIM Tanimoto calculation, from packed fingerprints</p>
-<p>iSIM Tanimoto was first propsed in:
-<a class="reference external" href="https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b">https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</a></p>
-<p><span class="math notranslate nohighlight">\(iSIM_{JT}(X)\)</span> is an excellent <span class="math notranslate nohighlight">\(O(N)\)</span> approximation of the average
-Tanimoto similarity of a set of fingerprints.</p>
-<p>Also equivalent to the complement of the Tanimoto diameter
-<span class="math notranslate nohighlight">\(iSIM_{JT}(X) = 1 - D_{JT}(X)\)</span>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fps</strong> (<em>np.ndarray</em>) – 2D <em>packed</em> fingerprint array</p></li>
-<li><p><strong>n_objects</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of elements
-n_objects = X.shape[0]</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>isim</strong> – iSIM Jaccard-Tanimoto value</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a></p>
-</dd>
 </dl>
 </dd></dl>
 
@@ -540,8 +520,8 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="bblean.similarity.jt_isim_radius_complement_from_sum">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_radius_complement_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_radius_complement_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_radius_complement_from_sum" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_radius_compl_from_sum">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_radius_compl_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_radius_compl_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_radius_compl_from_sum" title="Link to this definition">#</a></dt>
 <dd><p>Calculate the complement of the Tanimoto radius of a set of fingerprints</p>
 <dl class="field-list simple">
 </dl>
@@ -552,6 +532,30 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
 <span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_diameter_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_diameter_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_diameter_from_sum" title="Link to this definition">#</a></dt>
 <dd><p>Calculate the Tanimoto diameter of a set of fingerprints.</p>
 <p>Equivalent to <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">jt_isim_from_sum(ls,</span> <span class="pre">n)</span></code></p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_radius">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_radius</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_radius"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_radius" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the Tanimoto radius of a set of fingerprints</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_radius_compl">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_radius_compl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_radius_compl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_radius_compl" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the complement of the Tanimoto radius of a set of fingerprints</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_isim_diameter">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_isim_diameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_isim_diameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_isim_diameter" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the Tanimoto diameter of a set of fingerprints</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -628,13 +632,15 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_from_sum()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim"><code class="docutils literal notranslate"><span class="pre">jt_isim()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_sim_packed"><code class="docutils literal notranslate"><span class="pre">jt_sim_packed()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_unpacked"><code class="docutils literal notranslate"><span class="pre">jt_isim_unpacked()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_packed"><code class="docutils literal notranslate"><span class="pre">jt_isim_packed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_most_dissimilar_packed"><code class="docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_radius_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_radius_from_sum()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_radius_complement_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_radius_complement_from_sum()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_radius_compl_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_radius_compl_from_sum()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_diameter_from_sum"><code class="docutils literal notranslate"><span class="pre">jt_isim_diameter_from_sum()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_radius"><code class="docutils literal notranslate"><span class="pre">jt_isim_radius()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_radius_compl"><code class="docutils literal notranslate"><span class="pre">jt_isim_radius_compl()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_diameter"><code class="docutils literal notranslate"><span class="pre">jt_isim_diameter()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.centroid_from_sum"><code class="docutils literal notranslate"><span class="pre">centroid_from_sum()</span></code></a></li>
 </ul>
   </nav></div>
