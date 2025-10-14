@@ -47,6 +47,7 @@
 r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
 from __future__ import annotations  # Stringize type annotations for no runtime overhead
 import typing_extensions as tpx
+import os
 from pathlib import Path
 import warnings
 import typing as tp
@@ -70,12 +71,15 @@ from bblean.similarity import (
     centroid_from_sum,
 )
 
-try:
-    # NOTE: There are small gains from using this fn but only ~3%, so don't warn for now
-    # if this fails, and don't expose it
-    from bblean._cpp_similarity import unpack_fingerprints as _unpack_fingerprints
-except ImportError:
+if os.getenv("BITBIRCH_NO_EXTENSIONS"):
     from bblean.fingerprints import unpack_fingerprints as _unpack_fingerprints
+else:
+    try:
+        # NOTE: There are small gains from using this fn but only ~3%, so don't warn for
+        # now if this fails, and don't expose it
+        from bblean._cpp_similarity import unpack_fingerprints as _unpack_fingerprints  # type: ignore # noqa
+    except ImportError:
+        from bblean.fingerprints import unpack_fingerprints as _unpack_fingerprints
 
 __all__ = ["BitBirch"]
 
