@@ -561,6 +561,10 @@ def _plot_summary(
         bool,
         Option("--save/--no-save"),
     ] = True,
+    ylim: Annotated[
+        int | None,
+        Option("--ylim"),
+    ] = None,
     min_size: Annotated[
         int,
         Option("--min-size"),
@@ -633,7 +637,7 @@ def _plot_summary(
             clusters_path,
             "summary",
             summary_plot,
-            {"annotate": annotate},
+            {"annotate": annotate, "counts_ylim": ylim},
             smiles=load_smiles(smiles_path) if smiles_path is not None else (),
             min_size=min_size,
             top=top,
