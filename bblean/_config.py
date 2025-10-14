@@ -12,7 +12,11 @@ import os
 import numpy as np
 
 from bblean._memory import system_mem_gib
-from bblean.utils import _cpu_name
+from bblean.utils import (
+    _cpu_name,
+    cpp_extensions_are_enabled,
+    cpp_extensions_are_installed,
+)
 
 
 @dataclasses.dataclass(slots=True)
@@ -39,6 +43,8 @@ def collect_system_specs_and_dump_config(
     config_path = Path(config["out_dir"]) / "config.json"
     total_mem, avail_mem = system_mem_gib()
     # System info
+    config["cpp_extensions_enabled"] = cpp_extensions_are_enabled()
+    config["cpp_extensions_installed"] = cpp_extensions_are_installed()
     config["total_memory_gib"] = total_mem
     config["initial_available_memory_gib"] = avail_mem
     config["platform"] = sys.platform

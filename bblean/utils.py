@@ -1,5 +1,6 @@
 r"""Misc. utility functions"""
 
+import os
 from pathlib import Path
 import itertools
 import typing as tp
@@ -11,7 +12,12 @@ import importlib
 import psutil
 import numpy as np
 
-__all__ = ["batched", "min_safe_uint"]
+__all__ = [
+    "batched",
+    "min_safe_uint",
+    "cpp_extensions_are_enabled",
+    "cpp_extensions_are_installed",
+]
 
 _T = tp.TypeVar("_T")
 
@@ -97,3 +103,25 @@ def _has_files_or_valid_symlinks(path: Path) -> bool:
         if p.is_file():
             has_files = True
     return has_files
+
+
+def cpp_extensions_are_enabled() -> bool:
+    r"""Query whether the C++ BitBRICH extensions are currently enabled"""
+    if os.getenv("BITBIRCH_NO_EXTENSIONS"):
+        return False
+    try:
+        from bblean._cpp_similarity import jt_isim_from_sum  # noqa
+
+        return True
+    except ImportError:
+        return False
+
+
+def cpp_extensions_are_installed() -> bool:
+    r"""Query whether the C++ BitBRICH extensions are currently installed"""
+    try:
+        from bblean._cpp_similarity import jt_isim_from_sum  # noqa
+
+        return True
+    except ImportError:
+        return False
