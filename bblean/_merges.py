@@ -1,10 +1,10 @@
 r"""Merging criteria for BitBIRCH clustering"""
 
-from numpy.typing import NDArray
 import numpy as np
+from numpy.typing import NDArray
 
-# NOTE: jt_isim_from_sum is equivalent to jt_isim_diameter_complement_from_sum
-from bblean.similarity import jt_isim_from_sum, jt_isim_radius_complement_from_sum
+# NOTE: jt_isim_from_sum is equivalent to jt_isim_diameter_compl_from_sum
+from bblean.similarity import jt_isim_from_sum, jt_isim_radius_compl_from_sum
 
 BUILTIN_MERGES = [
     "radius",
@@ -49,7 +49,7 @@ class RadiusMerge(MergeAcceptFunction):
         old_n: int,
         nom_n: int,
     ) -> bool:
-        return jt_isim_radius_complement_from_sum(new_ls, new_n) >= threshold
+        return jt_isim_radius_compl_from_sum(new_ls, new_n) >= threshold
 
 
 class DiameterMerge(MergeAcceptFunction):
@@ -128,12 +128,12 @@ class ToleranceRadiusMerge(ToleranceDiameterMerge):
         old_n: int,
         nom_n: int,
     ) -> bool:
-        new_rc = jt_isim_radius_complement_from_sum(new_ls, new_n)
+        new_rc = jt_isim_radius_compl_from_sum(new_ls, new_n)
         if new_rc < threshold:
             return False
         if old_n == 1:
             return True
-        old_rc = jt_isim_radius_complement_from_sum(old_ls, old_n)
+        old_rc = jt_isim_radius_compl_from_sum(old_ls, old_n)
         tol = max(self.tolerance * (np.exp(-self.decay * old_n) - self.offset), 0.0)
         return new_rc >= old_rc - tol
 

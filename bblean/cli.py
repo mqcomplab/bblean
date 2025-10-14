@@ -561,6 +561,10 @@ def _plot_summary(
         bool,
         Option("--save/--no-save"),
     ] = True,
+    ylim: Annotated[
+        int | None,
+        Option("--ylim"),
+    ] = None,
     min_size: Annotated[
         int,
         Option("--min-size"),
@@ -633,7 +637,7 @@ def _plot_summary(
             clusters_path,
             "summary",
             summary_plot,
-            {"annotate": annotate},
+            {"annotate": annotate, "counts_ylim": ylim},
             smiles=load_smiles(smiles_path) if smiles_path is not None else (),
             min_size=min_size,
             top=top,
@@ -860,25 +864,26 @@ def _run(
             )
     timer.end_timing("total", console, indent=False)
     console.print_peak_mem(out_dir, indent=False)
-    if save_tree:
-        # TODO: BitBIRCH is highly recursive. pickling may crash python,
-        # an alternative solution would be better
-        _old_limit = sys.getrecursionlimit()
-        sys.setrecursionlimit(100_000)
-        with open(out_dir / "bitbirch.pkl", mode="wb") as f:
-            pickle.dump(tree, f)
-        sys.setrecursionlimit(_old_limit)
-    tree.delete_internal_nodes()
-    # Dump outputs (peak memory, timings, config, cluster ids)
-    if save_centroids:
-        output = tree.get_centroids_mol_ids()
-        with open(out_dir / "clusters.pkl", mode="wb") as f:
-            pickle.dump(output["mol_ids"], f)
-        with open(out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
-            pickle.dump(output["centroids"], f)
-    else:
-        with open(out_dir / "clusters.pkl", mode="wb") as f:
-            pickle.dump(tree.get_cluster_mol_ids(), f)
+    if variant == "lean":
+        if save_tree:
+            # TODO: BitBIRCH is highly recursive. pickling may crash python,
+            # an alternative solution would be better
+            _old_limit = sys.getrecursionlimit()
+            sys.setrecursionlimit(100_000)
+            with open(out_dir / "bitbirch.pkl", mode="wb") as f:
+                pickle.dump(tree, f)
+            sys.setrecursionlimit(_old_limit)
+        tree.delete_internal_nodes()
+        # Dump outputs (peak memory, timings, config, cluster ids)
+        if save_centroids:
+            output = tree.get_centroids_mol_ids()
+            with open(out_dir / "clusters.pkl", mode="wb") as f:
+                pickle.dump(output["mol_ids"], f)
+            with open(out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
+                pickle.dump(output["centroids"], f)
+        else:
+            with open(out_dir / "clusters.pkl", mode="wb") as f:
+                pickle.dump(tree.get_cluster_mol_ids(), f)
 
     collect_system_specs_and_dump_config(ctx.params)
     timer.dump(out_dir / "timings.json")
