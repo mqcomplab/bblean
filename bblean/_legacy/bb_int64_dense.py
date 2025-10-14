@@ -628,9 +628,9 @@ class BitBirch:
             Fitted estimator.
         """
         if isinstance(X, Path):
-            fps = np.load(file, mmap_mode="r")[max_fps:]
+            X = np.load(X, mmap_mode="r")[:max_fps]
         else:
-            X = X[max_fps:]
+            X = X[:max_fps]
         threshold = self.threshold
         branching_factor = self.branching_factor
         n_features = _validate_n_features(X, input_is_packed, n_features)
