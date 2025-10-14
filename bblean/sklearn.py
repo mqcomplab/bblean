@@ -166,17 +166,38 @@ class UnpackedBitBirch(BitBirch):
 
     See `bblean.bitbirch.BitBirch` for more details"""
 
-    def fit(self, X, y=None) -> tpx.Self:  # type: ignore
-        return super().fit(X, y, input_is_packed=False)
+    def fit(  # type: ignore
+        self, X, y=None, input_is_packed: bool = False, n_features: int | None = None
+    ) -> tpx.Self:
+        return super().fit(X, y, input_is_packed=input_is_packed, n_features=n_features)
 
-    def partial_fit(self, X, y=None):  # type: ignore
-        return super().partial_fit(X, y, input_is_packed=False)
+    def partial_fit(  # type: ignore
+        self, X, y=None, input_is_packed: bool = False, n_features: int | None = None
+    ):
+        return super().partial_fit(
+            X, y, input_is_packed=input_is_packed, n_features=n_features
+        )
 
-    def fit_predict(self, X, y=None):  # type: ignore
-        return super().fit_predict(X, y, input_is_packed=False)
+    def fit_predict(  # type: ignore
+        self, X, y=None, input_is_packed: bool = False, n_features: int | None = None
+    ):
+        return super().fit_predict(
+            X, y, input_is_packed=input_is_packed, n_features=n_features
+        )
 
-    def _predict(self, X):  # type: ignore
-        return super()._predict(X, input_is_packed=False)
+    def predict(  # type: ignore
+        self,
+        X,
+        input_is_packed: bool = False,
+        n_features: int | None = None,
+    ):
+        return super().predict(
+            X, input_is_packed=input_is_packed, n_features=n_features
+        )
 
-    def transform(self, X):  # type: ignore
-        return super().transform(X, input_is_packed=False)
+    def transform(  # type: ignore
+        self, X, input_is_packed: bool = False, n_features: int | None = None
+    ):
+        return super().transform(
+            X, input_is_packed=input_is_packed, n_features=n_features
+        )
