@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=d3be57ac"></script>
+    <script src="../../_static/documentation_options.js?v=5110d70a"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -407,6 +407,7 @@
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;BitBirch &#39;Lean&#39; class for fast, memory-efficient O(N) clustering&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>  <span class="c1"># Stringize type annotations for no runtime overhead</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tp</span>
@@ -430,12 +431,15 @@
     <span class="n">centroid_from_sum</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># NOTE: There are small gains from using this fn but only ~3%, so don&#39;t warn for now</span>
-    <span class="c1"># if this fails, and don&#39;t expose it</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._cpp_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_fingerprints</span> <span class="k">as</span> <span class="n">_unpack_fingerprints</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;BITBIRCH_NO_EXTENSIONS&quot;</span><span class="p">):</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_fingerprints</span> <span class="k">as</span> <span class="n">_unpack_fingerprints</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># NOTE: There are small gains from using this fn but only ~3%, so don&#39;t warn for</span>
+        <span class="c1"># now if this fails, and don&#39;t expose it</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._cpp_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_fingerprints</span> <span class="k">as</span> <span class="n">_unpack_fingerprints</span>  <span class="c1"># type: ignore # noqa</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_fingerprints</span> <span class="k">as</span> <span class="n">_unpack_fingerprints</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;BitBirch&quot;</span><span class="p">]</span>
 
