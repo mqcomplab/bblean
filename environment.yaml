@@ -37,6 +37,7 @@ dependencies:
   - autoflake  # Remove unused imports / variables
   - mypy  # Type checker
   - pytest  # Python testing framework
+  - inline-snapshot  # For generating snapshots for acceptance testing
   - pytest-subtests
   - pytest-cov  # code coverage
   - cruft # Keep up with cookiecutter updates

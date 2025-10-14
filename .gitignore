@@ -81,6 +81,8 @@ max-rss.txt
 *.script.sh
 *.script.bash
 *.script.py
+script.py
+script.sh
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
