@@ -133,31 +133,6 @@ def _jt_sim_packed_precalc_cardinalities(
 
 
 def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:
-    r"""iSIM Tanimoto calculation, from unpacked fingerprints
-
-    iSIM Tanimoto was first propsed in:
-    https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
-
-    :math:`iSIM_{JT}(X)` is an excellent :math:`O(N)` approximation of the average
-    Tanimoto similarity of a set of fingerprints.
-
-    Also equivalent to the complement of the Tanimoto diameter
-    :math:`iSIM_{JT}(X) = 1 - D_{JT}(X)`.
-
-    Parameters
-    ----------
-    fps : np.ndarray
-        2D *unpacked* fingerprint array
-
-    n_objects : int
-                Number of elements
-                n_objects = X.shape[0]
-
-    Returns
-    ----------
-    isim : float
-           iSIM Jaccard-Tanimoto value
-    """
     # cast is slower
     return jt_isim_from_sum(
         np.sum(arr, axis=0, dtype=np.uint64), len(arr)  # type: ignore
@@ -165,31 +140,6 @@ def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:
 
 
 def jt_isim_packed(fps: NDArray[np.integer], n_features: int | None = None) -> float:
-    r"""iSIM Tanimoto calculation, from packed fingerprints
-
-    iSIM Tanimoto was first propsed in:
-    https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
-
-    :math:`iSIM_{JT}(X)` is an excellent :math:`O(N)` approximation of the average
-    Tanimoto similarity of a set of fingerprints.
-
-    Also equivalent to the complement of the Tanimoto diameter
-    :math:`iSIM_{JT}(X) = 1 - D_{JT}(X)`.
-
-    Parameters
-    ----------
-    fps : np.ndarray
-        2D *packed* fingerprint array
-
-    n_objects : int
-                Number of elements
-                n_objects = X.shape[0]
-
-    Returns
-    ----------
-    isim : float
-           iSIM Jaccard-Tanimoto value
-    """
     # cast is slower
     return jt_isim_from_sum(
         np.sum(

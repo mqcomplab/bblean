@@ -1,5 +1,6 @@
 r"""Plotting and visualization convenience functions"""
 
+import warnings
 from pathlib import Path
 import pickle
 import random
@@ -65,6 +66,7 @@ def summary_plot(
     c: ClusterAnalysis,
     /,
     title: str | None = None,
+    counts_ylim: int | None = None,
     annotate: bool = True,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Create a summary plot from a cluster analysis
@@ -73,7 +75,6 @@ def summary_plot(
     orange = "tab:orange"
     blue = "tab:blue"
     df = c.df
-    num_clusters = c.num_clusters
     if mpl.rcParamsDefault["font.size"] == plt.rcParams["font.size"]:
         plt.rcParams["font.size"] = 8
     if annotate:
@@ -90,6 +91,7 @@ def summary_plot(
         label="Num. molecules",
         zorder=0,
     )
+    ax.set_ylim(0, counts_ylim)
     if annotate:
         for i, mol in enumerate(df["mol_num"]):
             plt.text(
@@ -126,45 +128,51 @@ def summary_plot(
     # Labels
     ax.set_xlabel("Cluster label")
     ax.set_ylabel("Num. molecules")
-    ax.set_xticks(range(num_clusters))
+    ax.set_xticks(range(c.num_clusters))
 
     # Plot iSIM
-    ax_isim = ax.twinx()
-    ax_isim.plot(
-        df["label"] - 1,
-        df["isim"],
-        color="tab:green",
-        linestyle="dashed",
-        linewidth=1.5,
-        zorder=5,
-        alpha=0.6,
-    )
-    ax_isim.scatter(
-        df["label"] - 1,
-        df["isim"],
-        color="tab:green",
-        marker="o",
-        s=15,
-        label="Tanimoto iSIM",
-        edgecolor="darkgreen",
-        zorder=100,
-        alpha=0.6,
-    )
-    ax_isim.set_ylabel("Tanimoto iSIM (average similarity)")
-    ax_isim.set_yticks(np.arange(0, 1.1, 0.1))
-    ax_isim.set_ylim(0, 1)
-    ax_isim.spines["right"].set_color("tab:green")
-    ax_isim.tick_params(colors="tab:green")
-    ax_isim.yaxis.label.set_color("tab:green")
+    if c.has_fps:
+        ax_isim = ax.twinx()
+        ax_isim.plot(
+            df["label"] - 1,
+            df["isim"],
+            color="tab:green",
+            linestyle="dashed",
+            linewidth=1.5,
+            zorder=5,
+            alpha=0.6,
+        )
+        ax_isim.scatter(
+            df["label"] - 1,
+            df["isim"],
+            color="tab:green",
+            marker="o",
+            s=15,
+            label="Tanimoto iSIM",
+            edgecolor="darkgreen",
+            zorder=100,
+            alpha=0.6,
+        )
+        ax_isim.set_ylabel("Tanimoto iSIM (average similarity)")
+        ax_isim.set_yticks(np.arange(0, 1.1, 0.1))
+        ax_isim.set_ylim(0, 1)
+        ax_isim.spines["right"].set_color("tab:green")
+        ax_isim.tick_params(colors="tab:green")
+        ax_isim.yaxis.label.set_color("tab:green")
     bbox = ax.get_position()
     fig.legend(
-        loc="center right",
-        bbox_to_anchor=(bbox.x0 + 0.95 * bbox.width, bbox.y0 + 0.5 * bbox.height),
+        loc="upper right",
+        bbox_to_anchor=(bbox.x0 + 0.95 * bbox.width, bbox.y0 + 0.95 * bbox.height),
     )
-    msg = f"Metrics for top {num_clusters} largest clusters"
+    if c.has_all_clusters:
+        msg = "Metrics of all clusters"
+    else:
+        msg = f"Metrics of top {c.num_clusters} largest clusters"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
+    if not c.has_fps:
+        return fig, (ax,)
     return fig, (ax, ax_isim)
 
 
@@ -185,7 +193,7 @@ def umap_plot(
     color_labels: list[int] = []
     for num, label in zip(df["mol_num"], df["label"]):
         color_labels.extend([label - 1] * num)  # color labels start with 0
-    num_clusters = c.num_clusters
+    num_top = c.num_clusters
     if workers is None:
         workers = _num_avail_cpus()
 
@@ -213,7 +221,7 @@ def umap_plot(
         fps_umap[:, 0],
         fps_umap[:, 1],
         c=color_labels,
-        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_clusters]),
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_top]),
         edgecolors="none",
         alpha=0.5,
         s=2,
@@ -221,11 +229,14 @@ def umap_plot(
     # t-SNE plots *must be square*
     ax.set_aspect("equal", adjustable="box")
     cbar = plt.colorbar(scatter, label="Cluster label")
-    cbar.set_ticks(list(range(num_clusters)))
-    cbar.set_ticklabels(list(map(str, range(1, num_clusters + 1))))
+    cbar.set_ticks(list(range(num_top)))
+    cbar.set_ticklabels(list(map(str, range(1, num_top + 1))))
     ax.set_xlabel("UMAP component 1")
     ax.set_ylabel("UMAP component 2")
-    msg = f"UMAP of top {num_clusters} largest clusters"
+    if c.has_all_clusters:
+        msg = "UMAP of all clusters"
+    else:
+        msg = f"UMAP of top {num_top} largest clusters"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
@@ -244,7 +255,7 @@ def pca_plot(
     color_labels: list[int] = []
     for num, label in zip(df["mol_num"], df["label"]):
         color_labels.extend([label - 1] * num)  # color labels start with 0
-    num_clusters = c.num_clusters
+    num_top = c.num_clusters
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":
@@ -264,7 +275,7 @@ def pca_plot(
         fps_pca[:, 0],
         fps_pca[:, 1],
         c=color_labels,
-        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_clusters]),
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_top]),
         edgecolors="none",
         alpha=0.5,
         s=2,
@@ -272,11 +283,14 @@ def pca_plot(
     # t-SNE plots *must be square*
     ax.set_aspect("equal", adjustable="box")
     cbar = plt.colorbar(scatter, label="Cluster label")
-    cbar.set_ticks(list(range(num_clusters)))
-    cbar.set_ticklabels(list(map(str, range(1, num_clusters + 1))))
+    cbar.set_ticks(list(range(num_top)))
+    cbar.set_ticklabels(list(map(str, range(1, num_top + 1))))
     ax.set_xlabel("PCA component 1")
     ax.set_ylabel("PCA component 2")
-    msg = f"PCA of top {num_clusters} largest clusters"
+    if c.has_all_clusters:
+        msg = "PCA of all clusters"
+    else:
+        msg = f"PCA of top {num_top} largest clusters"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
@@ -305,7 +319,7 @@ def tsne_plot(
     color_labels: list[int] = []
     for num, label in zip(df["mol_num"], df["label"]):
         color_labels.extend([label - 1] * num)  # color labels start with 0
-    num_clusters = c.num_clusters
+    num_top = c.num_clusters
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":
@@ -362,7 +376,7 @@ def tsne_plot(
         fps_tsne[:, 0],
         fps_tsne[:, 1],
         c=color_labels,
-        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_clusters]),
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_top]),
         edgecolors="none",
         alpha=0.5,
         s=2,
@@ -370,11 +384,14 @@ def tsne_plot(
     # t-SNE plots *must be square*
     ax.set_aspect("equal", adjustable="box")
     cbar = plt.colorbar(scatter, label="Cluster label")
-    cbar.set_ticks(list(range(num_clusters)))
-    cbar.set_ticklabels(list(map(str, range(1, num_clusters + 1))))
+    cbar.set_ticks(list(range(num_top)))
+    cbar.set_ticklabels(list(map(str, range(1, num_top + 1))))
     ax.set_xlabel("t-SNE component 1")
     ax.set_ylabel("t-SNE component 2")
-    msg = f"t-SNE of top {num_clusters} largest clusters"
+    if c.has_all_clusters:
+        msg = "t-SNE of all clusters"
+    else:
+        msg = f"t-SNE of top {num_top} largest clusters"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
@@ -432,9 +449,18 @@ def _dispatch_visualization(
         if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
             fps_path = input_fps_path
         else:
-            msg = "Could not find input fingerprints. Please use --fps-path"
-            raise RuntimeError(msg)
-    if fps_path.is_dir():
+            if fn_name != "summary":
+                msg = "Could not find input fingerprints. Please use --fps-path"
+                raise RuntimeError(msg)
+            else:
+                msg = (
+                    "Could not find input fingerprints. Please use --fps-path."
+                    " Summary plot without fingerprints doesn't include isim values"
+                )
+                warnings.warn(msg)
+    if fps_path is None:
+        fps_paths = None
+    elif fps_path.is_dir():
         fps_paths = sorted(fps_path.glob("*.npy"))
     else:
         fps_paths = [fps_path]

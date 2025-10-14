@@ -11,10 +11,11 @@ from numpy.typing import NDArray
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
 from bblean._config import DEFAULTS
-from bblean.similarity import jt_isim_packed, jt_isim_unpacked
+from bblean.similarity import jt_isim
 from bblean.fingerprints import (
     fps_from_smiles,
     unpack_fingerprints,
+    pack_fingerprints,
     _FingerprintFileSequence,
 )
 
@@ -34,24 +35,87 @@ class ScaffoldAnalysis:
     isim: float
 
 
-@dataclasses.dataclass
 class ClusterAnalysis:
     r""":meta private:"""
 
-    clusters: list[list[int]]
-    df: pd.DataFrame
-    fps: NDArray[np.uint8]
-    fps_are_packed: bool = True
-    n_features: int | None = None
-    min_size: int | None = None
+    def __init__(
+        self,
+        clusters: list[list[int]],
+        df: pd.DataFrame,
+        size_stats: pd.DataFrame,
+        fps: NDArray[np.uint8] | None = None,
+        cluster_sizes: list[int] | None = None,
+        fps_are_packed: bool = True,
+        n_features: int | None = None,
+        min_size: int | None = None,
+    ) -> None:
+        self.stats = size_stats
+        self.clusters = clusters
+        self.df = df
+        self._fps = fps
+        self.fps_are_packed = fps_are_packed
+        self.n_features = n_features
+        self.min_size = min_size
+
+    @property
+    def mean(self) -> float:
+        return self.stats.mean
+
+    @property
+    def median(self) -> float:
+        return self.stats["50%"]
+
+    @property
+    def q1(self) -> float:
+        return self.stats["25%"]
+
+    @property
+    def q2(self) -> float:
+        return self.stats["50%"]
+
+    @property
+    def q3(self) -> float:
+        return self.stats["75%"]
+
+    @property
+    def min(self) -> float:
+        return self.stats["min"]
+
+    @property
+    def max(self) -> float:
+        return self.stats["max"]
+
+    @property
+    def total(self) -> float:
+        return self.stats["count"]
 
     @property
     def unpacked_fps(self) -> NDArray[np.uint8]:
-        return unpack_fingerprints(self.fps, self.n_features)
+        if self._fps is None:
+            raise RuntimeError("Fingerprints not present")
+        if self.fps_are_packed:
+            return unpack_fingerprints(self._fps, self.n_features)
+        return self._fps
+
+    @property
+    def packed_fps(self) -> NDArray[np.uint8]:
+        if self._fps is None:
+            raise RuntimeError("Fingerprints not present")
+        if self.fps_are_packed:
+            return self._fps
+        return pack_fingerprints(self._fps)
 
     @property
     def has_scaffolds(self) -> bool:
         return "unique_scaffolds_num" in self.df.columns
+
+    @property
+    def has_fps(self) -> bool:
+        return self._fps is not None
+
+    @property
+    def has_all_clusters(self) -> bool:
+        return self.num_clusters == self.total
 
     @property
     def num_clusters(self) -> int:
@@ -74,13 +138,13 @@ def scaffold_analysis(
     scaffolds = [MurckoScaffold.MurckoScaffoldSmilesFromSmiles(smi) for smi in smiles]
     unique_scaffolds = set(scaffolds)
     scaffolds_fps = fps_from_smiles(unique_scaffolds, kind=fp_kind, pack=False)
-    scaffolds_isim = jt_isim_unpacked(scaffolds_fps)
+    scaffolds_isim = jt_isim(scaffolds_fps, input_is_packed=False)
     return ScaffoldAnalysis(len(unique_scaffolds), scaffolds_isim)
 
 
 def cluster_analysis(
     clusters: list[list[int]],
-    fps: NDArray[np.integer] | Path | tp.Sequence[Path],
+    fps: NDArray[np.integer] | Path | tp.Sequence[Path] | None = None,
     smiles: tp.Iterable[str] = (),
     n_features: int | None = None,
     top: int | None = 20,
@@ -97,10 +161,11 @@ def cluster_analysis(
     if not assume_sorted:
         # Largest first
         clusters = sorted(clusters, key=lambda x: len(x), reverse=True)
+    cluster_sizes = [len(c) for c in clusters]
     # Filter by min size
     _clusters = []
     for i, c in enumerate(clusters):
-        if len(c) < min_size:
+        if cluster_sizes[i] < min_size:
             break
         if top is not None and i >= top:
             break
@@ -108,39 +173,47 @@ def cluster_analysis(
     clusters = _clusters
 
     info: dict[str, list[tp.Any]] = defaultdict(list)
-    fps_provider: tp.Union[_FingerprintFileSequence, NDArray[np.uint8]]
-    if isinstance(fps, Path):
+    fps_provider: tp.Union[_FingerprintFileSequence, NDArray[np.uint8], None]
+    if fps is None:
+        fps_provider = None
+    elif isinstance(fps, Path):
         fps_provider = np.load(fps, mmap_mode="r")
     elif not isinstance(fps, np.ndarray):
         fps_provider = _FingerprintFileSequence(fps)
     else:
         fps_provider = tp.cast(NDArray[np.uint8], fps.astype(np.uint8, copy=False))
-    selected = np.empty(
-        (sum(len(c) for c in clusters), fps_provider.shape[1]), dtype=np.uint8
-    )
+
+    if fps_provider is None:
+        selected = None
+    else:
+        selected = np.empty(
+            (sum(len(c) for c in clusters), fps_provider.shape[1]), dtype=np.uint8
+        )
     start = 0
     for i, c in enumerate(clusters, 1):
         size = len(c)
         # If a file sequence is passed, the cluster indices must be sorted.
         # the cluster analysis is idx-order-independent, so this is fine
-        _fps = fps_provider[sorted(c)]
         info["label"].append(i)
         info["mol_num"].append(size)
-        if input_is_packed:
-            info["isim"].append(jt_isim_packed(_fps, n_features))  # type: ignore
-        else:
-            info["isim"].append(jt_isim_unpacked(_fps))  # type: ignore
         if smiles.size:
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
             info["unique_scaffolds_num"].append(analysis.unique_num)
             info["unique_scaffolds_isim"].append(analysis.isim)
-        selected[start : start + size] = _fps
+        if fps_provider is not None:
+            assert selected is not None
+            _fps = fps_provider[sorted(c)]
+            info["isim"].append(
+                jt_isim(_fps, input_is_packed=input_is_packed, n_features=n_features)
+            )
+            selected[start : start + size] = _fps
         start += size
     return ClusterAnalysis(
         clusters,
         pd.DataFrame(info),
-        selected,
+        fps=selected,
         fps_are_packed=input_is_packed,
+        size_stats=pd.Series(cluster_sizes).describe(),
         n_features=n_features,
         min_size=min_size,
     )
