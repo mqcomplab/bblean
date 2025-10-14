@@ -585,8 +585,8 @@ class BitBirch:
         tolerance: float | None = None,
     ):
         # Criterion for merges
-        self._threshold = threshold
-        self._branching_factor = branching_factor
+        self.threshold = threshold
+        self.branching_factor = branching_factor
         if _global_merge_accept is not None:
             # Backwards compat
             if tolerance is not None:
@@ -623,16 +623,12 @@ class BitBirch:
         _BITBIRCH_INSTANCES.add(self)
 
     @property
-    def threshold(self) -> float:
-        return self._threshold
-
-    @property
-    def branching_factor(self) -> int:
-        return self._branching_factor
-
-    @property
     def merge_criterion(self) -> str:
         return self._merge_accept_fn.name
+
+    @merge_criterion.setter
+    def merge_criterion(self, value: str) -> None:
+        self.set_merge(criterion=value)
 
     @property
     def tolerance(self) -> float | None:
@@ -640,6 +636,10 @@ class BitBirch:
         if hasattr(fn, "tolerance"):
             return fn.tolerance
         return None
+
+    @tolerance.setter
+    def tolerance(self, value: float) -> None:
+        self.set_merge(tolerance=value)
 
     @property
     def is_init(self) -> bool:
@@ -655,7 +655,7 @@ class BitBirch:
         self,
         criterion: str | MergeAcceptFunction | None = None,
         *,
-        tolerance: float = 0.05,
+        tolerance: float | None = None,
         threshold: float | None = None,
         branching_factor: int | None = None,
     ) -> None:
@@ -668,20 +668,19 @@ class BitBirch:
                 "BitBirch.set_merge() can only called if "
                 "the global set_merge() function has *not* been used"
             )
-        if criterion is not None:
-            if isinstance(criterion, MergeAcceptFunction):
-                if tolerance is not None:
-                    raise ValueError(
-                        "'tolerance' arg is disregarded for custom merge functions"
-                    )
-                self._merge_accept_fn = criterion
-            else:
-                self._merge_accept_fn = get_merge_accept_fn(criterion, tolerance)
-            self._merge_accept_fn = get_merge_accept_fn(criterion, tolerance)
+        _tolerance = 0.05 if tolerance is None else tolerance
+        if isinstance(criterion, MergeAcceptFunction):
+            self._merge_accept_fn = criterion
+        elif isinstance(criterion, str):
+            self._merge_accept_fn = get_merge_accept_fn(criterion, _tolerance)
+        if hasattr(self._merge_accept_fn, "tolerance"):
+            self._merge_accept_fn.tolerance = _tolerance
+        elif tolerance is not None:
+            raise ValueError(f"Can't set tolerance for {self._merge_accept_fn}")
         if threshold is not None:
-            self._threshold = threshold
+            self.threshold = threshold
         if branching_factor is not None:
-            self._branching_factor = branching_factor
+            self.branching_factor = branching_factor
 
     def fit(
         self,
@@ -743,8 +742,8 @@ class BitBirch:
         else:
             iterable = zip(reinsert_indices, arr_iterable)
 
-        threshold = self._threshold
-        branching_factor = self._branching_factor
+        threshold = self.threshold
+        branching_factor = self.branching_factor
         merge_accept_fn = self._merge_accept_fn
 
         arr_idx = 0
@@ -812,8 +811,8 @@ class BitBirch:
         # array rows, depending on the kind of X passed
         arr_iterable = _get_array_iterable(X, input_is_packed=False, dtype=X[0].dtype)
         merge_accept_fn = self._merge_accept_fn
-        threshold = self._threshold
-        branching_factor = self._branching_factor
+        threshold = self.threshold
+        branching_factor = self.branching_factor
         idx_provider: tp.Iterable[tp.Sequence[int]]
         arr_idx = 0
         if reinsert_index_seqs is None:
