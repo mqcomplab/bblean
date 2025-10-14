@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=07621693"></script>
+    <script src="../../_static/documentation_options.js?v=4bcb52b8"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -947,8 +947,8 @@
         <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="c1"># Criterion for merges</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span> <span class="o">=</span> <span class="n">threshold</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span>
         <span class="k">if</span> <span class="n">_global_merge_accept</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Backwards compat</span>
             <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -985,16 +985,12 @@
         <span class="n">_BITBIRCH_INSTANCES</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">branching_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span>
-
-    <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">merge_criterion</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@merge_criterion</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge_criterion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -1002,6 +998,10 @@
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="s2">&quot;tolerance&quot;</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">fn</span><span class="o">.</span><span class="n">tolerance</span>
         <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@tolerance</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span><span class="n">tolerance</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_init</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1019,7 +1019,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">MergeAcceptFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">branching_factor</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1032,20 +1032,19 @@
                 <span class="s2">&quot;BitBirch.set_merge() can only called if &quot;</span>
                 <span class="s2">&quot;the global set_merge() function has *not* been used&quot;</span>
             <span class="p">)</span>
-        <span class="k">if</span> <span class="n">criterion</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">MergeAcceptFunction</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;&#39;tolerance&#39; arg is disregarded for custom merge functions&quot;</span>
-                    <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">criterion</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+        <span class="n">_tolerance</span> <span class="o">=</span> <span class="mf">0.05</span> <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tolerance</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">MergeAcceptFunction</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">criterion</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">_tolerance</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span><span class="p">,</span> <span class="s2">&quot;tolerance&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span><span class="o">.</span><span class="n">tolerance</span> <span class="o">=</span> <span class="n">_tolerance</span>
+        <span class="k">elif</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t set tolerance for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
         <span class="k">if</span> <span class="n">branching_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span></div>
 
 
 <div class="viewcode-block" id="BitBirch.fit">
@@ -1110,8 +1109,8 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">iterable</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">reinsert_indices</span><span class="p">,</span> <span class="n">arr_iterable</span><span class="p">)</span>
 
-        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span>
-        <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span>
+        <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span>
         <span class="n">merge_accept_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span>
 
         <span class="n">arr_idx</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1180,8 +1179,8 @@
         <span class="c1"># array rows, depending on the kind of X passed</span>
         <span class="n">arr_iterable</span> <span class="o">=</span> <span class="n">_get_array_iterable</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
         <span class="n">merge_accept_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span>
-        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span>
-        <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_branching_factor</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span>
+        <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span>
         <span class="n">idx_provider</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
         <span class="n">arr_idx</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">if</span> <span class="n">reinsert_index_seqs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
