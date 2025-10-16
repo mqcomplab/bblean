@@ -7,6 +7,7 @@ from legacy_merges import (  # type: ignore
     merge_tolerance,
 )
 from bblean._merges import (
+    NeverMerge,
     RadiusMerge,
     DiameterMerge,
     ToleranceMerge,
@@ -115,6 +116,25 @@ def test_tolerance_radius() -> None:
             val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
             assert val == expect[idx]
             idx += 1
+
+
+def test_never_merge() -> None:
+    fps = make_fake_fingerprints(
+        500, n_features=2048, seed=12620509540149709235, pack=False
+    )
+    tolerances = range(1, 10)
+    for thresh in (0.23, 0.2):
+        for j, tol in enumerate(tolerances):
+            old, nom = get_old_and_nom(fps, j, ">1, >1")
+            old_ls = old.sum(0)
+            nom_ls = nom.sum(0)
+            new_ls = old_ls + nom_ls
+            old_n = len(old)
+            nom_n = len(nom)
+            new_n = old_n + nom_n
+            fn = NeverMerge(tolerance=tol)
+            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+            assert not val
 
 
 # These are designed to trip all cases of tolerance
