@@ -51,7 +51,7 @@ def batched(iterable: tp.Iterable[_T], n: int) -> tp.Iterator[tuple[_T, ...]]:
 def _import_bitbirch_variant(
     variant: str = "lean",
 ) -> tuple[tp.Any, tp.Callable[..., None]]:
-    if variant not in ("lean", "int64_dense", "uint8"):
+    if variant not in ("lean", "int64", "uint8"):
         raise ValueError(f"Unknown variant {variant}")
     if variant == "lean":
         # Most up-to-date bb variant
@@ -59,9 +59,9 @@ def _import_bitbirch_variant(
     elif variant == "uint8":
         # Legacy variant of bb that uses uint8 and supports packing, but no extra optim
         module = importlib.import_module("bblean._legacy.bb_uint8")
-    elif variant == "int64_dense":
+    elif variant == "int64":
         # Legacy variant of bb that uses int64 fps (dense only)
-        module = importlib.import_module("bblean._legacy.bb_int64_dense")
+        module = importlib.import_module("bblean._legacy.bb_int64")
 
     Cls = getattr(module, "BitBirch")
     fn = getattr(module, "set_merge")
