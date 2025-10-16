@@ -791,8 +791,8 @@ def _run(
     from bblean.fingerprints import _get_fps_file_num
 
     console = get_console(silent=not verbose)
-    if variant == "int64_dense" and input_is_packed:
-        raise ValueError("Packed inputs are not supported for the int64_dense variant")
+    if variant == "int64" and input_is_packed:
+        raise ValueError("Packed inputs are not supported for the int64 variant")
 
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
