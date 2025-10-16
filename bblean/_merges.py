@@ -200,11 +200,11 @@ def get_merge_accept_fn(
         return DiameterMerge()
     elif merge_criterion == "tolerance-legacy":
         return ToleranceMerge(tolerance)
-    elif merge_criterion in "tolerance-diameter":
+    elif merge_criterion == "tolerance-diameter":
         return ToleranceDiameterMerge(tolerance)
-    elif merge_criterion in "tolerance-radius":
+    elif merge_criterion == "tolerance-radius":
         return ToleranceRadiusMerge(tolerance)
-    elif merge_criterion in "never-merge":
+    elif merge_criterion == "never-merge":
         return NeverMerge(tolerance)
     raise ValueError(
         f"Unknown merge criterion {merge_criterion} "
