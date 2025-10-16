@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=7c3eac5a"></script>
+    <script src="../../_static/documentation_options.js?v=a5af66fd"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -508,7 +508,7 @@
         <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">out_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">full_refinement_before_midsection</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">refinement_before_midsection</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">refine_threshold_increase</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">refine_merge_criterion</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -517,7 +517,9 @@
         <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">full_refinement_before_midsection</span> <span class="o">=</span> <span class="n">full_refinement_before_midsection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">=</span> <span class="n">refinement_before_midsection</span>
+        <span class="k">if</span> <span class="n">refinement_before_midsection</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;full&quot;</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown refinement kind </span><span class="si">{</span><span class="n">refinement_before_midsection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="o">=</span> <span class="n">tolerance</span>
@@ -549,23 +551,25 @@
         <span class="c1"># Extract the BitFeatures of the leaves, breaking the largest cluster(s) apart,</span>
         <span class="c1"># to prepare for refinement</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
-        <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">_bf_to_np_refine</span><span class="p">(</span><span class="n">fp_file</span><span class="p">,</span> <span class="n">initial_mol</span><span class="o">=</span><span class="n">start_idx</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_refinement_before_midsection</span><span class="p">:</span>
-            <span class="c1"># Finish the first refinement step internally in this round</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">refine_merge_criterion</span><span class="p">,</span>
-                <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">,</span>
-                <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_threshold_increase</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-                <span class="n">tree</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
-                <span class="k">del</span> <span class="n">mol_idxs</span>
-                <span class="k">del</span> <span class="n">bufs</span>
-
-            <span class="n">tree</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
             <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">_bf_to_np</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;full&quot;</span><span class="p">]:</span>
+            <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">_bf_to_np_refine</span><span class="p">(</span><span class="n">fp_file</span><span class="p">,</span> <span class="n">initial_mol</span><span class="o">=</span><span class="n">start_idx</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">==</span> <span class="s2">&quot;full&quot;</span><span class="p">:</span>
+                <span class="c1"># Finish the first refinement step internally in this round</span>
+                <span class="n">tree</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+                <span class="n">tree</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">refine_merge_criterion</span><span class="p">,</span>
+                    <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">,</span>
+                    <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_threshold_increase</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                    <span class="n">tree</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+                    <span class="k">del</span> <span class="n">mol_idxs</span>
+                    <span class="k">del</span> <span class="n">bufs</span>
+
+                <span class="n">tree</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
+                <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">_bf_to_np</span><span class="p">()</span>
 
         <span class="n">_save_bufs_and_mol_idxs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span><span class="p">,</span> <span class="n">file_label</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -707,7 +711,7 @@
     <span class="n">num_midsection_rounds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">bin_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
     <span class="n">max_tasks_per_process</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">full_refinement_before_midsection</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">refinement_before_midsection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;full&quot;</span><span class="p">,</span>
     <span class="n">split_largest_after_each_midsection_round</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">midsection_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">refine_merge_criterion</span><span class="p">,</span>
     <span class="n">final_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -761,7 +765,7 @@
 
     <span class="n">initial_fn</span> <span class="o">=</span> <span class="n">_InitialRound</span><span class="p">(</span>
         <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
-        <span class="n">full_refinement_before_midsection</span><span class="o">=</span><span class="n">full_refinement_before_midsection</span><span class="p">,</span>
+        <span class="n">refinement_before_midsection</span><span class="o">=</span><span class="n">refinement_before_midsection</span><span class="p">,</span>
         <span class="n">max_fps</span><span class="o">=</span><span class="n">max_fps</span><span class="p">,</span>
         <span class="n">merge_criterion</span><span class="o">=</span><span class="n">initial_merge_criterion</span><span class="p">,</span>
         <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span>
