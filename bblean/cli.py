@@ -1013,17 +1013,17 @@ def _multiround(
             rich_help_panel="Advanced",
         ),
     ] = False,
-    full_refinement_before_midsection: Annotated[
-        bool,
+    refinement_before_midsection: Annotated[
+        str,
         Option(
             "--refine-before-mid/--no-refine-before-mid",
             help=(
-                "Run a *full* refinement step after the initial clustering round"
-                " (largest cluster is always split regardless of this flag)"
+                "Run a *full* refinement step after the initial clustering round,"
+                " only *split* largest cluster, or do *none*."
             ),
             rich_help_panel="Advanced",
         ),
-    ] = True,
+    ] = "full",
     max_tasks_per_process: Annotated[
         int, Option(help="Max tasks per process", rich_help_panel="Advanced")
     ] = 1,
@@ -1160,7 +1160,7 @@ def _multiround(
         save_centroids=save_centroids,
         bin_size=bin_size,
         max_tasks_per_process=max_tasks_per_process,
-        full_refinement_before_midsection=full_refinement_before_midsection,
+        refinement_before_midsection=refinement_before_midsection,
         num_midsection_rounds=num_midsection_rounds,
         split_largest_after_each_midsection_round=split_largest_after_midsection,
         # Debug
