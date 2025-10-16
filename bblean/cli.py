@@ -1016,7 +1016,7 @@ def _multiround(
     refinement_before_midsection: Annotated[
         str,
         Option(
-            "--refine-before-mid/--no-refine-before-mid",
+            "--initial-refine",
             help=(
                 "Run a *full* refinement step after the initial clustering round,"
                 " only *split* largest cluster, or do *none*."
