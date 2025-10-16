@@ -1,7 +1,7 @@
 import numpy as np
 
 
-from bblean._legacy.bb_int64_dense import (  # type: ignore
+from bblean._legacy.bb_int64 import (  # type: ignore
     BitBirch as BitBirchInt64,
     set_merge as set_merge_int64,
 )
