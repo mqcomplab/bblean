@@ -12,6 +12,7 @@ BUILTIN_MERGES = [
     "tolerance-diameter",
     "tolerance-radius",
     "tolerance-legacy",
+    "never-merge",
 ]
 
 
@@ -139,6 +140,25 @@ class ToleranceRadiusMerge(ToleranceDiameterMerge):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.tolerance})"
+
+
+class NeverMerge(ToleranceDiameterMerge):
+    name = "never-merge"
+
+    def __call__(
+        self,
+        threshold: float,
+        new_ls: NDArray[np.integer],
+        new_n: int,
+        old_ls: NDArray[np.integer],
+        nom_ls: NDArray[np.integer],
+        old_n: int,
+        nom_n: int,
+    ) -> bool:
+        return False
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
 
 
 class ToleranceMerge(MergeAcceptFunction):
