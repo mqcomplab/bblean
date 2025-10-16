@@ -148,7 +148,7 @@ class _InitialRound:
         threshold: float,
         tolerance: float,
         out_dir: Path | str,
-        full_refinement_before_midsection: bool,
+        refinement_before_midsection: str,
         refine_threshold_increase: float,
         refine_merge_criterion: str,
         n_features: int | None = None,
@@ -157,7 +157,9 @@ class _InitialRound:
         input_is_packed: bool = True,
     ) -> None:
         self.n_features = n_features
-        self.full_refinement_before_midsection = full_refinement_before_midsection
+        self.refinement_before_midsection = refinement_before_midsection
+        if refinement_before_midsection not in ["full", "split", "none"]:
+            raise ValueError(f"Unknown refinement kind {refinement_before_midsection}")
         self.branching_factor = branching_factor
         self.threshold = threshold
         self.tolerance = tolerance
@@ -189,23 +191,25 @@ class _InitialRound:
         # Extract the BitFeatures of the leaves, breaking the largest cluster(s) apart,
         # to prepare for refinement
         tree.delete_internal_nodes()
-        fps_bfs, mols_bfs = tree._bf_to_np_refine(fp_file, initial_mol=start_idx)
-
-        if self.full_refinement_before_midsection:
-            # Finish the first refinement step internally in this round
-            tree.reset()
-            tree.set_merge(
-                self.refine_merge_criterion,
-                tolerance=self.tolerance,
-                threshold=self.threshold + self.refine_threshold_increase,
-            )
-            for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                tree._fit_np(bufs, reinsert_index_seqs=mol_idxs)
-                del mol_idxs
-                del bufs
-
-            tree.delete_internal_nodes()
+        if self.refinement_before_midsection == "none":
             fps_bfs, mols_bfs = tree._bf_to_np()
+        elif self.refinement_before_midsection in ["split", "full"]:
+            fps_bfs, mols_bfs = tree._bf_to_np_refine(fp_file, initial_mol=start_idx)
+            if self.refinement_before_midsection == "full":
+                # Finish the first refinement step internally in this round
+                tree.reset()
+                tree.set_merge(
+                    self.refine_merge_criterion,
+                    tolerance=self.tolerance,
+                    threshold=self.threshold + self.refine_threshold_increase,
+                )
+                for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
+                    tree._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+                    del mol_idxs
+                    del bufs
+
+                tree.delete_internal_nodes()
+                fps_bfs, mols_bfs = tree._bf_to_np()
 
         _save_bufs_and_mol_idxs(self.out_dir, fps_bfs, mols_bfs, file_label, 1)
 
@@ -345,7 +349,7 @@ def run_multiround_bitbirch(
     num_midsection_rounds: int = 1,
     bin_size: int = 10,
     max_tasks_per_process: int = 1,
-    full_refinement_before_midsection: bool = True,
+    refinement_before_midsection: str = "full",
     split_largest_after_each_midsection_round: bool = False,
     midsection_merge_criterion: str = DEFAULTS.refine_merge_criterion,
     final_merge_criterion: str | None = None,
@@ -399,7 +403,7 @@ def run_multiround_bitbirch(
 
     initial_fn = _InitialRound(
         n_features=n_features,
-        full_refinement_before_midsection=full_refinement_before_midsection,
+        refinement_before_midsection=refinement_before_midsection,
         max_fps=max_fps,
         merge_criterion=initial_merge_criterion,
         input_is_packed=input_is_packed,
