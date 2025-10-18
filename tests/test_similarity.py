@@ -17,7 +17,7 @@ except ImportError:
         raise
     CSIM_AVAIL = False
 from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
-from bblean.similarity import centroid_from_sum
+from bblean.similarity import centroid_from_sum, centroid as centroid_from_fps
 
 
 def test_jt_most_dissimilar_packed() -> None:
@@ -103,6 +103,8 @@ def test_cpp_centroid() -> None:
     assert (centroid == expect_centroid).all()
     centroid = csim.centroid_from_sum(_sum, num, pack=True)
     expect_centroid = centroid_from_sum(_sum, num, pack=True)
+    assert (centroid == expect_centroid).all()
+    centroid = centroid_from_fps(fps, input_is_packed=False)
     assert (centroid == expect_centroid).all()
 
 
