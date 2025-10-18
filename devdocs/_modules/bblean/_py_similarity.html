@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=ec8048bb"></script>
+    <script src="../../_static/documentation_options.js?v=e37003c8"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -402,6 +402,26 @@
     <span class="k">if</span> <span class="n">pack</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">packbits</span><span class="p">(</span><span class="n">centroid</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">centroid</span></div>
+
+
+
+<div class="viewcode-block" id="centroid">
+<a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.centroid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">centroid</span><span class="p">(</span>
+    <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+    <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculates the majority vote centroid from a set of fingerprints</span>
+
+<span class="sd">    The majority vote centroid is an good approximation of the Tanimoto centroid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">input_is_packed</span><span class="p">:</span>
+        <span class="n">fps</span> <span class="o">=</span> <span class="n">unpack_fingerprints</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">centroid_from_sum</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">),</span>  <span class="c1"># type: ignore</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">),</span>
+    <span class="p">)</span></div>
 
 
 
