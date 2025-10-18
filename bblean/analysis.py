@@ -215,7 +215,7 @@ def cluster_analysis(
         size = len(c)
         # If a file sequence is passed, the cluster indices must be sorted.
         # the cluster analysis is idx-order-independent, so this is fine
-        info["label"].append(i)
+        info["labels"].append(i)
         info["sizes"].append(size)
         if smiles.size:
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
