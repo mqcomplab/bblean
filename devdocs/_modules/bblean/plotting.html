@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=e1bc0b72"></script>
+    <script src="../../_static/documentation_options.js?v=80631b03"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -402,7 +402,7 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Distrubution of cluster populations using KDE&quot;&quot;&quot;</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-    <span class="n">cluster_sizes</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;mol_num&quot;</span><span class="p">]</span>
+    <span class="n">cluster_sizes</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">sizes</span>
     <span class="n">sns</span><span class="o">.</span><span class="n">kdeplot</span><span class="p">(</span>
         <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
         <span class="n">data</span><span class="o">=</span><span class="n">cluster_sizes</span><span class="p">,</span>
@@ -414,7 +414,7 @@
     <span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Density&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Cluster size&quot;</span><span class="p">)</span>
-    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Populations for top </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">num_clusters</span><span class="si">}</span><span class="s2"> largest clusters&quot;</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Populations for top </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">clusters_num</span><span class="si">}</span><span class="s2"> largest clusters&quot;</span>
     <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">min_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2"> (min. size = </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">min_size</span><span class="si">}</span><span class="s2">)&quot;</span>
     <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -439,7 +439,6 @@
 <span class="sd">    If the analysis contains scaffolds, a scaffold analysis is added to the plot&quot;&quot;&quot;</span>
     <span class="n">orange</span> <span class="o">=</span> <span class="s2">&quot;tab:orange&quot;</span>
     <span class="n">blue</span> <span class="o">=</span> <span class="s2">&quot;tab:blue&quot;</span>
-    <span class="n">df</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">df</span>
     <span class="k">if</span> <span class="n">mpl</span><span class="o">.</span><span class="n">rcParamsDefault</span><span class="p">[</span><span class="s2">&quot;font.size&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;font.size&quot;</span><span class="p">]:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;font.size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
     <span class="k">if</span> <span class="n">annotate</span><span class="p">:</span>
@@ -448,17 +447,17 @@
         <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
 
     <span class="c1"># Plot and annotate the number of molecules</span>
-    <span class="n">label_strs</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>  <span class="c1"># TODO: Is this necessary?</span>
+    <span class="n">label_strs</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>  <span class="c1"># TODO: Is this necessary?</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
         <span class="n">label_strs</span><span class="p">,</span>
-        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;mol_num&quot;</span><span class="p">],</span>
+        <span class="n">c</span><span class="o">.</span><span class="n">sizes</span><span class="p">,</span>
         <span class="n">color</span><span class="o">=</span><span class="n">blue</span><span class="p">,</span>
         <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Num. molecules&quot;</span><span class="p">,</span>
         <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">counts_ylim</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">annotate</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;mol_num&quot;</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mol</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">sizes</span><span class="p">):</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                 <span class="n">i</span><span class="p">,</span>
                 <span class="n">mol</span><span class="p">,</span>
@@ -473,13 +472,13 @@
         <span class="c1"># Plot and annotate the number of unique scaffolds</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
             <span class="n">label_strs</span><span class="p">,</span>
-            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_num&quot;</span><span class="p">],</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">unique_scaffolds_num</span><span class="p">,</span>
             <span class="n">color</span><span class="o">=</span><span class="n">orange</span><span class="p">,</span>
             <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Num. unique scaffolds&quot;</span><span class="p">,</span>
             <span class="n">zorder</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">annotate</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_num&quot;</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">unique_scaffolds_num</span><span class="p">):</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                     <span class="n">i</span><span class="p">,</span>
                     <span class="n">s</span><span class="p">,</span>
@@ -493,14 +492,14 @@
     <span class="c1"># Labels</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Cluster label&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Num. molecules&quot;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">num_clusters</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">clusters_num</span><span class="p">))</span>
 
     <span class="c1"># Plot iSIM</span>
     <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">has_fps</span><span class="p">:</span>
         <span class="n">ax_isim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>
         <span class="n">ax_isim</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">],</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">labels</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">isims</span><span class="p">,</span>
             <span class="n">color</span><span class="o">=</span><span class="s2">&quot;tab:green&quot;</span><span class="p">,</span>
             <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;dashed&quot;</span><span class="p">,</span>
             <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
@@ -508,8 +507,8 @@
             <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">ax_isim</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">],</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">labels</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">isims</span><span class="p">,</span>
             <span class="n">color</span><span class="o">=</span><span class="s2">&quot;tab:green&quot;</span><span class="p">,</span>
             <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
             <span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
@@ -532,7 +531,7 @@
     <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">has_all_clusters</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Metrics of all clusters&quot;</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Metrics of top </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">num_clusters</span><span class="si">}</span><span class="s2"> largest clusters&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Metrics of top </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">clusters_num</span><span class="si">}</span><span class="s2"> largest clusters&quot;</span>
     <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
@@ -557,11 +556,10 @@
     <span class="n">deterministic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Create a UMAP plot from a cluster analysis&quot;&quot;&quot;</span>
-    <span class="n">df</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">df</span>
     <span class="n">color_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;mol_num&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]):</span>
+    <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">sizes</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">labels</span><span class="p">):</span>
         <span class="n">color_labels</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">label</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">num</span><span class="p">)</span>  <span class="c1"># color labels start with 0</span>
-    <span class="n">num_top</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">num_clusters</span>
+    <span class="n">num_top</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">clusters_num</span>
     <span class="k">if</span> <span class="n">workers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">workers</span> <span class="o">=</span> <span class="n">_num_avail_cpus</span><span class="p">()</span>
 
@@ -622,11 +620,10 @@
     <span class="n">whiten</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Create a t-SNE plot from a cluster analysis&quot;&quot;&quot;</span>
-    <span class="n">df</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">df</span>
     <span class="n">color_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;mol_num&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]):</span>
+    <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">sizes</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">labels</span><span class="p">):</span>
         <span class="n">color_labels</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">label</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">num</span><span class="p">)</span>  <span class="c1"># color labels start with 0</span>
-    <span class="n">num_top</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">num_clusters</span>
+    <span class="n">num_top</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">clusters_num</span>
 
     <span class="c1"># I don&#39;t think these should be transformed, like this, only normalized</span>
     <span class="k">if</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;normalize&quot;</span><span class="p">:</span>
@@ -689,11 +686,10 @@
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Create a t-SNE plot from a cluster analysis&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">workers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">workers</span> <span class="o">=</span> <span class="n">_num_avail_cpus</span><span class="p">()</span>
-    <span class="n">df</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">df</span>
     <span class="n">color_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;mol_num&quot;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]):</span>
+    <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">sizes</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">labels</span><span class="p">):</span>
         <span class="n">color_labels</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">label</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">num</span><span class="p">)</span>  <span class="c1"># color labels start with 0</span>
-    <span class="n">num_top</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">num_clusters</span>
+    <span class="n">num_top</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">clusters_num</span>
 
     <span class="c1"># I don&#39;t think these should be transformed, like this, only normalized</span>
     <span class="k">if</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;normalize&quot;</span><span class="p">:</span>
