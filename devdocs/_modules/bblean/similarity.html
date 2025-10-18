@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=80631b03"></script>
+    <script src="../../_static/documentation_options.js?v=ec8048bb"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -383,13 +383,17 @@
     <span class="s2">&quot;jt_isim_radius&quot;</span><span class="p">,</span>
     <span class="s2">&quot;jt_isim_radius_compl&quot;</span><span class="p">,</span>
     <span class="s2">&quot;jt_isim_diameter&quot;</span><span class="p">,</span>
+    <span class="c1"># Centroid and medoid</span>
     <span class="c1"># Radius and diameter unpacked / packed</span>
     <span class="s2">&quot;centroid_from_sum&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jt_isim_medoid&quot;</span><span class="p">,</span>
+    <span class="c1"># Complementary similarity</span>
+    <span class="s2">&quot;jt_compl_isim&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="c1"># jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for</span>
 <span class="c1"># speed</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">centroid_from_sum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">centroid_from_sum</span><span class="p">,</span> <span class="n">jt_compl_isim</span><span class="p">,</span> <span class="n">jt_isim_medoid</span>
 
 <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;BITBIRCH_NO_EXTENSIONS&quot;</span><span class="p">):</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
