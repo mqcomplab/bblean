@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import warnings
 import random
 import typing as tp
 import math
@@ -542,6 +543,126 @@ def _plot_tsne(
         )
 
 
+@app.command("summary", rich_help_panel="Analysis")
+def _table_summary(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    min_size: Annotated[
+        int,
+        Option("--min-size"),
+    ] = 0,
+    smiles_path: Annotated[
+        Path | None,
+        Option(
+            "-s",
+            "--smiles-path",
+            show_default=False,
+            help="Optional smiles path, if passed a scaffold analysis is performed",
+        ),
+    ] = None,
+    top: Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    scaffold_fp_kind: Annotated[
+        str,
+        Option("--scaffold-fp-kind"),
+    ] = DEFAULTS.fp_kind,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+) -> None:
+    from bblean._console import get_console
+    from bblean.smiles import load_smiles
+    from bblean.analysis import cluster_analysis
+    from bblean.utils import _has_files_or_valid_symlinks
+    from rich.table import Table
+
+    console = get_console()
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        with open(clusters_path, mode="rb") as f:
+            clusters = pickle.load(f)
+        if fps_path is None:
+            input_fps_path = clusters_path.parent / "input-fps"
+            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+                fps_path = input_fps_path
+            else:
+                msg = (
+                    "Could not find input fingerprints. Please use --fps-path."
+                    " Summary plot without fingerprints doesn't include isim values"
+                )
+                warnings.warn(msg)
+        if fps_path is None:
+            fps_paths = None
+        elif fps_path.is_dir():
+            fps_paths = sorted(fps_path.glob("*.npy"))
+        else:
+            fps_paths = [fps_path]
+        ca = cluster_analysis(
+            clusters,
+            fps_paths,
+            smiles=load_smiles(smiles_path) if smiles_path is not None else (),
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            min_size=min_size,
+        )
+        table = Table(title=(f"Top {top} clusters" if top is not None else "Clusters"))
+        table.add_column("Size", justify="center")
+        table.add_column("% fps", justify="center")
+        table.add_column("iSIM", justify="center")
+        if smiles_path is not None:
+            table.add_column("Size/Scaff.", justify="center")
+            table.add_column("Num. Scaff.", justify="center")
+            table.add_column("Scaff. iSIM", justify="center")
+        sizes = ca.sizes
+        isims = ca.isims
+        total_fps = ca.total_fps
+        for i in range(ca.clusters_num):
+            size = sizes[i]
+            percent = size / total_fps * 100
+            table.add_row(f"{size:,}", f"{percent:.2f}", f"{isims[i]:.3f}")
+        console.print(table)
+        console.print()
+        console.print(f"Total num. fps: {total_fps:,}")
+        console.print(f"Total num. clusters: {ca.all_clusters_num:,}")
+        console.print(f"Total num. singletons: {ca.all_singletons_num:,}")
+        console.print(
+            f"num-clusters/num-fps ratio: {ca.all_clusters_num / total_fps:.2f}"
+        )
+        console.print(f"Mean size: {ca.all_clusters_mean_size:.2f}")
+        console.print(f"Max. size: {ca.all_clusters_max_size:,}")
+        console.print(f"Q3 (75%) size: {ca.all_clusters_q3:,}")
+        console.print(f"Median size: {ca.all_clusters_median_size:,}")
+        console.print(f"Q1 (25%) size: {ca.all_clusters_q1:,}")
+        console.print(f"Min. size: {ca.all_clusters_min_size:,}")
+
+
 @app.command("plot-summary", rich_help_panel="Analysis")
 def _plot_summary(
     clusters_path: Annotated[
@@ -598,13 +719,6 @@ def _plot_summary(
         str,
         Option("--scaffold-fp-kind"),
     ] = DEFAULTS.fp_kind,
-    annotate: Annotated[
-        bool,
-        Option(
-            "--annotate/--no-annotate",
-            help="Display scaffold and fingerprint number in each cluster",
-        ),
-    ] = True,
     n_features: Annotated[
         int | None,
         Option(
@@ -615,6 +729,13 @@ def _plot_summary(
             rich_help_panel="Advanced",
         ),
     ] = None,
+    annotate: Annotated[
+        bool,
+        Option(
+            "--annotate/--no-annotate",
+            help="Display scaffold and fingerprint number in each cluster",
+        ),
+    ] = True,
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),

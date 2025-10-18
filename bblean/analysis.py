@@ -43,51 +43,50 @@ class ClusterAnalysis:
         clusters: list[list[int]],
         df: pd.DataFrame,
         size_stats: pd.DataFrame,
+        total_fps: int,
+        all_singletons_num: int,
         fps: NDArray[np.uint8] | None = None,
-        cluster_sizes: list[int] | None = None,
         fps_are_packed: bool = True,
         n_features: int | None = None,
         min_size: int | None = None,
     ) -> None:
+        self.total_fps = total_fps
         self.stats = size_stats
         self.clusters = clusters
-        self.df = df
+        self._df = df
         self._fps = fps
         self.fps_are_packed = fps_are_packed
         self.n_features = n_features
         self.min_size = min_size
+        self.all_singletons_num = all_singletons_num
 
     @property
-    def mean(self) -> float:
-        return self.stats.mean
+    def all_clusters_mean_size(self) -> float:
+        return float(self.stats["mean"])
 
     @property
-    def median(self) -> float:
-        return self.stats["50%"]
+    def all_clusters_median_size(self) -> int:
+        return int(self.stats["50%"])
 
     @property
-    def q1(self) -> float:
-        return self.stats["25%"]
+    def all_clusters_q1(self) -> int:
+        return int(self.stats["25%"])
 
     @property
-    def q2(self) -> float:
-        return self.stats["50%"]
+    def all_clusters_q3(self) -> int:
+        return int(self.stats["75%"])
 
     @property
-    def q3(self) -> float:
-        return self.stats["75%"]
+    def all_clusters_min_size(self) -> int:
+        return int(self.stats["min"])
 
     @property
-    def min(self) -> float:
-        return self.stats["min"]
+    def all_clusters_max_size(self) -> int:
+        return int(self.stats["max"])
 
     @property
-    def max(self) -> float:
-        return self.stats["max"]
-
-    @property
-    def total(self) -> float:
-        return self.stats["count"]
+    def all_clusters_num(self) -> int:
+        return int(self.stats["count"])
 
     @property
     def unpacked_fps(self) -> NDArray[np.uint8]:
@@ -107,7 +106,7 @@ class ClusterAnalysis:
 
     @property
     def has_scaffolds(self) -> bool:
-        return "unique_scaffolds_num" in self.df.columns
+        return "unique_scaffolds_num" in self._df.columns
 
     @property
     def has_fps(self) -> bool:
@@ -115,14 +114,34 @@ class ClusterAnalysis:
 
     @property
     def has_all_clusters(self) -> bool:
-        return self.num_clusters == self.total
+        return self.clusters_num == self.all_clusters_num
 
     @property
-    def num_clusters(self) -> int:
-        return len(self.df)
+    def clusters_num(self) -> int:
+        return len(self._df)
+
+    @property
+    def isims(self) -> pd.Series:
+        return self._df["isim"]
+
+    @property
+    def labels(self) -> pd.Series:
+        return self._df["labels"]
+
+    @property
+    def sizes(self) -> pd.Series:
+        return self._df["sizes"]
+
+    @property
+    def unique_scaffolds_num(self) -> pd.Series:
+        return self._df["unique_scaffolds_num"]
+
+    @property
+    def unique_scaffolds_isim(self) -> pd.Series:
+        return self._df["unique_scaffolds_isim"]
 
     def dump_metrics(self, path: Path) -> None:
-        self.df.to_csv(path, index=False)
+        self._df.to_csv(path, index=False)
 
 
 # Get the number of unique scaffolds and the scaffold isim
@@ -162,6 +181,8 @@ def cluster_analysis(
         # Largest first
         clusters = sorted(clusters, key=lambda x: len(x), reverse=True)
     cluster_sizes = [len(c) for c in clusters]
+    all_singletons_num = sum(1 for c in cluster_sizes if c == 1)
+    total_fps = sum(cluster_sizes)
     # Filter by min size
     _clusters = []
     for i, c in enumerate(clusters):
@@ -195,7 +216,7 @@ def cluster_analysis(
         # If a file sequence is passed, the cluster indices must be sorted.
         # the cluster analysis is idx-order-independent, so this is fine
         info["label"].append(i)
-        info["mol_num"].append(size)
+        info["sizes"].append(size)
         if smiles.size:
             analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
             info["unique_scaffolds_num"].append(analysis.unique_num)
@@ -212,6 +233,8 @@ def cluster_analysis(
         clusters,
         pd.DataFrame(info),
         fps=selected,
+        total_fps=total_fps,
+        all_singletons_num=all_singletons_num,
         fps_are_packed=input_is_packed,
         size_stats=pd.Series(cluster_sizes).describe(),
         n_features=n_features,
