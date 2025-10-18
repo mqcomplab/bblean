@@ -594,6 +594,7 @@ def _table_summary(
         ),
     ] = None,
 ) -> None:
+    r"""Summary table of clustering results, together with cluster metrics"""
     from bblean._console import get_console
     from bblean.smiles import load_smiles
     from bblean.analysis import cluster_analysis
