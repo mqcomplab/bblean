@@ -40,7 +40,7 @@ def pops_plot(
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Distrubution of cluster populations using KDE"""
     fig, ax = plt.subplots()
-    cluster_sizes = c.df["mol_num"]
+    cluster_sizes = c.sizes
     sns.kdeplot(
         ax=ax,
         data=cluster_sizes,
@@ -52,7 +52,7 @@ def pops_plot(
     )
     ax.set_xlabel("Density")
     ax.set_xlabel("Cluster size")
-    msg = f"Populations for top {c.num_clusters} largest clusters"
+    msg = f"Populations for top {c.clusters_num} largest clusters"
     if c.min_size is not None:
         msg = f"{msg} (min. size = {c.min_size})"
     if title is not None:
@@ -74,7 +74,6 @@ def summary_plot(
     If the analysis contains scaffolds, a scaffold analysis is added to the plot"""
     orange = "tab:orange"
     blue = "tab:blue"
-    df = c.df
     if mpl.rcParamsDefault["font.size"] == plt.rcParams["font.size"]:
         plt.rcParams["font.size"] = 8
     if annotate:
@@ -83,17 +82,17 @@ def summary_plot(
         fig, ax = plt.subplots()
 
     # Plot and annotate the number of molecules
-    label_strs = df["label"].astype(str)  # TODO: Is this necessary?
+    label_strs = c.labels.astype(str)  # TODO: Is this necessary?
     ax.bar(
         label_strs,
-        df["mol_num"],
+        c.sizes,
         color=blue,
         label="Num. molecules",
         zorder=0,
     )
     ax.set_ylim(0, counts_ylim)
     if annotate:
-        for i, mol in enumerate(df["mol_num"]):
+        for i, mol in enumerate(c.sizes):
             plt.text(
                 i,
                 mol,
@@ -108,13 +107,13 @@ def summary_plot(
         # Plot and annotate the number of unique scaffolds
         plt.bar(
             label_strs,
-            df["unique_scaffolds_num"],
+            c.unique_scaffolds_num,
             color=orange,
             label="Num. unique scaffolds",
             zorder=1,
         )
         if annotate:
-            for i, s in enumerate(df["unique_scaffolds_num"]):
+            for i, s in enumerate(c.unique_scaffolds_num):
                 plt.text(
                     i,
                     s,
@@ -128,14 +127,14 @@ def summary_plot(
     # Labels
     ax.set_xlabel("Cluster label")
     ax.set_ylabel("Num. molecules")
-    ax.set_xticks(range(c.num_clusters))
+    ax.set_xticks(range(c.clusters_num))
 
     # Plot iSIM
     if c.has_fps:
         ax_isim = ax.twinx()
         ax_isim.plot(
-            df["label"] - 1,
-            df["isim"],
+            c.labels - 1,
+            c.isims,
             color="tab:green",
             linestyle="dashed",
             linewidth=1.5,
@@ -143,8 +142,8 @@ def summary_plot(
             alpha=0.6,
         )
         ax_isim.scatter(
-            df["label"] - 1,
-            df["isim"],
+            c.labels - 1,
+            c.isims,
             color="tab:green",
             marker="o",
             s=15,
@@ -167,7 +166,7 @@ def summary_plot(
     if c.has_all_clusters:
         msg = "Metrics of all clusters"
     else:
-        msg = f"Metrics of top {c.num_clusters} largest clusters"
+        msg = f"Metrics of top {c.clusters_num} largest clusters"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
@@ -189,11 +188,10 @@ def umap_plot(
     deterministic: bool = False,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Create a UMAP plot from a cluster analysis"""
-    df = c.df
     color_labels: list[int] = []
-    for num, label in zip(df["mol_num"], df["label"]):
+    for num, label in zip(c.sizes, c.labels):
         color_labels.extend([label - 1] * num)  # color labels start with 0
-    num_top = c.num_clusters
+    num_top = c.clusters_num
     if workers is None:
         workers = _num_avail_cpus()
 
@@ -251,11 +249,10 @@ def pca_plot(
     whiten: bool = False,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Create a t-SNE plot from a cluster analysis"""
-    df = c.df
     color_labels: list[int] = []
-    for num, label in zip(df["mol_num"], df["label"]):
+    for num, label in zip(c.sizes, c.labels):
         color_labels.extend([label - 1] * num)  # color labels start with 0
-    num_top = c.num_clusters
+    num_top = c.clusters_num
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":
@@ -315,11 +312,10 @@ def tsne_plot(
     r"""Create a t-SNE plot from a cluster analysis"""
     if workers is None:
         workers = _num_avail_cpus()
-    df = c.df
     color_labels: list[int] = []
-    for num, label in zip(df["mol_num"], df["label"]):
+    for num, label in zip(c.sizes, c.labels):
         color_labels.extend([label - 1] * num)  # color labels start with 0
-    num_top = c.num_clusters
+    num_top = c.clusters_num
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":

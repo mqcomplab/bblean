@@ -23,13 +23,24 @@ __all__ = [
     "jt_isim_radius",
     "jt_isim_radius_compl",
     "jt_isim_diameter",
+    # Centroid and medoid
     # Radius and diameter unpacked / packed
     "centroid_from_sum",
+    "centroid",
+    "jt_isim_medoid",
+    # Complementary similarity
+    "jt_compl_isim",
 ]
+
+from bblean._py_similarity import (
+    centroid_from_sum,
+    centroid,
+    jt_compl_isim,
+    jt_isim_medoid,
+)
 
 # jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for
 # speed
-from bblean._py_similarity import centroid_from_sum
 
 if os.getenv("BITBIRCH_NO_EXTENSIONS"):
     from bblean._py_similarity import (

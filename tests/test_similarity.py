@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pytest
 
+from inline_snapshot import snapshot
+
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
 # _cpp_similarity are tested independently
 import bblean._py_similarity as pysim
@@ -15,7 +17,7 @@ except ImportError:
         raise
     CSIM_AVAIL = False
 from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
-from bblean.similarity import centroid_from_sum
+from bblean.similarity import centroid_from_sum, centroid as centroid_from_fps
 
 
 def test_jt_most_dissimilar_packed() -> None:
@@ -101,6 +103,8 @@ def test_cpp_centroid() -> None:
     assert (centroid == expect_centroid).all()
     centroid = csim.centroid_from_sum(_sum, num, pack=True)
     expect_centroid = centroid_from_sum(_sum, num, pack=True)
+    assert (centroid == expect_centroid).all()
+    centroid = centroid_from_fps(fps, input_is_packed=False)
     assert (centroid == expect_centroid).all()
 
 
@@ -231,3 +235,38 @@ def test_jt_isim_from_sum_single() -> None:
     if CSIM_AVAIL:
         with pytest.warns(RuntimeWarning):
             _ = csim.jt_isim_from_sum(c_total, c_objects)
+
+
+def test_jt_compl_isim() -> None:
+    fps = make_fake_fingerprints(2, seed=17408390758220920002, pack=False)
+    with pytest.warns(RuntimeWarning):
+        _ = pysim.jt_compl_isim(fps)
+
+    fps = make_fake_fingerprints(10, seed=17408390758220920002, pack=False)
+    assert pysim.jt_compl_isim(fps).tolist() == snapshot(
+        [
+            0.20256457907452147,
+            0.24748926949201983,
+            0.22550084742079876,
+            0.2002884861456855,
+            0.23889840001690868,
+            0.2364222674813306,
+            0.1986207548061027,
+            0.19904732709222533,
+            0.21303348506016495,
+            0.2225069540267648,
+        ]
+    )
+    assert (
+        pysim.jt_compl_isim(np.zeros((10, 512), dtype=np.uint8))
+        == np.ones(10, dtype=np.float64)
+    ).all()
+
+
+def test_jt_isim_medoid() -> None:
+    fps = make_fake_fingerprints(
+        30, n_features=8, seed=17408390758220920002, pack=False
+    )
+    idx, m = pysim.jt_isim_medoid(fps)
+    assert idx == snapshot(26)
+    assert m.tolist() == snapshot([1, 1, 0, 1, 1, 1, 1, 1])
