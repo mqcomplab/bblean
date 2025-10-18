@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 import numpy as np
 
 from bblean.utils import min_safe_uint
-from bblean.fingerprints import unpack_fingerprints
+from bblean.fingerprints import unpack_fingerprints, pack_fingerprints
 
 
 def centroid_from_sum(
@@ -57,6 +57,65 @@ def centroid(
         np.sum(fps, axis=0, dtype=np.uint64),  # type: ignore
         len(fps),
     )
+
+
+def jt_compl_isim(
+    fps: NDArray[np.uint8], input_is_packed: bool = True, n_features: int | None = None
+) -> NDArray[np.float64]:
+    """Get all complementary (Tanimoto) similarities of a set of fps, using iSIM"""
+    if input_is_packed:
+        fps = unpack_fingerprints(fps, n_features)
+    # Vectorized calculation of all compl isim
+    # For all compl isim N is N_total - 1
+    n_objects = len(fps) - 1
+    if n_objects < 2:
+        msg = "Invalid fps. len(fps) must be >= 3"
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
+        return np.full(len(fps), fill_value=np.nan, dtype=np.float64)
+    linear_sum = np.sum(fps, axis=0)
+    compl_ls = linear_sum - fps  # Holds all complementary linear sums
+    sum_kqs = np.sum(compl_ls, axis=1)
+    mask = sum_kqs == 0
+    sum_kqs_sq = (compl_ls**2).sum(axis=1)
+    a = (sum_kqs_sq - sum_kqs) / 2
+    # isim of fingerprints that are all zeros should be 1 (they are all equal)
+    a[mask] = 1
+    return a / (a + n_objects * sum_kqs - sum_kqs_sq)
+
+
+def _jt_isim_medoid_index(
+    fps: NDArray[np.uint8], input_is_packed: bool = True, n_features: int | None = None
+) -> int:
+    return np.argmin(jt_compl_isim(fps, input_is_packed, n_features)).item()
+
+
+def jt_isim_medoid(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    pack: bool = True,
+) -> tuple[int, NDArray[np.uint8]]:
+    r"""Calculate the (Tanimoto) medoid of a set of fingerprints, using iSIM
+
+    Returns both the index of the medoid in the input array and the medoid itself
+
+    .. note::
+        Returns the first (or only) fingerprint for array of size 2 and 1 respectively.
+        Raises ValueError for arrays of size 0
+
+    """
+    if not fps.size:
+        raise ValueError("Size of fingerprints set must be > 0")
+    if input_is_packed:
+        fps = unpack_fingerprints(fps, n_features)
+    if len(fps) < 3:
+        idx = 0  # Medoid undefined for sets of 3 or more fingerprints
+    else:
+        idx = _jt_isim_medoid_index(fps, input_is_packed=False)
+    m = fps[idx]
+    if pack:
+        return idx, pack_fingerprints(m)
+    return idx, m
 
 
 # Requires numpy >= 2.0
@@ -199,6 +258,7 @@ def jt_isim_from_sum(linear_sum: NDArray[np.integer], n_objects: int) -> float:
         warnings.warn(
             f"Invalid n_objects = {n_objects} in isim. Expected n_objects >= 2",
             RuntimeWarning,
+            stacklevel=2,
         )
         return np.nan
 
