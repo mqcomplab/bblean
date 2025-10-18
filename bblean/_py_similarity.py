@@ -42,6 +42,23 @@ def centroid_from_sum(
     return centroid
 
 
+def centroid(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+) -> NDArray[np.uint8]:
+    r"""Calculates the majority vote centroid from a set of fingerprints
+
+    The majority vote centroid is an good approximation of the Tanimoto centroid.
+    """
+    if input_is_packed:
+        fps = unpack_fingerprints(fps, n_features)
+    return centroid_from_sum(
+        np.sum(fps, axis=0, dtype=np.uint64),  # type: ignore
+        len(fps),
+    )
+
+
 # Requires numpy >= 2.0
 def _popcount(a: NDArray[np.uint8]) -> NDArray[np.uint32]:
     # a is packed uint8 array with last axis = bytes
