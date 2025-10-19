@@ -46,6 +46,8 @@ def centroid(
     fps: NDArray[np.uint8],
     input_is_packed: bool = True,
     n_features: int | None = None,
+    *,
+    pack: bool = True,
 ) -> NDArray[np.uint8]:
     r"""Calculates the majority vote centroid from a set of fingerprints
 
@@ -56,6 +58,7 @@ def centroid(
     return centroid_from_sum(
         np.sum(fps, axis=0, dtype=np.uint64),  # type: ignore
         len(fps),
+        pack=pack,
     )
 
 

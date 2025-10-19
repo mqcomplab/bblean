@@ -4,6 +4,7 @@ from pathlib import Path
 from collections import defaultdict
 import dataclasses
 import typing as tp
+from functools import cached_property
 
 import pandas as pd
 import numpy as np
@@ -40,25 +41,42 @@ class ClusterAnalysis:
 
     def __init__(
         self,
-        clusters: list[list[int]],
+        selected_cluster_sizes: list[int],
+        all_cluster_sizes: list[int],
         df: pd.DataFrame,
-        size_stats: pd.DataFrame,
-        total_fps: int,
-        all_singletons_num: int,
-        fps: NDArray[np.uint8] | None = None,
+        total_fps_num: int,
+        selected_fps: NDArray[np.uint8] | None = None,
         fps_are_packed: bool = True,
         n_features: int | None = None,
         min_size: int | None = None,
     ) -> None:
-        self.total_fps = total_fps
-        self.stats = size_stats
-        self.clusters = clusters
+        self.total_fps = total_fps_num
+        self.stats = pd.Series(all_cluster_sizes).describe()
+        self._all_cluster_sizes = all_cluster_sizes
+        self._selected_cluster_sizes = selected_cluster_sizes
+        self._fps = selected_fps
         self._df = df
-        self._fps = fps
         self.fps_are_packed = fps_are_packed
         self.n_features = n_features
         self.min_size = min_size
-        self.all_singletons_num = all_singletons_num
+
+    def all_clusters_num_with_size_above(self, size: int) -> int:
+        return sum(1 for c in self._all_cluster_sizes if c > size)
+
+    @cached_property
+    def all_singletons_num(self) -> int:
+        return sum(1 for c in self._all_cluster_sizes if c == 1)
+
+    def get_cluster_fps(self, packed: bool = True) -> list[NDArray[np.uint8]]:
+        if self._fps is None:
+            raise RuntimeError("Fingerprints not present")
+        fps = self.packed_fps if packed else self.unpacked_fps
+        out = []
+        offset = 0
+        for s in self._selected_cluster_sizes:
+            out.append(fps[offset : offset + s])
+            offset += s
+        return out
 
     @property
     def all_clusters_mean_size(self) -> float:
@@ -180,13 +198,12 @@ def cluster_analysis(
     if not assume_sorted:
         # Largest first
         clusters = sorted(clusters, key=lambda x: len(x), reverse=True)
-    cluster_sizes = [len(c) for c in clusters]
-    all_singletons_num = sum(1 for c in cluster_sizes if c == 1)
-    total_fps = sum(cluster_sizes)
+    all_cluster_sizes = [len(c) for c in clusters]
+    total_fps = sum(all_cluster_sizes)
     # Filter by min size
     _clusters = []
     for i, c in enumerate(clusters):
-        if cluster_sizes[i] < min_size:
+        if all_cluster_sizes[i] < min_size:
             break
         if top is not None and i >= top:
             break
@@ -230,13 +247,12 @@ def cluster_analysis(
             selected[start : start + size] = _fps
         start += size
     return ClusterAnalysis(
-        clusters,
+        [len(c) for c in clusters],
+        all_cluster_sizes,
         pd.DataFrame(info),
-        fps=selected,
-        total_fps=total_fps,
-        all_singletons_num=all_singletons_num,
+        selected_fps=selected,
+        total_fps_num=total_fps,
         fps_are_packed=input_is_packed,
-        size_stats=pd.Series(cluster_sizes).describe(),
         n_features=n_features,
         min_size=min_size,
     )

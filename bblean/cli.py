@@ -593,12 +593,24 @@ def _table_summary(
             rich_help_panel="Advanced",
         ),
     ] = None,
+    metrics: Annotated[
+        bool,
+        Option(
+            "--metrics/--no-metrics",
+            help="Calculate clustering indices (Dunn, DBI, CHI)",
+        ),
+    ] = False,
+    metrics_min_size: Annotated[
+        int,
+        Option("--metrics-min-size", hidden=True),
+    ] = 1,
 ) -> None:
     r"""Summary table of clustering results, together with cluster metrics"""
     from bblean._console import get_console
     from bblean.smiles import load_smiles
     from bblean.analysis import cluster_analysis
     from bblean.utils import _has_files_or_valid_symlinks
+    from bblean.metrics import jt_dbi, jt_isim_chi, jt_isim_dunn, _calc_centrals
     from rich.table import Table
 
     console = get_console()
@@ -652,7 +664,19 @@ def _table_summary(
         console.print()
         console.print(f"Total num. fps: {total_fps:,}")
         console.print(f"Total num. clusters: {ca.all_clusters_num:,}")
-        console.print(f"Total num. singletons: {ca.all_singletons_num:,}")
+        singles = ca.all_singletons_num
+        singles_percent = singles * 100 / ca.all_clusters_num
+        console.print(f"Total num. singletons: {singles:,} ({singles_percent:.2f} %)")
+        gt10 = ca.all_clusters_num_with_size_above(10)
+        gt10_percent = gt10 * 100 / ca.all_clusters_num
+        console.print(
+            f"Total num. clusters, size > 10: {gt10:,} ({gt10_percent:.2f} %)"
+        )
+        gt100 = ca.all_clusters_num_with_size_above(100)
+        gt100_percent = gt100 * 100 / ca.all_clusters_num
+        console.print(
+            f"Total num. clusters, size > 100: {gt100:,} ({gt100_percent:.2f} %)"
+        )
         console.print(
             f"num-clusters/num-fps ratio: {ca.all_clusters_num / total_fps:.2f}"
         )
@@ -662,6 +686,20 @@ def _table_summary(
         console.print(f"Median size: {ca.all_clusters_median_size:,}")
         console.print(f"Q1 (25%) size: {ca.all_clusters_q1:,}")
         console.print(f"Min. size: {ca.all_clusters_min_size:,}")
+    if metrics:
+        console.print()
+        with console.status("[italic]Calculating metrics...[/italic]", spinner="dots"):
+            clusters = ca.get_cluster_fps()
+            if metrics_min_size > 0:
+                clusters = [c for c in clusters if len(c) > metrics_min_size]
+            centrals = _calc_centrals(clusters, kind="centroid")
+            chi = jt_isim_chi(clusters, centrals=centrals)
+            dbi = jt_dbi(clusters, centrals=centrals)
+            dunn = jt_isim_dunn(clusters)
+            console.print("Clustering metrics:")
+            console.print(f"    - CHI index: {chi:.4f} (Higher is better)")
+            console.print(f"    - Dunn index: {dunn:.4f} (Higher is better)")
+            console.print(f"    - DBI index: {dbi:.4f} (Lower is better)")
 
 
 @app.command("plot-summary", rich_help_panel="Analysis")
