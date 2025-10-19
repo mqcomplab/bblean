@@ -18,13 +18,6 @@ import numpy as np
 from numpy.typing import NDArray
 from rich.console import Console
 
-try:
-    import resource
-except Exception:
-    # resource is only available on Unix systems
-    pass
-
-
 _BYTES_TO_GIB = 1 / 1024**3
 
 
@@ -126,6 +119,9 @@ def _mmap_file_and_madvise_sequential(
     # This is required since madvise needs a page-aligned address (address must
     # be a multiple of mmap.PAGESIZE (portable) == os.sysconf("SC_PAGE_SIZE")
     # (mac|linux), typically 4096 B).
+    #
+    # TODO: In some cases, for some reason, this fails with errno 22
+    # failure is harmless, but could incurr in a slight perf penalty
     _madvise_sequential(arr.ctypes.data - arr.offset, arr.nbytes)
     return arr
 
@@ -133,36 +129,6 @@ def _mmap_file_and_madvise_sequential(
 def system_mem_gib() -> tuple[int, int] | tuple[None, None]:
     mem = psutil.virtual_memory()
     return mem.total * _BYTES_TO_GIB, mem.available * _BYTES_TO_GIB
-
-
-@dataclasses.dataclass
-class PeakMemoryStats:
-    self_gib: float
-    child_gib: float | None
-
-    @property
-    def children_were_tracked(self) -> bool:
-        if mp.get_start_method() == "forkserver":
-            return False
-        return True
-
-
-def get_peak_memory(num_processes: int) -> PeakMemoryStats | None:
-    # Can't track peak memory in non-unix systems
-    if "resource" not in sys.modules:
-        return None
-    max_mem_bytes_self = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    max_mem_bytes_child = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-    if sys.platform == "linux":
-        # In linux these are returned kiB, not bytes
-        max_mem_bytes_self *= 1024
-        max_mem_bytes_child *= 1024
-    max_mem_gib_self = max_mem_bytes_self * _BYTES_TO_GIB
-    max_mem_gib_child = max_mem_bytes_child * _BYTES_TO_GIB
-
-    if num_processes == 1:
-        return PeakMemoryStats(max_mem_gib_self, None)
-    return PeakMemoryStats(max_mem_gib_self, max_mem_gib_child)
 
 
 def get_peak_memory_gib(out_dir: Path) -> float | None:
