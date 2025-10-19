@@ -1,77 +1,116 @@
 from numpy.typing import NDArray
 import numpy as np
-from bblean.similarity import jt_isim_from_sum, jt_isim_medoid, centroid_from_sum
+
+from bblean.similarity import (
+    jt_isim_from_sum,
+    jt_sim_packed,
+    jt_isim_packed,
+    jt_isim_unpacked,
+    centroid as centroid_from_fps,
+    centroid_from_sum,
+    jt_isim_medoid,
+)
+from bblean.fingerprints import unpack_fingerprints, pack_fingerprints
+
+__all__ = ["jt_isim_chi", "jt_isim_dunn", "jt_dbi"]
 
 
-# For Dunn
-def _intra_sim(clust1: NDArray[np.uint8], clust2: NDArray[np.uint8]) -> float:
-    """Similarity between clusters from the iSIM of their union"""
-    n1 = len(clust1)
-    n2 = len(clust2)
-    combined = np.sum(clust1, axis=0) + np.sum(clust2, axis=0)
-    return jt_isim_from_sum(combined, n1 + n2)
-
-
-# For Dunn
-def _inter_sim(clust1, clust2) -> float:
-    """Similarity between clusters from the average distance between their elements"""
-    n1 = len(clust1)
-    n2 = len(clust2)
-    n = n1 + n2
-    c_total1 = np.sum(clust1, axis=0)
-    c_total2 = np.sum(clust2, axis=0)
-    combined = c_total1 + c_total2
-    # This function has a fatal bug TODO: Check how to implement correctly
-    raise ValueError()
-    # return (
-    # jt_isim_from_sum(combined, n1 + n2) * n * (n - 1)
-    # - (
-    # jt_isim_from_sum(c_total1) * n1 * (n1 - 1)
-    # + jt_isim_from_sum(c_total2) * n2 * (n2 - 1)
-    # )
-    # ) / (2 * n1 * n2)
-
-    # if central_kind == "centroid":
-    # all_fps_central = centroid_from_fps(fps)
-    # elif central_kind == "medoid":
-    # _, all_fps_central = jt_isim_medoid(fps)
-
-
-def chi(
+def _calc_centrals(
     cluster_fps: list[NDArray[np.uint8]],
-    centrals: list[NDArray[np.uint8]],
-    all_fps: NDArray[np.uint8],
-    all_fps_central: NDArray[np.uint8],
-) -> float:
-    """Calinski-Harabasz index
+    kind: str,
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    pack: bool = True,
+) -> list[NDArray[np.uint8]]:
+    if kind == "medoid":
+        return [
+            jt_isim_medoid(
+                c, input_is_packed=input_is_packed, n_features=n_features, pack=pack
+            )[1]
+            for c in cluster_fps
+        ]
+    elif kind == "centroid":
+        return [
+            centroid_from_fps(
+                c, input_is_packed=input_is_packed, n_features=n_features, pack=pack
+            )
+            for c in cluster_fps
+        ]
+    raise ValueError(f"Unknown arg {kind} use 'medoids|centroids'")
 
-    Note
-    ----
-    Higher values are better
+
+def jt_isim_chi(
+    cluster_fps: list[NDArray[np.uint8]],
+    all_fps_central: NDArray[np.uint8] | str = "centroid",
+    centrals: list[NDArray[np.uint8]] | str = "centroid",
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+) -> float:
+    """Calinski-Harabasz clustering index
+
+    An approximation to the CHI index using the Tanimoto iSIM. *Higher* is better.
     """
-    fps_num = len(all_fps)
+    all_fps_num = sum(len(c) for c in cluster_fps)
+    if isinstance(all_fps_central, str):
+        if not all_fps_central == "centroid":
+            raise NotImplementedError("Currently only 'centroid' implemented for CHI")
+        if input_is_packed:
+            unpacked_clusts = [unpack_fingerprints(c, n_features) for c in cluster_fps]
+        else:
+            unpacked_clusts = cluster_fps
+        total_linear_sum = sum(np.sum(c, axis=0) for c in unpacked_clusts)
+        all_fps_central = centroid_from_sum(total_linear_sum, all_fps_num)
+
+    if isinstance(centrals, str):
+        if not centrals == "centroid":
+            raise NotImplementedError("Currently only 'centroid' implemented for CHI")
+        centrals = _calc_centrals(cluster_fps, centrals, input_is_packed, n_features)
+    else:
+        if not input_is_packed:
+            centrals = [pack_fingerprints(c) for c in centrals]
+
     clusters_num = len(cluster_fps)
+    # Packed cluster_fps required for CHI
+    if not input_is_packed:
+        cluster_fps = [pack_fingerprints(c) for c in cluster_fps]
 
     if clusters_num <= 1:
         return 0
 
-    wcss = 0  # within-cluster sum of squares
-    bcss = 0  # between-cluster sum of squares
-    for central, clust_fps in zip(centrals, cluster_fps):
-        bcss += len(clust_fps) * jt_sim_packed(all_fps_central, central) ** 2
-        d = 1 - jt_sim_packed(central, clust_fps)
+    wcss = 0.0  # within-cluster sum of squares
+    bcss = 0.0  # between-cluster sum of squares
+    for central, clust in zip(centrals, cluster_fps):
+        # TODO: In the original implementation there isn't a (1 - jt...) here (!)
+        bcss += len(clust) * (1 - jt_sim_packed(all_fps_central, central).item()) ** 2
+        d = 1 - jt_sim_packed(central, clust)
         wcss += np.dot(d, d)
+    # TODO: When can the denom be 0?
+    return bcss * (all_fps_num - clusters_num) / (wcss * (all_fps_num - 1))
 
-    return bcss * (fps_num - clusters_num) / (wcss * (fps_num - 1))
 
-
-# NOTE: Input must be packed for now
-def dbi(
-    cluster_fps: list[NDArray[np.uint8]], centrals: list[NDArray[np.uint8]]
+def jt_dbi(
+    cluster_fps: list[NDArray[np.uint8]],
+    centrals: list[NDArray[np.uint8]] | str = "centroid",
+    input_is_packed: bool = True,
+    n_features: int | None = None,
 ) -> float:
+    """Davies-Bouldin clustering index
+
+    DBI index using the Tanimoto distance. *Lower* is better.
+    """
+    if isinstance(centrals, str):
+        centrals = _calc_centrals(cluster_fps, centrals, input_is_packed, n_features)
+    else:
+        if not input_is_packed:
+            centrals = [pack_fingerprints(c) for c in centrals]
+
     # Centrals can be 'medoids' or 'centroids'
+    if not input_is_packed:
+        cluster_fps = [pack_fingerprints(c) for c in cluster_fps]
+    # Packed cluster_fps required for DBI
+
     fps_num = 0
-    S = []
+    S: list[float] = []
     for central, clust_fps in zip(centrals, cluster_fps):
         size = len(clust_fps)
         S.append(np.sum(1 - jt_sim_packed(central, clust_fps)) / size)
@@ -80,167 +119,44 @@ def dbi(
     if fps_num == 0:
         return 0
 
-    # Quadratic scaling on num. clusters I believe
-    numerator = 0
+    # Quadratic scaling on num. clusters
+    numerator = 0.0
     for i, central in enumerate(centrals):
-        maxd = 0
+        max_d = 0.0
         for j, other_central in enumerate(centrals):
             if i == j:
                 continue
-            Mij = 1 - jt_sim_packed(central, other_central)
-            maxd = max(maxd, (S[i] + S[j]) / Mij)
-        numerator += maxd
-
+            Mij = 1 - jt_sim_packed(central, other_central).item()
+            max_d = max(max_d, (S[i] + S[j]) / Mij)
+        numerator += max_d
     return numerator / fps_num
 
 
-def dunn(
-    clusters,
-    within_sim="isim",
-    cluster_sim="intra",
-    reps=False,
-    rep_type="centroid",
-    min_size=1,
-):
-    """Dunn index
-
-    within_sim : {'isim', 'mean'} type of intra cluster similarity
-        isim : isim of the cluster
-        mean : mean distances to the cluster representative
-
-    cluster_sim : {'intra', 'inter'} type of similarity between clusters
-        intra : intra_sim
-        inter : inter_sim
-
-    clusters : list of np.arrays containing the clusters
-
-    reps : {bool, list} indicates if cluster representatives are given
-
-    rep_type : type of representative, medoid or centroid
-
-    curated : bool indicates if singletons have been removed
-
-    min_size : int size below which clusters will be ignored
-
-    Note
-    ----
-    Higher values are better
-
-    """
-    clusters = select_large(clusters, min_size)
-
-    D = []
-
-    if within_sim == "isim":
-        for clust in clusters:
-            n_samples = len(clust)
-            linear_sum = np.sum(clust, axis=0)
-            D.append(jt_isim_from_sum(linear_sum, n_samples))
-    elif within_sim == "mean":
-        if not reps:
-            for clust in clusters:
-                n_samples = len(clust)
-                if rep_type == "centroid":
-                    linear_sum = np.sum(clust, axis=0)
-                    rep = centroid_from_sum(linear_sum, n_samples)
-                elif rep_type == "medoid":
-                    medoid = jt_isim_medoid(clust)
-                    rep = clust[medoid]
-                d = (
-                    1
-                    - (
-                        jt_isim_from_sum(linear_sum + rep, n_samples + 1)
-                        * (n_samples + 1)
-                        - jt_isim_from_sum(linear_sum, n_samples) * (n_samples - 1)
-                    )
-                    / 2
-                )
-                D.append(d)
-        else:
-            for i, clust in enumerate(clusters):
-                n_samples = len(clust)
-                d = (
-                    1
-                    - (
-                        jt_isim_from_sum(linear_sum + reps[i], n_samples + 1)
-                        * (n_samples + 1)
-                        - jt_isim_from_sum(linear_sum, n_samples) * (n_samples - 1)
-                    )
-                    / 2
-                )
-                D.append(d)
-    if not D:
-        return 0
-
-
-def dunn_isim(
-    clusters: list[NDArray[np.uint8]],
-    cluster_sim="intra",
+# This is the Dunn varaint used in the original BitBirch article
+def jt_isim_dunn(
+    cluster_fps: list[NDArray[np.uint8]],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
 ) -> float:
-    D = [jt_isim_packed(clust_fps) for clust_fps in clusters]
+    """Dunn clustering index
+
+    An approximation to the Dunn index using the Tanimoto iSIM. *Higher* is better.
+    """
+    # Unpacked cluster_fps required for Dunn
+    if input_is_packed:
+        D = [jt_isim_packed(clust) for clust in cluster_fps]
+        cluster_fps = [unpack_fingerprints(clust, n_features) for clust in cluster_fps]
+    else:
+        D = [jt_isim_unpacked(clust) for clust in cluster_fps]
+    max_d = max(D)
+    if max_d == 0:
+        # TODO: Unclear what to return in this case, probably 1.0 is safer?
+        return 1
     min_d = 1.00
-    # Quadratic scaling on num. clusters I believe
-    for i, clust1 in enumerate(clusters[:-1]):
-        for j, clust2 in enumerate(clusters[i + 1 :]):
-            if cluster_sim == "intra":
-                dij = 1 - _intra_sim(clust1, clust2)
-            elif cluster_sim == "inter":
-                dij = 1 - _inter_sim(clust1, clust2)
+    # Quadratic scaling on num. clusters
+    for i, clust1 in enumerate(cluster_fps[:-1]):
+        for j, clust2 in enumerate(cluster_fps[i + 1 :]):
+            combined = np.sum(clust1, axis=0) + np.sum(clust2, axis=0)
+            dij = 1 - jt_isim_from_sum(combined, len(clust1) + len(clust2))
             min_d = min(dij, min_d)
     return min_d / max(D)
-
-
-def clust_dispersion(clusters, reps=False, rep_type="centroid", min_size=1):
-    """Cluster dispersion
-
-    cd = isim(representatives)/<isim(clusters)>
-
-    clusters : list of np.arrays containing the clusters
-
-    reps : {bool, list} indicates if cluster representatives are given
-
-    rep_type : type of representative, medoid or centroid
-
-    curated : bool indicates if singletons have been removed
-
-    min_size : int size below which clusters will be ignored
-
-    Note
-    ----
-    Lower values are better TODO: DOUBLE CHECK THIS!!!!
-    """
-    clusters = select_large(clusters, min_size)
-
-    n_clusters = len(clusters)
-
-    if n_clusters == 1:
-        return -1
-
-    isim_clusts = 0
-
-    if not reps:
-        representatives = []
-    else:
-        representatives = reps
-
-    for clust in clusters:
-        n_samples = len(clust)
-        linear_sum = np.sum(clust, axis=0)
-        isim_clusts += jt_isim_from_sum(linear_sum, n_samples)
-        if not reps:
-            if rep_type == "centroid":
-                representatives.append(centroid_from_sum(linear_sum, n_samples))
-            elif rep_type == "medoid":
-                medoid = jt_isim_medoid(clust)
-                representatives.append(clust[medoid])
-
-    av_isim_clusts = isim_clusts / n_clusters
-
-    representatives = np.array(representatives)
-    rep_linear_sum = np.sum(representatives, axis=0)
-    rep_isim = jt_isim_from_sum(rep_linear_sum, n_clusters)
-
-    # ??
-    if av_isim_clusts == 0:
-        return 0
-    return rep_isim / av_isim_clusts
