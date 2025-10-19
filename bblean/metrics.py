@@ -1,3 +1,5 @@
+r"""Clustering metrics using Tanimoto similarity"""
+
 from numpy.typing import NDArray
 import numpy as np
 
@@ -61,6 +63,8 @@ def jt_isim_chi(
         total_linear_sum = sum(np.sum(c, axis=0) for c in unpacked_clusts)
         all_fps_central = centroid_from_sum(total_linear_sum, all_fps_num)
 
+    # TODO: Remove reshapes once jt_sim_packed is generic over shapes
+    all_fps_central = all_fps_central.reshape(1, -1)
     if isinstance(centrals, str):
         if not centrals == "centroid":
             raise NotImplementedError("Currently only 'centroid' implemented for CHI")
@@ -81,11 +85,12 @@ def jt_isim_chi(
     bcss = 0.0  # between-cluster sum of squares
     for central, clust in zip(centrals, cluster_fps):
         # TODO: In the original implementation there isn't a (1 - jt...) here (!)
+        # Is it correct like this?
         bcss += len(clust) * (1 - jt_sim_packed(all_fps_central, central).item()) ** 2
-        d = 1 - jt_sim_packed(central, clust)
+        d = 1 - jt_sim_packed(clust, central)
         wcss += np.dot(d, d)
     # TODO: When can the denom be 0?
-    return bcss * (all_fps_num - clusters_num) / (wcss * (all_fps_num - 1))
+    return bcss * (all_fps_num - clusters_num) / (wcss * (clusters_num - 1))
 
 
 def jt_dbi(
@@ -113,7 +118,7 @@ def jt_dbi(
     S: list[float] = []
     for central, clust_fps in zip(centrals, cluster_fps):
         size = len(clust_fps)
-        S.append(np.sum(1 - jt_sim_packed(central, clust_fps)) / size)
+        S.append(np.sum(1 - jt_sim_packed(clust_fps, central)) / size)
         fps_num += size
 
     if fps_num == 0:
@@ -122,6 +127,8 @@ def jt_dbi(
     # Quadratic scaling on num. clusters
     numerator = 0.0
     for i, central in enumerate(centrals):
+        # TODO: Remove reshape once jt_sim_packed is generic over shapes
+        central = central.reshape(1, -1)
         max_d = 0.0
         for j, other_central in enumerate(centrals):
             if i == j:
