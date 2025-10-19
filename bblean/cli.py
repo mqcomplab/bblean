@@ -699,7 +699,7 @@ def _table_summary(
             console.print("Clustering metrics:")
             console.print(f"    - CHI index: {chi:.4f} (Higher is better)")
             console.print(f"    - Dunn index: {dunn:.4f} (Higher is better)")
-            console.print(f"    - DBI index: {dbi:.4f} (Lower is better)")
+            console.print(f"    - DBI index: {dbi:.4e} (Lower is better)")
 
 
 @app.command("plot-summary", rich_help_panel="Analysis")
