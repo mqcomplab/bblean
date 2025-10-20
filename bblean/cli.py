@@ -1065,15 +1065,6 @@ def _run(
                 input_is_packed=input_is_packed,
                 max_fps=max_fps,
             )
-
-            tree.set_merge(
-                refine_merge_criterion,
-                tolerance=tolerance,
-                threshold=threshold + refine_threshold_increase,
-            )
-            tree.refine_inplace(
-                input_files, input_is_packed=input_is_packed, n_largest=refine_num
-            )
     if recluster_rounds != 0:
         tree.set_merge(
             refine_merge_criterion,
