@@ -143,10 +143,13 @@ clusters[:2]
 The indices refer to the position of each molecule in the order they were read from the
 fingerprint files, making it easy to link back to your original SMILES records.
 
-## Python Quickstart
+## Python Quickstart and Examples
 
 For an example of how to use the main `bblean` classes and functions consult
-`examples/bitbirch_quickstart.ipynb`. More examples will be added soon!
+`examples/bitbirch_quickstart.ipynb`. The `examples/dataset_splitting.ipynb` notebook
+contains an adapted notebook by Pat Walters ([Some Thoughts on Splitting Chemical
+Datasets](https://practicalcheminformatics.blogspot.com/2024/11/some-thoughts-on-splitting-chemical.html)).
+More examples will be added soon!
 
 A quick summary:
 
