@@ -877,12 +877,13 @@ def _run(
         float,
         Option("--threshold", "-t", help="Threshold for merge criterion"),
     ] = DEFAULTS.threshold,
-    refine_threshold_increase: Annotated[
+    refine_threshold_change: Annotated[
         float,
         Option(
-            "--refine-threshold-increase", help="Threshold for refinement criterion"
+            "--refine-threshold-change",
+            help="Modify threshold for refinement criterion, can be negative",
         ),
-    ] = DEFAULTS.refine_threshold_increase,
+    ] = DEFAULTS.refine_threshold_change,
     save_tree: Annotated[
         bool,
         Option("--save-tree/--no-save-tree", rich_help_panel="Advanced"),
@@ -1069,7 +1070,7 @@ def _run(
         tree.set_merge(
             refine_merge_criterion,
             tolerance=tolerance,
-            threshold=threshold + refine_threshold_increase,
+            threshold=threshold + refine_threshold_change,
         )
         if refine_num != 0:
             ref_msg = f" (will refine {refine_num} clusters)"
@@ -1166,10 +1167,10 @@ def _multiround(
         float,
         Option("--threshold", "-t", help="Thresh for merge criterion (initial step)"),
     ] = DEFAULTS.threshold,
-    mid_threshold_increase: Annotated[
+    mid_threshold_change: Annotated[
         float,
-        Option("--mid-threshold-increase", help="Increase in threshold for refinement"),
-    ] = DEFAULTS.refine_threshold_increase,
+        Option("--mid-threshold-change", help="Modify threshold for refinement"),
+    ] = DEFAULTS.refine_threshold_change,
     initial_merge_criterion: Annotated[
         str,
         Option(
@@ -1378,7 +1379,7 @@ def _multiround(
         num_midsection_processes=num_midsection_processes,
         branching_factor=branching_factor,
         threshold=threshold,
-        midsection_threshold_increase=mid_threshold_increase,
+        midsection_threshold_change=mid_threshold_change,
         tolerance=tolerance,
         # Advanced
         save_tree=save_tree,

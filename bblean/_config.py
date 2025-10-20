@@ -25,7 +25,7 @@ class BitBirchConfig:
     branching_factor: int = 254
     merge_criterion: str = "diameter"
     refine_merge_criterion: str = "tolerance-diameter"
-    refine_threshold_increase: float = 0.0
+    refine_threshold_change: float = 0.0
     tolerance: float = 0.05
     n_features: int = 2048
     fp_kind: str = "ecfp4"
