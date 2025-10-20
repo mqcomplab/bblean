@@ -907,11 +907,10 @@ def _run(
     refine_num: Annotated[
         int,
         Option(
-            "-r",
             "--refine-num",
             help=(
                 "Num. of largest clusters to refine."
-                " '-r' 1 for standard refinement, '-r' 0 is the default (no refinement)"
+                " 1 for standard refinement, 0 is the default (no refinement)"
             ),
         ),
     ] = 0,
