@@ -48,6 +48,7 @@ r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
 from __future__ import annotations  # Stringize type annotations for no runtime overhead
 import typing_extensions as tpx
 import os
+import random
 from pathlib import Path
 import warnings
 import typing as tp
@@ -988,16 +989,32 @@ class BitBirch:
     def _only_has_leaves(self) -> bool:
         return (self._root is None) and (self._dummy_leaf._next_leaf is not None)
 
-    def recluster_inplace(self) -> tpx.Self:
+    def recluster_inplace(
+        self, shuffle: bool = True, seed: int | None = None
+    ) -> tpx.Self:
         r"""Re-fit all clusters in the tree.
 
-        Similar to `BitBirch.refine_inplace`, but doesn't break any clusters"""
+        Similar to `BitBirch.refine_inplace`, but doesn't break any clusters
+
+        ``shuffle`` shuffles BFs before reclustering.
+        """
 
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         # Release the memory held by non-leaf nodes
         self.delete_internal_nodes()
         fps_bfs, mols_bfs = self._bf_to_np()
+        if shuffle:
+            random.seed(seed)
+            keys = list(fps_bfs.keys())
+            for k in keys:
+                fps_v = fps_bfs[k]
+                perm = list(range(len(fps_v)))
+                random.shuffle(perm)
+                fps_bfs[k] = [fps_v[i] for i in perm]
+                mols_v = mols_bfs[k]
+                mols_bfs[k] = [mols_v[i] for i in perm]
+
         self.reset()
         for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
             self._fit_np(bufs, reinsert_index_seqs=mol_idxs)

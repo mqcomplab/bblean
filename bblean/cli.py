@@ -877,12 +877,13 @@ def _run(
         float,
         Option("--threshold", "-t", help="Threshold for merge criterion"),
     ] = DEFAULTS.threshold,
-    refine_threshold_increase: Annotated[
+    refine_threshold_change: Annotated[
         float,
         Option(
-            "--refine-threshold-increase", help="Threshold for refinement criterion"
+            "--refine-threshold-change",
+            help="Modify threshold for refinement criterion, can be negative",
         ),
-    ] = DEFAULTS.refine_threshold_increase,
+    ] = DEFAULTS.refine_threshold_change,
     save_tree: Annotated[
         bool,
         Option("--save-tree/--no-save-tree", rich_help_panel="Advanced"),
@@ -914,6 +915,21 @@ def _run(
             ),
         ),
     ] = 0,
+    recluster_rounds: Annotated[
+        int | None,
+        Option(
+            "--recluster-rounds",
+            help=(
+                "Num. of recluster rounds. "
+                " Refinement is performed in all recluster rounds"
+            ),
+            hidden=True,
+        ),
+    ] = None,
+    recluster_shuffle: Annotated[
+        bool,
+        Option("--recluster-shuffle/--no-recluster-shuffle", hidden=True),
+    ] = True,
     n_features: Annotated[
         int | None,
         Option(
@@ -989,6 +1005,8 @@ def _run(
     console = get_console(silent=not verbose)
     if variant == "int64" and input_is_packed:
         raise ValueError("Packed inputs are not supported for the int64 variant")
+    if recluster_rounds is None:
+        recluster_rounds = 1 if refine_num > 0 else 0
 
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
@@ -1048,16 +1066,28 @@ def _run(
                 input_is_packed=input_is_packed,
                 max_fps=max_fps,
             )
+    if recluster_rounds != 0:
+        tree.set_merge(
+            refine_merge_criterion,
+            tolerance=tolerance,
+            threshold=threshold + refine_threshold_change,
+        )
+        if refine_num != 0:
+            ref_msg = f" (will refine {refine_num} clusters)"
+        else:
+            ref_msg = ""
+        for r in range(recluster_rounds):
+            msg = f"[italic]Reclustering, round {r + 1}{ref_msg}...[/italic]"
+            with console.status(msg, spinner="dots"):
+                if refine_num == 0:
+                    tree.recluster_inplace(shuffle=recluster_shuffle)
+                else:
+                    tree.refine_inplace(
+                        input_files,
+                        input_is_packed=input_is_packed,
+                        n_largest=refine_num,
+                    )
 
-        if refine_num > 0:
-            tree.set_merge(
-                refine_merge_criterion,
-                tolerance=tolerance,
-                threshold=threshold + refine_threshold_increase,
-            )
-            tree.refine_inplace(
-                input_files, input_is_packed=input_is_packed, n_largest=refine_num
-            )
     timer.end_timing("total", console, indent=False)
     console.print_peak_mem(out_dir, indent=False)
     if variant == "lean":
@@ -1137,10 +1167,10 @@ def _multiround(
         float,
         Option("--threshold", "-t", help="Thresh for merge criterion (initial step)"),
     ] = DEFAULTS.threshold,
-    mid_threshold_increase: Annotated[
+    mid_threshold_change: Annotated[
         float,
-        Option("--mid-threshold-increase", help="Increase in threshold for refinement"),
-    ] = DEFAULTS.refine_threshold_increase,
+        Option("--mid-threshold-change", help="Modify threshold for refinement"),
+    ] = DEFAULTS.refine_threshold_change,
     initial_merge_criterion: Annotated[
         str,
         Option(
@@ -1349,7 +1379,7 @@ def _multiround(
         num_midsection_processes=num_midsection_processes,
         branching_factor=branching_factor,
         threshold=threshold,
-        midsection_threshold_increase=mid_threshold_increase,
+        midsection_threshold_change=mid_threshold_change,
         tolerance=tolerance,
         # Advanced
         save_tree=save_tree,
