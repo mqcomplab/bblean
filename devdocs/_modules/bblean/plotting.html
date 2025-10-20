@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=4863c412"></script>
+    <script src="../../_static/documentation_options.js?v=f4eb98cb"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -565,12 +565,12 @@
 
     <span class="c1"># I don&#39;t think these should be transformed, like this, only normalized</span>
     <span class="k">if</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;normalize&quot;</span><span class="p">:</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">normalize_features</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span><span class="p">)</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">normalize_features</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span>
         <span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span><span class="p">)</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown scaling </span><span class="si">{</span><span class="n">scaling</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">fps_umap</span> <span class="o">=</span> <span class="n">umap</span><span class="o">.</span><span class="n">UMAP</span><span class="p">(</span>
@@ -627,12 +627,12 @@
 
     <span class="c1"># I don&#39;t think these should be transformed, like this, only normalized</span>
     <span class="k">if</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;normalize&quot;</span><span class="p">:</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">normalize_features</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span><span class="p">)</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">normalize_features</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span>
         <span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span><span class="p">)</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown scaling </span><span class="si">{</span><span class="n">scaling</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">fps_pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">whiten</span><span class="o">=</span><span class="n">whiten</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">1234</span><span class="p">)</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span>
@@ -693,12 +693,12 @@
 
     <span class="c1"># I don&#39;t think these should be transformed, like this, only normalized</span>
     <span class="k">if</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;normalize&quot;</span><span class="p">:</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">normalize_features</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span><span class="p">)</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">normalize_features</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span>
         <span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span><span class="p">)</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">scaling</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
-        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">unpacked_fps</span>
+        <span class="n">fps_scaled</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">top_unpacked_fps</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown scaling </span><span class="si">{</span><span class="n">scaling</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">pca_reduce</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
