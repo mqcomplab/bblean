@@ -600,10 +600,29 @@ def _table_summary(
             help="Calculate clustering indices (Dunn, DBI, CHI)",
         ),
     ] = False,
+    chosen_metrics: Annotated[
+        str,
+        Option(
+            "-m",
+            "--metrics-choice",
+            help=(
+                "Chosen metrics. "
+                " Comma-separated list including dunn (slow), dbi or chi"
+            ),
+        ),
+    ] = "dunn,dbi,chi",
+    metrics_top: Annotated[
+        int | None,
+        Option("--metrics-top", rich_help_panel="Advanced"),
+    ] = 100,
     metrics_min_size: Annotated[
         int,
         Option("--metrics-min-size", hidden=True),
     ] = 1,
+    verbose: Annotated[
+        bool,
+        Option("--verbose/--no-verbose", hidden=True),
+    ] = True,
 ) -> None:
     r"""Summary table of clustering results, together with cluster metrics"""
     from bblean._console import get_console
@@ -613,7 +632,7 @@ def _table_summary(
     from bblean.metrics import jt_dbi, jt_isim_chi, jt_isim_dunn, _calc_centrals
     from rich.table import Table
 
-    console = get_console()
+    console = get_console(silent=not verbose)
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
         if clusters_path.is_dir():
@@ -687,19 +706,36 @@ def _table_summary(
         console.print(f"Q1 (25%) size: {ca.all_clusters_q1:,}")
         console.print(f"Min. size: {ca.all_clusters_min_size:,}")
     if metrics:
+        chosen = set(s.lower() for s in chosen_metrics.split(","))
+        assert all(s in ["dunn", "chi", "dbi"] for s in chosen)
+        # Redo cluster analysis with more *top* clusters
         console.print()
-        with console.status("[italic]Calculating metrics...[/italic]", spinner="dots"):
-            clusters = ca.get_cluster_fps()
-            if metrics_min_size > 0:
-                clusters = [c for c in clusters if len(c) > metrics_min_size]
-            centrals = _calc_centrals(clusters, kind="centroid")
-            chi = jt_isim_chi(clusters, centrals=centrals)
-            dbi = jt_dbi(clusters, centrals=centrals)
-            dunn = jt_isim_dunn(clusters)
+        if metrics_top is None:
             console.print("Clustering metrics:")
+        else:
+            console.print(f"Clustering metrics considering top {metrics_top} clusters:")
+        with console.status("[italic]Reanalyzing clusters...[/italic]", spinner="dots"):
+            ca = cluster_analysis(
+                clusters,
+                fps_paths,
+                smiles=(),
+                top=metrics_top,
+                n_features=n_features,
+                input_is_packed=input_is_packed,
+                min_size=metrics_min_size,
+            )
+            clusters = ca.get_top_cluster_fps()
+        with console.status("[italic]Calculating centrals...[/italic]", spinner="dots"):
+            centrals = _calc_centrals(clusters, kind="centroid")
+        if "chi" in chosen:
+            chi = jt_isim_chi(clusters, centrals=centrals, verbose=verbose)
             console.print(f"    - CHI index: {chi:.4f} (Higher is better)")
-            console.print(f"    - Dunn index: {dunn:.4f} (Higher is better)")
+        if "dbi" in chosen:
+            dbi = jt_dbi(clusters, centrals=centrals, verbose=verbose)
             console.print(f"    - DBI index: {dbi:.4e} (Lower is better)")
+        if "dunn" in chosen:
+            dunn = jt_isim_dunn(clusters, verbose=verbose)
+            console.print(f"    - Dunn index: {dunn:.4f} (Higher is better)")
 
 
 @app.command("plot-summary", rich_help_panel="Analysis")

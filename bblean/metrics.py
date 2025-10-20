@@ -1,7 +1,10 @@
 r"""Clustering metrics using Tanimoto similarity"""
 
-from numpy.typing import NDArray
+from contextlib import nullcontext
+
 import numpy as np
+from numpy.typing import NDArray
+from rich.progress import Progress
 
 from bblean.similarity import (
     jt_isim_from_sum,
@@ -47,6 +50,7 @@ def jt_isim_chi(
     centrals: list[NDArray[np.uint8]] | str = "centroid",
     input_is_packed: bool = True,
     n_features: int | None = None,
+    verbose: bool = False,
 ) -> float:
     """Calinski-Harabasz clustering index
 
@@ -83,12 +87,22 @@ def jt_isim_chi(
 
     wcss = 0.0  # within-cluster sum of squares
     bcss = 0.0  # between-cluster sum of squares
-    for central, clust in zip(centrals, cluster_fps):
-        # TODO: In the original implementation there isn't a (1 - jt...) here (!)
-        # Is it correct like this?
-        bcss += len(clust) * (1 - jt_sim_packed(all_fps_central, central).item()) ** 2
-        d = 1 - jt_sim_packed(clust, central)
-        wcss += np.dot(d, d)
+    progress = Progress(transient=True) if verbose else nullcontext()
+    with progress as pbar:
+        if verbose:
+            task = pbar.add_task(  # type: ignore
+                "[italic]Calculating CHI[/italic]...",
+                total=(len(centrals)),
+            )
+        for central, clust in zip(centrals, cluster_fps):
+            # NOTE: In the original implementation there isn't a (1 - jt...) here (!)
+            bcss += (
+                len(clust) * (1 - jt_sim_packed(all_fps_central, central).item()) ** 2
+            )
+            d = 1 - jt_sim_packed(clust, central)
+            wcss += np.dot(d, d)
+            if verbose:
+                pbar.update(task, advance=1)  # type: ignore
     # TODO: When can the denom be 0?
     return bcss * (all_fps_num - clusters_num) / (wcss * (clusters_num - 1))
 
@@ -98,6 +112,7 @@ def jt_dbi(
     centrals: list[NDArray[np.uint8]] | str = "centroid",
     input_is_packed: bool = True,
     n_features: int | None = None,
+    verbose: bool = False,
 ) -> float:
     """Davies-Bouldin clustering index
 
@@ -125,17 +140,26 @@ def jt_dbi(
         return 0
 
     # Quadratic scaling on num. clusters
-    numerator = 0.0
-    for i, central in enumerate(centrals):
-        # TODO: Remove reshape once jt_sim_packed is generic over shapes
-        central = central.reshape(1, -1)
-        max_d = 0.0
-        for j, other_central in enumerate(centrals):
-            if i == j:
-                continue
-            Mij = 1 - jt_sim_packed(central, other_central).item()
-            max_d = max(max_d, (S[i] + S[j]) / Mij)
-        numerator += max_d
+    progress = Progress(transient=True) if verbose else nullcontext()
+    with progress as pbar:
+        if verbose:
+            task = pbar.add_task(  # type: ignore
+                "[italic]Calculating DBI[/italic]...",
+                total=(len(centrals) ** 2 - len(centrals)),
+            )
+        numerator = 0.0
+        for i, central in enumerate(centrals):
+            # TODO: Remove reshape once jt_sim_packed is generic over shapes
+            central = central.reshape(1, -1)
+            max_d = 0.0
+            for j, other_central in enumerate(centrals):
+                if i == j:
+                    continue
+                Mij = 1 - jt_sim_packed(central, other_central).item()
+                max_d = max(max_d, (S[i] + S[j]) / Mij)
+                if verbose:
+                    pbar.update(task, advance=1)  # type: ignore
+            numerator += max_d
     return numerator / fps_num
 
 
@@ -144,6 +168,7 @@ def jt_isim_dunn(
     cluster_fps: list[NDArray[np.uint8]],
     input_is_packed: bool = True,
     n_features: int | None = None,
+    verbose: bool = False,
 ) -> float:
     """Dunn clustering index
 
@@ -161,9 +186,18 @@ def jt_isim_dunn(
         return 1
     min_d = 1.00
     # Quadratic scaling on num. clusters
-    for i, clust1 in enumerate(cluster_fps[:-1]):
-        for j, clust2 in enumerate(cluster_fps[i + 1 :]):
-            combined = np.sum(clust1, axis=0) + np.sum(clust2, axis=0)
-            dij = 1 - jt_isim_from_sum(combined, len(clust1) + len(clust2))
-            min_d = min(dij, min_d)
+    pairs_num = len(cluster_fps) * (len(cluster_fps) - 1) // 2
+    progress = Progress(transient=True) if verbose else nullcontext()
+    with progress as pbar:
+        if verbose:
+            task = pbar.add_task(  # type: ignore
+                "[italic]Calculating Dunn (slow)[/italic]...", total=pairs_num
+            )
+        for i, clust1 in enumerate(cluster_fps[:-1]):
+            for j, clust2 in enumerate(cluster_fps[i + 1 :]):
+                combined = np.sum(clust1, axis=0) + np.sum(clust2, axis=0)
+                dij = 1 - jt_isim_from_sum(combined, len(clust1) + len(clust2))
+                min_d = min(dij, min_d)
+                if verbose:
+                    pbar.update(task, advance=1)  # type: ignore
     return min_d / max(D)

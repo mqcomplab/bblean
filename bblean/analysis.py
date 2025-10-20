@@ -67,10 +67,10 @@ class ClusterAnalysis:
     def all_singletons_num(self) -> int:
         return sum(1 for c in self._all_cluster_sizes if c == 1)
 
-    def get_cluster_fps(self, packed: bool = True) -> list[NDArray[np.uint8]]:
+    def get_top_cluster_fps(self, packed: bool = True) -> list[NDArray[np.uint8]]:
         if self._fps is None:
             raise RuntimeError("Fingerprints not present")
-        fps = self.packed_fps if packed else self.unpacked_fps
+        fps = self.top_packed_fps if packed else self.top_unpacked_fps
         out = []
         offset = 0
         for s in self._selected_cluster_sizes:
@@ -107,7 +107,7 @@ class ClusterAnalysis:
         return int(self.stats["count"])
 
     @property
-    def unpacked_fps(self) -> NDArray[np.uint8]:
+    def top_unpacked_fps(self) -> NDArray[np.uint8]:
         if self._fps is None:
             raise RuntimeError("Fingerprints not present")
         if self.fps_are_packed:
@@ -115,7 +115,7 @@ class ClusterAnalysis:
         return self._fps
 
     @property
-    def packed_fps(self) -> NDArray[np.uint8]:
+    def top_packed_fps(self) -> NDArray[np.uint8]:
         if self._fps is None:
             raise RuntimeError("Fingerprints not present")
         if self.fps_are_packed:

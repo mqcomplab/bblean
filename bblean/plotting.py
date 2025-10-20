@@ -197,12 +197,12 @@ def umap_plot(
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":
-        fps_scaled = normalize_features(c.unpacked_fps)
+        fps_scaled = normalize_features(c.top_unpacked_fps)
     elif scaling == "std":
         scaler = StandardScaler()
-        fps_scaled = scaler.fit_transform(c.unpacked_fps)
+        fps_scaled = scaler.fit_transform(c.top_unpacked_fps)
     elif scaling == "none":
-        fps_scaled = c.unpacked_fps
+        fps_scaled = c.top_unpacked_fps
     else:
         raise ValueError(f"Unknown scaling {scaling}")
     fps_umap = umap.UMAP(
@@ -256,12 +256,12 @@ def pca_plot(
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":
-        fps_scaled = normalize_features(c.unpacked_fps)
+        fps_scaled = normalize_features(c.top_unpacked_fps)
     elif scaling == "std":
         scaler = StandardScaler()
-        fps_scaled = scaler.fit_transform(c.unpacked_fps)
+        fps_scaled = scaler.fit_transform(c.top_unpacked_fps)
     elif scaling == "none":
-        fps_scaled = c.unpacked_fps
+        fps_scaled = c.top_unpacked_fps
     else:
         raise ValueError(f"Unknown scaling {scaling}")
     fps_pca = PCA(n_components=2, whiten=whiten, random_state=1234).fit_transform(
@@ -319,12 +319,12 @@ def tsne_plot(
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":
-        fps_scaled = normalize_features(c.unpacked_fps)
+        fps_scaled = normalize_features(c.top_unpacked_fps)
     elif scaling == "std":
         scaler = StandardScaler()
-        fps_scaled = scaler.fit_transform(c.unpacked_fps)
+        fps_scaled = scaler.fit_transform(c.top_unpacked_fps)
     elif scaling == "none":
-        fps_scaled = c.unpacked_fps
+        fps_scaled = c.top_unpacked_fps
     else:
         raise ValueError(f"Unknown scaling {scaling}")
     if pca_reduce is not None:
