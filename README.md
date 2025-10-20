@@ -86,7 +86,7 @@ An example usual workflow is as follows:
    sample that you can use right away for testing:
 
    ```bash
-   bb fps-from-smiles examples/chembl-sample.smi
+   bb fps-from-smiles examples/chembl-33-natural-products-sample.smi
    ```
 
    This writes a packed fingerprint array to the current working directory (use
@@ -143,10 +143,13 @@ clusters[:2]
 The indices refer to the position of each molecule in the order they were read from the
 fingerprint files, making it easy to link back to your original SMILES records.
 
-## Python Quickstart
+## Python Quickstart and Examples
 
 For an example of how to use the main `bblean` classes and functions consult
-`examples/bitbirch_quickstart.ipynb`. More examples will be added soon!
+`examples/bitbirch_quickstart.ipynb`. The `examples/dataset_splitting.ipynb` notebook
+contains an adapted notebook by Pat Walters ([Some Thoughts on Splitting Chemical
+Datasets](https://practicalcheminformatics.blogspot.com/2024/11/some-thoughts-on-splitting-chemical.html)).
+More examples will be added soon!
 
 A quick summary:
 
@@ -160,7 +163,7 @@ import bblean.plotting as plotting
 import bblean.analysis as analysis
 
 # Create the fingerprints and pack them into a numpy array, starting from a *.smi file
-smiles = bblean.load_smiles("./examples/chembl-smiles.smi")
+smiles = bblean.load_smiles("./examples/chembl-33-natural-products-sample.smi")
 fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind="rdkit")
 
 # Fit the figerprints (by default all bblean functions take *packed* fingerprints)
@@ -192,7 +195,6 @@ By default all functions take *packed* fingerprints of dtype `uint8`. Many funct
 support an `input_is_packed: bool` flag, which you can toggle to `False` in case for
 some reason you want to pass unpacked fingerprints (not recommended).
 
-
 - Functions and classes that *end in an underscore* are considered private (such as
   `_private_function(...)`) and should not be used, since they can be removed or
   modified without warning.
@@ -204,4 +206,13 @@ some reason you want to pass unpacked fingerprints (not recommended).
 
 ## Contributing
 
-TODO: Add some info about how to contribute to the repo / open issues
+If you find a bug in BitBIRCH-Lean or have an issue with the usage
+or documentation please open an issue in the GitHub issue tracker.
+
+If you want to contribute to BitBIRCH-Lean with a bug fix, improving the documentation,
+with usability, maintainability, or performance, please open an issue with your
+idea/request (or directly open a PR from a fork if you prefer).
+
+Currently we don't directly accept PRs with new features that have not been extensively
+validated, but if you have an idea to improve the BitBIRCH algorithm you may want to
+contact the Miranda-Quintana Lab, we are open to collaborations.

@@ -90,4 +90,5 @@ script.sh
 # Outputs from examples
 examples/*.png
 examples/*.csv
+!examples/biogen_logS.csv
 *.pdf
