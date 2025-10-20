@@ -86,7 +86,7 @@ An example usual workflow is as follows:
    sample that you can use right away for testing:
 
    ```bash
-   bb fps-from-smiles examples/chembl-sample.smi
+   bb fps-from-smiles examples/chembl-33-natural-products-sample.smi
    ```
 
    This writes a packed fingerprint array to the current working directory (use
@@ -160,7 +160,7 @@ import bblean.plotting as plotting
 import bblean.analysis as analysis
 
 # Create the fingerprints and pack them into a numpy array, starting from a *.smi file
-smiles = bblean.load_smiles("./examples/chembl-smiles.smi")
+smiles = bblean.load_smiles("./examples/chembl-33-natural-products-sample.smi")
 fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind="rdkit")
 
 # Fit the figerprints (by default all bblean functions take *packed* fingerprints)
