@@ -988,36 +988,83 @@ class BitBirch:
     @property
     def _only_has_leaves(self) -> bool:
         return (self._root is None) and (self._dummy_leaf._next_leaf is not None)
+   
+    def  recluster_inplace(
+            self, iterations: int = 1, 
+            extra_threshold: float = 0.0, 
+            shuffle: bool = False, 
+            seed: int | None = None,
+            verbose: bool = False) -> tpx.Self:
+        r"""Refine singleton clusters by iteratively attempting to merge them into existing clusters.
 
-    def recluster_inplace(
-        self, shuffle: bool = True, seed: int | None = None
-    ) -> tpx.Self:
-        r"""Re-fit all clusters in the tree.
+            Parameters
+            ----------
+            extra_threshold : float, default=0.0
+                The amount to increase the current threshold for the purpose of merging singletons.
+                A higher value makes it easier for singletons to merge into existing clusters.
 
-        Similar to `BitBirch.refine_inplace`, but doesn't break any clusters
+            iterations : int, default=1
+                The maximum number of refinement iterations to perform.
 
-        ``shuffle`` shuffles BFs before reclustering.
-        """
+            Returns
+            -------
+            self : BitBirch
+                The fitted estimator with refined clusters.
 
+            Raises
+            ------
+            ValueError
+                If the model has not been fitted yet or if `extra_threshold` is negative.
+            """
+        
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
-        # Release the memory held by non-leaf nodes
-        self.delete_internal_nodes()
-        fps_bfs, mols_bfs = self._bf_to_np()
-        if shuffle:
-            random.seed(seed)
-            keys = list(fps_bfs.keys())
-            for k in keys:
-                fps_v = fps_bfs[k]
-                perm = list(range(len(fps_v)))
-                random.shuffle(perm)
-                fps_bfs[k] = [fps_v[i] for i in perm]
-                mols_v = mols_bfs[k]
-                mols_bfs[k] = [mols_v[i] for i in perm]
+        if extra_threshold < 0:
+            raise ValueError("extra_threshold must be non-negative.")
 
-        self.reset()
-        for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-            self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+
+        singletons_before = 0
+        for _ in range(iterations):
+            # Get the BFs
+            bfs = self._get_leaf_bfs(sort=True)
+
+            # Count the number of clusters and singletons
+            singleton_bfs = len([bf for bf in bfs if bf.n_samples == 1])
+            if singleton_bfs == 0 or singleton_bfs == singletons_before:
+                # No more singletons to refine
+                break
+            singletons_before = singleton_bfs
+
+            # Print progress
+            if verbose:
+                print(f"Current number of clusters: {len(bfs)}")
+                print(f"Current number of singletons: {singleton_bfs}")
+
+            if shuffle:
+                random.seed(seed)
+                random.shuffle(bfs)
+
+            # Prepare the buffers for refitting
+            fps_bfs, mols_bfs = self._prepare_bf_to_buffer_dicts(bfs)
+
+            # Reset the tree
+            self.reset()
+
+            # Change the threshold
+            self.threshold += extra_threshold
+
+            # Refit the subsclusters
+            for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
+                self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+
+        # Print final stats
+        if verbose:
+            bfs = self._get_leaf_bfs(sort=True)
+            singleton_bfs = len([bf for bf in bfs if bf.n_samples == 1])
+        
+            print(f"Final number of clusters: {len(bfs)}")
+            print(f"Final number of singletons: {singleton_bfs}")
+
         return self
 
     def refine_inplace(
