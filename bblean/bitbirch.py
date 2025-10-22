@@ -951,8 +951,7 @@ class BitBirch:
                 f"Len of the provided smiles {len(smiles)}"
                 f" must match the number of fitted fingerprints {self.num_fitted_fps}"
             )
-        if smiles is None:
-            df = pd.DataFrame({"assignments": assignments})
+        df = pd.DataFrame({"assignments": assignments})
         if smiles.size:
             df = pd.DataFrame({"smiles": smiles, "assignments": assignments})
         df.to_csv(path, index=False)
