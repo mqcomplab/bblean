@@ -1011,6 +1011,10 @@ def _run(
         raise ValueError("Packed inputs are not supported for the int64 variant")
     if refine_rounds is None:
         refine_rounds = 1 if refine_num > 0 else 0
+    if refine_rounds > 0 and refine_num == 0:
+        refine_num = 1
+    ctx.params["refine_rounds"] = refine_rounds
+    ctx.params["refine_num"] = refine_num
 
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
