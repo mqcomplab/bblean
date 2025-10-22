@@ -89,7 +89,11 @@ def jt_stratified_sampling(
     n_features: int | None = None
 ) -> NDArray[np.uint8]:
     # Calculate the complementary similarities
-    complementary_sims = jt_compl_isim(fps, input_is_packed=input_is_packed, n_features=n_features)
+    complementary_sims = jt_compl_isim(
+        fps,
+        input_is_packed=input_is_packed,
+        n_features=n_features,
+    )
 
     # Get the indices that would sort the complementary similarities
     sorted_indices = np.argsort(complementary_sims)
