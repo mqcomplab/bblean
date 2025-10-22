@@ -995,6 +995,7 @@ class BitBirch:
         shuffle: bool = False,
         seed: int | None = None,
         verbose: bool = False,
+        stop_early: bool = False,
     ) -> tpx.Self:
         r"""Refine singleton clusters by re-inserting them into the tree
 
@@ -1026,9 +1027,12 @@ class BitBirch:
 
             # Count the number of clusters and singletons
             singleton_bfs = sum(1 for bf in bfs if bf.n_samples == 1)
-            if singleton_bfs == 0 or singleton_bfs == singletons_before:
-                # No more singletons to refine
-                break
+
+            # Check stopping criteria
+            if stop_early:
+                if singleton_bfs == 0 or singleton_bfs == singletons_before:
+                    # No more singletons to refine
+                    break
             singletons_before = singleton_bfs
 
             # Print progress
