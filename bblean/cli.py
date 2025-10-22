@@ -914,17 +914,22 @@ def _run(
             ),
         ),
     ] = 0,
-    recluster_rounds: Annotated[
+    refine_rounds: Annotated[
         int | None,
         Option(
-            "--recluster-rounds",
-            help=(
-                "Num. of recluster rounds. "
-                " Refinement is performed in all recluster rounds"
-            ),
+            "--refine-rounds",
+            help=("Num. of refinement rounds. "),
             hidden=True,
         ),
     ] = None,
+    recluster_rounds: Annotated[
+        int,
+        Option(
+            "--recluster-rounds",
+            help=("Num. of reclustering rounds. "),
+            hidden=True,
+        ),
+    ] = 0,
     recluster_shuffle: Annotated[
         bool,
         Option("--recluster-shuffle/--no-recluster-shuffle", hidden=True),
@@ -1004,8 +1009,12 @@ def _run(
     console = get_console(silent=not verbose)
     if variant == "int64" and input_is_packed:
         raise ValueError("Packed inputs are not supported for the int64 variant")
-    if recluster_rounds is None:
-        recluster_rounds = 1 if refine_num > 0 else 0
+    if refine_rounds is None:
+        refine_rounds = 1 if refine_num > 0 else 0
+    if refine_rounds > 0 and refine_num == 0:
+        refine_num = 1
+    ctx.params["refine_rounds"] = refine_rounds
+    ctx.params["refine_num"] = refine_num
 
     BitBirch, set_merge = _import_bitbirch_variant(variant)
 
@@ -1065,28 +1074,27 @@ def _run(
                 input_is_packed=input_is_packed,
                 max_fps=max_fps,
             )
-    if recluster_rounds != 0:
+    if recluster_rounds != 0 or refine_rounds != 0:
         tree.set_merge(
             refine_merge_criterion,
             tolerance=tolerance,
             threshold=threshold + refine_threshold_change,
         )
-        if refine_num != 0:
-            ref_msg = f" (will refine {refine_num} clusters)"
-        else:
-            ref_msg = ""
-        for r in range(recluster_rounds):
-            msg = f"[italic]Reclustering, round {r + 1}{ref_msg}...[/italic]"
+        for r in range(refine_rounds):
+            msg = (
+                f"[italic]Refinement, round {r + 1}"
+                f" (will split {refine_num} largest clusters)...[/italic]"
+            )
             with console.status(msg, spinner="dots"):
-                if refine_num == 0:
-                    tree.recluster_inplace(shuffle=recluster_shuffle)
-                    # TODO: Test and add the other params
-                else:
-                    tree.refine_inplace(
-                        input_files,
-                        input_is_packed=input_is_packed,
-                        n_largest=refine_num,
-                    )
+                tree.refine_inplace(
+                    input_files,
+                    input_is_packed=input_is_packed,
+                    n_largest=refine_num,
+                )
+        for r in range(recluster_rounds):
+            msg = f"[italic]Reclustering, round {r + 1}...[/italic]"
+            with console.status(msg, spinner="dots"):
+                tree.recluster_inplace(shuffle=recluster_shuffle)
 
     timer.end_timing("total", console, indent=False)
     console.print_peak_mem(out_dir, indent=False)
