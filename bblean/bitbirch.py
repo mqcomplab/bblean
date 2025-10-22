@@ -1016,7 +1016,6 @@ class BitBirch:
             ValueError
                 If the model has not been fitted yet or if `extra_threshold` is negative.
             """
-        
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
 
@@ -1058,10 +1057,8 @@ class BitBirch:
         if verbose:
             bfs = self._get_leaf_bfs(sort=True)
             singleton_bfs = len([bf for bf in bfs if bf.n_samples == 1])
-        
             print(f"Final number of clusters: {len(bfs)}")
             print(f"Final number of singletons: {singleton_bfs}")
-
         return self
 
     def refine_inplace(
