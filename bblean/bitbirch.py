@@ -951,10 +951,10 @@ class BitBirch:
                 f"Len of the provided smiles {len(smiles)}"
                 f" must match the number of fitted fingerprints {self.num_fitted_fps}"
             )
-        if not smiles:
+        if smiles is None:
             df = pd.DataFrame({"assignments": assignments})
         if smiles.size:
-            df["smiles"] = smiles
+            df = pd.DataFrame({"smiles": smiles, "assignments": assignments})
         df.to_csv(path, index=False)
 
     def reset(self) -> None:
@@ -1019,9 +1019,6 @@ class BitBirch:
         
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
-        if extra_threshold < 0:
-            raise ValueError("extra_threshold must be non-negative.")
-
 
         singletons_before = 0
         for _ in range(iterations):
