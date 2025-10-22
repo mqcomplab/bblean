@@ -1079,7 +1079,8 @@ def _run(
             msg = f"[italic]Reclustering, round {r + 1}{ref_msg}...[/italic]"
             with console.status(msg, spinner="dots"):
                 if refine_num == 0:
-                    tree.recluster_inplace(shuffle=recluster_shuffle) # TODO: Test and add the other params
+                    tree.recluster_inplace(shuffle=recluster_shuffle) 
+                    # TODO: Test and add the other params
                 else:
                     tree.refine_inplace(
                         input_files,
