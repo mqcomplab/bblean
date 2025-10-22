@@ -1057,7 +1057,7 @@ class BitBirch:
         # Print final stats
         if verbose:
             bfs = self._get_leaf_bfs(sort=True)
-            singleton_bfs = len([bf for bf in bfs if bf.n_samples == 1])
+            singleton_bfs = sum(1 for bf in bfs if bf.n_samples == 1)
             print(f"Final number of clusters: {len(bfs)}")
             print(f"Final number of singletons: {singleton_bfs}")
         return self
