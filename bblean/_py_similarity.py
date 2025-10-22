@@ -201,14 +201,15 @@ def jt_sim_packed(
     r"""Tanimoto similarity between a matrix of packed fps and a single packed fp"""
     return _jt_sim_packed_precalc_cardinalities(arr, vec, _popcount(arr))
 
-def jt_sim_matrix_packed(arr: NDArray[np.uint8]) -> NDArray[np.float64]:
+def jt_sim_matrix_packed(
+    arr: NDArray[np.uint8]
+) -> NDArray[np.float64]:
     r"""Tanimoto similarity matrix between all pairs of packed fps in arr"""
     matrix = np.zeros((len(arr), len(arr)), dtype=np.float64)
     for i in range(len(arr)):
         for j in range(i, len(arr)):
             # Set the similarities for each row
             matrix[i, j:] = jt_sim_packed(arr[i], arr[j])
-
             # Set the similarities for each column (symmetric)
             matrix[j:, i] = matrix[i, j:]
     return matrix

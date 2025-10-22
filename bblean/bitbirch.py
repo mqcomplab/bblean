@@ -988,7 +988,7 @@ class BitBirch:
     @property
     def _only_has_leaves(self) -> bool:
         return (self._root is None) and (self._dummy_leaf._next_leaf is not None)
-   
+
     def recluster_inplace(
         self,
         iterations: int = 1,
@@ -997,13 +997,12 @@ class BitBirch:
         seed: int | None = None,
         verbose: bool = False,
     ) -> tpx.Self:
-        r"""Refine singleton clusters by iteratively attempting to merge them into existing clusters.
+        r"""Refine singleton clusters by re-inserting them into the tree
 
             Parameters
             ----------
             extra_threshold : float, default=0.0
-                The amount to increase the current threshold for the purpose of merging singletons.
-                A higher value makes it easier for singletons to merge into existing clusters.
+                The amount to increase the current threshold in each iteration.
 
             iterations : int, default=1
                 The maximum number of refinement iterations to perform.
@@ -1016,7 +1015,7 @@ class BitBirch:
             Raises
             ------
             ValueError
-                If the model has not been fitted yet or if `extra_threshold` is negative.
+                If the model has not been fitted.
             """
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
