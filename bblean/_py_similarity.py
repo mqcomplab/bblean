@@ -82,7 +82,8 @@ def jt_compl_isim(
     return np.array(comp_sims, dtype=np.float64)
 
 
-def jt_stratified_sampling(fps: NDArray[np.uint8],
+def jt_stratified_sampling(
+    fps: NDArray[np.uint8],
     n_samples: int,
     input_is_packed: bool = True,
     n_features: int | None = None
