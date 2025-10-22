@@ -77,7 +77,7 @@ If you find this software useful please cite the following articles:
             if "tolerance" in config["refine_merge_criterion"]:
                 self.print(f"- Refine tolerance: {config['tolerance']}\n", end="")
             self.print(
-                f"- Refine threshold increase: {config['refine_threshold_increase']}\n",
+                f"- Refine threshold change: {config['refine_threshold_change']}\n",
                 end="",
             )
         if bb_variant != "lean":
