@@ -77,7 +77,7 @@ def jt_compl_isim(
         return np.full(len(fps), fill_value=np.nan, dtype=np.float64)
     linear_sum = np.sum(fps, axis=0)
     n_objects = len(fps) - 1
-    comp_sims = [jt_isim_unpacked(linear_sum - fp) for fp in fps]
+    comp_sims = [jt_isim_from_sum(linear_sum - fp, n_objects) for fp in fps]
 
     return np.array(comp_sims, dtype=np.float64)
 
