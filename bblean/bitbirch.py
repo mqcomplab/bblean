@@ -953,7 +953,7 @@ class BitBirch:
             )
         df = pd.DataFrame({"assignments": assignments})
         if smiles.size:
-            df = pd.DataFrame({"smiles": smiles, "assignments": assignments})
+            df["smiles"] = smiles
         df.to_csv(path, index=False)
 
     def reset(self) -> None:
