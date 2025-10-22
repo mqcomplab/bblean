@@ -1080,6 +1080,7 @@ def _run(
             with console.status(msg, spinner="dots"):
                 if refine_num == 0:
                     tree.recluster_inplace(shuffle=recluster_shuffle)
+                    # TODO: Test and add the other params
                 else:
                     tree.refine_inplace(
                         input_files,
