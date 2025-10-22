@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=1d417a8d"></script>
+    <script src="../../_static/documentation_options.js?v=e2ae7d6b"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -444,15 +444,36 @@
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">),</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="n">linear_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">compl_ls</span> <span class="o">=</span> <span class="n">linear_sum</span> <span class="o">-</span> <span class="n">fps</span>  <span class="c1"># Holds all complementary linear sums</span>
-    <span class="n">sum_kqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">compl_ls</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="n">sum_kqs</span> <span class="o">==</span> <span class="mi">0</span>
-    <span class="n">sum_kqs_sq</span> <span class="o">=</span> <span class="p">(</span><span class="n">compl_ls</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="n">sum_kqs_sq</span> <span class="o">-</span> <span class="n">sum_kqs</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
-    <span class="c1"># isim of fingerprints that are all zeros should be 1 (they are all equal)</span>
-    <span class="n">a</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">n_objects</span> <span class="o">*</span> <span class="n">sum_kqs</span> <span class="o">-</span> <span class="n">sum_kqs_sq</span><span class="p">)</span></div>
+    <span class="n">n_objects</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">comp_sims</span> <span class="o">=</span> <span class="p">[</span><span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">linear_sum</span> <span class="o">-</span> <span class="n">fp</span><span class="p">,</span> <span class="n">n_objects</span><span class="p">)</span> <span class="k">for</span> <span class="n">fp</span> <span class="ow">in</span> <span class="n">fps</span><span class="p">]</span>
 
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">comp_sims</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">jt_stratified_sampling</span><span class="p">(</span>
+    <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+    <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
+    <span class="c1"># Calculate the complementary similarities</span>
+    <span class="n">complementary_sims</span> <span class="o">=</span> <span class="n">jt_compl_isim</span><span class="p">(</span>
+        <span class="n">fps</span><span class="p">,</span>
+        <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Get the indices that would sort the complementary similarities</span>
+    <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">complementary_sims</span><span class="p">)</span>
+
+    <span class="c1"># Divide the sorted indices into n_samples strata</span>
+    <span class="n">strata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">sorted_indices</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+
+    <span class="c1"># Randomly select one index from each stratum</span>
+    <span class="n">selected_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">stratum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">stratum</span> <span class="ow">in</span> <span class="n">strata</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stratum</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">selected_indices</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_jt_isim_medoid_index</span><span class="p">(</span>
@@ -566,6 +587,20 @@
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Tanimoto similarity between a matrix of packed fps and a single packed fp&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_jt_sim_packed_precalc_cardinalities</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">arr</span><span class="p">))</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">jt_sim_matrix_packed</span><span class="p">(</span>
+    <span class="n">arr</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Tanimoto similarity matrix between all pairs of packed fps in arr&quot;&quot;&quot;</span>
+    <span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
+            <span class="c1"># Set the similarities for each row</span>
+            <span class="n">matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:]</span> <span class="o">=</span> <span class="n">jt_sim_packed</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="c1"># Set the similarities for each column (symmetric)</span>
+            <span class="n">matrix</span><span class="p">[</span><span class="n">j</span><span class="p">:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">matrix</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_jt_sim_packed_precalc_cardinalities</span><span class="p">(</span>

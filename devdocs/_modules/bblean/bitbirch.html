@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=1d417a8d"></script>
+    <script src="../../_static/documentation_options.js?v=e2ae7d6b"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -1333,8 +1333,7 @@
                 <span class="sa">f</span><span class="s2">&quot;Len of the provided smiles </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">smiles</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot; must match the number of fitted fingerprints </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">smiles</span><span class="p">:</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;assignments&quot;</span><span class="p">:</span> <span class="n">assignments</span><span class="p">})</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;assignments&quot;</span><span class="p">:</span> <span class="n">assignments</span><span class="p">})</span>
         <span class="k">if</span> <span class="n">smiles</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
             <span class="n">df</span><span class="p">[</span><span class="s2">&quot;smiles&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">smiles</span>
         <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
@@ -1381,34 +1380,80 @@
 <div class="viewcode-block" id="BitBirch.recluster_inplace">
 <a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.recluster_inplace">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">recluster_inplace</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">shuffle</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">extra_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">shuffle</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">stop_early</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Re-fit all clusters in the tree.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Refine singleton clusters by re-inserting them into the tree</span>
 
-<span class="sd">        Similar to `BitBirch.refine_inplace`, but doesn&#39;t break any clusters</span>
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            extra_threshold : float, default=0.0</span>
+<span class="sd">                The amount to increase the current threshold in each iteration.</span>
 
-<span class="sd">        ``shuffle`` shuffles BFs before reclustering.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">            iterations : int, default=1</span>
+<span class="sd">                The maximum number of refinement iterations to perform.</span>
 
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            self : BitBirch</span>
+<span class="sd">                The fitted estimator with refined clusters.</span>
+
+<span class="sd">            Raises</span>
+<span class="sd">            ------</span>
+<span class="sd">            ValueError</span>
+<span class="sd">                If the model has not been fitted.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model has not been fitted yet.&quot;</span><span class="p">)</span>
-        <span class="c1"># Release the memory held by non-leaf nodes</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
-        <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bf_to_np</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">shuffle</span><span class="p">:</span>
-            <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
-            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
-                <span class="n">fps_v</span> <span class="o">=</span> <span class="n">fps_bfs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-                <span class="n">perm</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fps_v</span><span class="p">)))</span>
-                <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">perm</span><span class="p">)</span>
-                <span class="n">fps_bfs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">fps_v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">perm</span><span class="p">]</span>
-                <span class="n">mols_v</span> <span class="o">=</span> <span class="n">mols_bfs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-                <span class="n">mols_bfs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">mols_v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">perm</span><span class="p">]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+        <span class="n">singletons_before</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
+            <span class="c1"># Get the BFs</span>
+            <span class="n">bfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaf_bfs</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Count the number of clusters and singletons</span>
+            <span class="n">singleton_bfs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">bf</span> <span class="ow">in</span> <span class="n">bfs</span> <span class="k">if</span> <span class="n">bf</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># Check stopping criteria</span>
+            <span class="k">if</span> <span class="n">stop_early</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">singleton_bfs</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">singleton_bfs</span> <span class="o">==</span> <span class="n">singletons_before</span><span class="p">:</span>
+                    <span class="c1"># No more singletons to refine</span>
+                    <span class="k">break</span>
+            <span class="n">singletons_before</span> <span class="o">=</span> <span class="n">singleton_bfs</span>
+
+            <span class="c1"># Print progress</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current number of clusters: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bfs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current number of singletons: </span><span class="si">{</span><span class="n">singleton_bfs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">shuffle</span><span class="p">:</span>
+                <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+                <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">bfs</span><span class="p">)</span>
+
+            <span class="c1"># Prepare the buffers for refitting</span>
+            <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_bf_to_buffer_dicts</span><span class="p">(</span><span class="n">bfs</span><span class="p">)</span>
+
+            <span class="c1"># Reset the tree</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+            <span class="c1"># Change the threshold</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">+=</span> <span class="n">extra_threshold</span>
+
+            <span class="c1"># Refit the subsclusters</span>
+            <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+
+        <span class="c1"># Print final stats</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">bfs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaf_bfs</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">singleton_bfs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">bf</span> <span class="ow">in</span> <span class="n">bfs</span> <span class="k">if</span> <span class="n">bf</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final number of clusters: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bfs</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final number of singletons: </span><span class="si">{</span><span class="n">singleton_bfs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
 
