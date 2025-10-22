@@ -86,7 +86,7 @@ def jt_stratified_sampling(
     fps: NDArray[np.uint8],
     n_samples: int,
     input_is_packed: bool = True,
-    n_features: int | None = None
+    n_features: int | None = None,
 ) -> NDArray[np.int64]:
     # Calculate the complementary similarities
     complementary_sims = jt_compl_isim(
@@ -209,9 +209,7 @@ def jt_sim_packed(
     return _jt_sim_packed_precalc_cardinalities(arr, vec, _popcount(arr))
 
 
-def jt_sim_matrix_packed(
-    arr: NDArray[np.uint8]
-) -> NDArray[np.float64]:
+def jt_sim_matrix_packed(arr: NDArray[np.uint8]) -> NDArray[np.float64]:
     r"""Tanimoto similarity matrix between all pairs of packed fps in arr"""
     matrix = np.zeros((len(arr), len(arr)), dtype=np.float64)
     for i in range(len(arr)):
