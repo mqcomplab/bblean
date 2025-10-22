@@ -989,12 +989,14 @@ class BitBirch:
     def _only_has_leaves(self) -> bool:
         return (self._root is None) and (self._dummy_leaf._next_leaf is not None)
    
-    def  recluster_inplace(
-            self, iterations: int = 1, 
-            extra_threshold: float = 0.0, 
-            shuffle: bool = False, 
-            seed: int | None = None,
-            verbose: bool = False) -> tpx.Self:
+    def recluster_inplace(
+        self,
+        iterations: int = 1,
+        extra_threshold: float = 0.0,
+        shuffle: bool = False,
+        seed: int | None = None,
+        verbose: bool = False,
+    ) -> tpx.Self:
         r"""Refine singleton clusters by iteratively attempting to merge them into existing clusters.
 
             Parameters
