@@ -371,7 +371,7 @@ py::array_t<double> jt_sim_packed_precalc_cardinalities(
     return out;
 }
 
-py::array_t<double> jt_sim_packed(const py::array_t<uint8_t>& arr,
+py::array_t<double> _jt_sim_arr_vec_packed(const py::array_t<uint8_t>& arr,
                                   const py::array_t<uint8_t>& vec) {
     return jt_sim_packed_precalc_cardinalities(arr, vec, _popcount_2d(arr));
 }
@@ -510,7 +510,7 @@ PYBIND11_MODULE(_cpp_similarity, m) {
     m.def("jt_isim_unpacked_u8", &jt_isim_unpacked_u8,
           "iSIM Tanimoto calculation", py::arg("arr"));
 
-    m.def("jt_sim_packed", &jt_sim_packed,
+    m.def("_jt_sim_arr_vec_packed", &_jt_sim_arr_vec_packed,
           "Tanimoto similarity between a matrix of packed fps and a single "
           "packed fp",
           py::arg("arr"), py::arg("vec"));

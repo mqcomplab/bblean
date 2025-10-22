@@ -182,24 +182,31 @@ def jt_most_dissimilar_packed(
     return fp_1, fp_2, sims_fp_1, sims_fp_2
 
 
-def jt_sim_packed(
-    arr: NDArray[np.uint8],
-    vec: NDArray[np.uint8],
+def _jt_sim_arr_vec_packed(
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
 ) -> NDArray[np.float64]:
-    r"""Tanimoto similarity between a matrix of packed fps and a single packed fp"""
-    return _jt_sim_packed_precalc_cardinalities(arr, vec, _popcount(arr))
+    r"""Tanimoto similarity between packed fingerprints
+
+    Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or one is
+    an vector (F,) and the other an array of shape (N, F) (Numpy array of shape (N,) is
+    returned).
+    """
+    if x.ndim != 2 or y.ndim != 1:
+        raise ValueError("Expected a 2D array and a 1D vector as inputs")
+    return _jt_sim_packed_precalc_cardinalities(x, y, _popcount(x))
 
 
 def _jt_sim_packed_precalc_cardinalities(
-    arr: NDArray[np.uint8],
-    vec: NDArray[np.uint8],
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
     cardinalities: NDArray[np.integer],
 ) -> NDArray[np.float64]:
     # _cardinalities must be the result of calling _popcount(arr)
 
     # Maximum value in the denominator sum is the 2 * n_features (which is typically
     # uint16, but we use uint32 for safety)
-    intersection = _popcount(np.bitwise_and(arr, vec))
+    intersection = _popcount(np.bitwise_and(x, y))
 
     # Return value requires an out-of-place operation since it casts uints to f64
     #
@@ -208,7 +215,7 @@ def _jt_sim_packed_precalc_cardinalities(
     #
     # In these cases the fps are equal so the similarity *should be 1*, so we
     # clamp the denominator, which is A | B (zero only if A & B is zero too).
-    return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
+    return intersection / np.maximum(cardinalities + _popcount(y) - intersection, 1)
 
 
 def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:

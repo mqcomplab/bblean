@@ -47,14 +47,14 @@ if os.getenv("BITBIRCH_NO_EXTENSIONS"):
         jt_isim_from_sum,
         jt_isim_unpacked,
         jt_isim_packed,
-        jt_sim_packed,
+        _jt_sim_arr_vec_packed,
         jt_most_dissimilar_packed,
     )
 else:
     try:
         from bblean._cpp_similarity import (  # type: ignore
             jt_isim_from_sum,
-            jt_sim_packed,
+            _jt_sim_arr_vec_packed,
             jt_isim_unpacked_u8,
             jt_isim_packed_u8,
             jt_most_dissimilar_packed,
@@ -91,7 +91,7 @@ else:
             jt_isim_from_sum,
             jt_isim_unpacked,
             jt_isim_packed,
-            jt_sim_packed,
+            _jt_sim_arr_vec_packed,
             jt_most_dissimilar_packed,
         )
 
@@ -210,3 +210,25 @@ def jt_isim_diameter_from_sum(ls: NDArray[np.integer], n: int) -> float:
 
     Equivalent to ``1 - jt_isim_from_sum(ls, n)``"""
     return 1 - jt_isim_from_sum(ls, n)
+
+
+# General wrapper that works both in C++ and python
+def jt_sim_packed(
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
+) -> NDArray[np.float64]:
+    r"""Tanimoto similarity between packed fingerprints
+
+    Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or
+    one is an vector (F,) and the other an array of shape (N, F) (Numpy array of
+    shape (N,) is returned).
+    """
+    if x.ndim == 1 and y.ndim == 1:
+        return _jt_sim_arr_vec_packed(x.reshape(1, -1), y)[0]
+    if x.ndim == 2:
+        return _jt_sim_arr_vec_packed(x, y)
+    if y.ndim == 2:
+        return _jt_sim_arr_vec_packed(y, x)
+    raise ValueError(
+        "Expected either two 1D vectors, or one 1D vector and one 2D array"
+    )
