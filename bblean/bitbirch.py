@@ -1026,7 +1026,7 @@ class BitBirch:
             bfs = self._get_leaf_bfs(sort=True)
 
             # Count the number of clusters and singletons
-            singleton_bfs = len([bf for bf in bfs if bf.n_samples == 1])
+            singleton_bfs = sum(1 for bf in bfs if bf.n_samples == 1)
             if singleton_bfs == 0 or singleton_bfs == singletons_before:
                 # No more singletons to refine
                 break
