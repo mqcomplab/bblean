@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=e2ae7d6b"></script>
+    <script src="../_static/documentation_options.js?v=b7a57f07"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -429,6 +429,12 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_compl_isim" title="bblean.similarity.jt_compl_isim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_compl_isim</span></code></a></p></td>
 <td><p>Get all complementary (Tanimoto) similarities of a set of fps, using iSIM</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_stratified_sampling</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_sim_matrix_packed" title="bblean.similarity.jt_sim_matrix_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_sim_matrix_packed</span></code></a></p></td>
+<td><p>Tanimoto similarity matrix between all pairs of packed fps in arr</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -622,6 +628,14 @@ Raises ValueError for arrays of size 0</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_sim_matrix_packed">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_sim_matrix_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_sim_matrix_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_sim_matrix_packed" title="Link to this definition">#</a></dt>
+<dd><p>Tanimoto similarity matrix between all pairs of packed fps in arr</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -685,6 +699,7 @@ Raises ValueError for arrays of size 0</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.centroid"><code class="docutils literal notranslate"><span class="pre">centroid()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_medoid"><code class="docutils literal notranslate"><span class="pre">jt_isim_medoid()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_compl_isim"><code class="docutils literal notranslate"><span class="pre">jt_compl_isim()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_sim_matrix_packed"><code class="docutils literal notranslate"><span class="pre">jt_sim_matrix_packed()</span></code></a></li>
 </ul>
   </nav></div>
 
