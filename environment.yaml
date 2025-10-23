@@ -46,6 +46,7 @@ dependencies:
   - py-spy
   # Docs
   - sphinx
+  - nbsphinx
   - sphinx-design
   - pydata-sphinx-theme
   # Loading and converting jupyter notebooks
