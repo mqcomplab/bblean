@@ -42,7 +42,7 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
             ext_sources,
             include_dirs=[pybind11.get_include()],
             language="c++",
-            cx_std=17,
+            cxx_std=17,
             extra_compile_args=extra_compile_args,
         ),
     ]
