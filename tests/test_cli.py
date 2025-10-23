@@ -195,7 +195,7 @@ def test_fps_from_smiles_invalid() -> None:
             ],
         )
         assert result.exit_code == 0
-        file = list(out_dir.glob("*.npy"))[0]
+        file = list(out_dir.glob("*fps*.npy"))[0]
         fps_raw = np.load(file).reshape(-1)
     nonzero = fps_raw.nonzero()[0].reshape(-1)
     actual = fps_raw[nonzero][:19].tolist()
