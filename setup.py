@@ -1,5 +1,6 @@
 import sys
 import os
+import platform
 from pathlib import Path
 import tomli
 
@@ -23,12 +24,15 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
     extra_compile_args = ["-O3", "-mpopcnt"]  # -O3 includes -ftree-vectorize
     if os.getenv("BITBIRCH_BUILD_X86"):
         extra_compile_args.extend(["-march=nocona", "-mtune=haswell"])
-    elif os.getenv("BITBIRCH_BUILD_AARCH64") or sys.platform == "darwin":
-        # For Apple, force these generic flags since "native" may not be supported on
-        # newer chips
+    elif os.getenv("BITBIRCH_BUILD_AARCH64"):
         extra_compile_args.extend(["-march=armv8-a", "-mtune=generic"])
     else:
-        extra_compile_args.extend(["-march=native", "-mtune=native"])
+        if sys.platform == "darwin" and platform.machine() in ["arm64", "aarch64"]:
+            # Force generic flags on macOS since newer chips may not be supported
+            # for native compilation
+            extra_compile_args.extend(["-march=arm64", "-mtune=generic"])
+        else:
+            extra_compile_args.extend(["-march=native", "-mtune=native"])
 
     if os.getenv("BITBIRCH_BUILD_CUSTOM_FLAGS"):
         # Override defaults and allow user to specify all flags, useful for attempting
