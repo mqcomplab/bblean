@@ -77,8 +77,9 @@ jobs:
 
       - name: install-repo-and-docs-deps
         run: |
+          sudo apt-get install -y pandoc
           python -m pip install --upgrade pip
-          pip install sphinx sphinx-design pydata-sphinx-theme nbsphinx pandoc
+          pip install sphinx sphinx-design pydata-sphinx-theme nbsphinx
           pip install --verbose --editable .
 
       - name: build-docs
