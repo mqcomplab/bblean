@@ -1685,8 +1685,9 @@ def _fps_from_smiles(
             new_num = len(fps)
             console.print(f"Generated {new_num} fingerprints")
             console.print(f"Skipped {prev_num - new_num} invalid smiles")
+            invalid_name = f"invalid-{unique_id}.npy"
             console.print(
-                f"Invalid smiles idxs written to {out_dir / 'invalid-{unique_id}.npy'}"
+                f"Invalid smiles idxs written to {str(out_dir / invalid_name)}"
             )
             np.save(out_dir / f"invalid-{unique_id}.npy", mask.nonzero()[0].reshape(-1))
 
