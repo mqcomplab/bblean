@@ -1,4 +1,3 @@
-import sys
 import os
 import platform
 from pathlib import Path
@@ -27,10 +26,8 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
     elif os.getenv("BITBIRCH_BUILD_AARCH64"):
         extra_compile_args.extend(["-march=armv8-a", "-mtune=generic"])
     else:
-        if sys.platform == "darwin" and platform.machine() in ["arm64", "aarch64"]:
-            # Force generic flags on macOS since newer chips may not be supported
-            # for native compilation
-            extra_compile_args.extend(["-march=arm64", "-mtune=generic"])
+        if platform.machine() in ["arm64", "aarch64"]:
+            extra_compile_args.extend(["-mcpu=native"])
         else:
             extra_compile_args.extend(["-march=native", "-mtune=native"])
 
