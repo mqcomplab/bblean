@@ -8,6 +8,11 @@ Tuning BitBIRCH parameters
 BitBIRCH has a few parameters parameters that can be adjusted to modify the quality of
 the resulting clustering.
 
+Before reading this section we recommend taking a look at the `quickstart notebook`_,
+so you are familiar with the basics.
+
+.. _`quickstart notebook`: notebooks/bitbirch_quickstart.ipynb
+
 Merge criterion and tolerance
 -----------------------------
 
@@ -72,6 +77,11 @@ A typical recommendation is to use a threshold in the range of **0.3-0.4** for E
 ECFP6, and a threshold in the range of **0.5-0.65** for ``rdkit`` fingerprints. Within
 these ranges the method is not very sensitive to the threshold value chosen, but
 choosing the wrong range for a given fingerprint kind may be **very disadvantageous**.
+
+If you want to automatically choose the best threshold for a given fingerprint value,
+follow the steps outlined in the `best practices notebook`_.
+
+.. _`best practices notebook`: notebooks/bitbirch_best_practices.ipynb
 
 Branching factor
 ----------------
