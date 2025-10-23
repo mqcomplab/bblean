@@ -87,7 +87,17 @@ def jt_stratified_sampling(
     n_samples: int,
     input_is_packed: bool = True,
     n_features: int | None = None,
+    seed: int | None = None,
 ) -> NDArray[np.int64]:
+    # Stratified sampling without replacement
+    if n_samples == 0:
+        return np.array([], dtype=np.int64)
+    if n_samples > len(fps):
+        raise ValueError("n_samples must be <= len(fps)")
+    if n_samples == len(fps):
+        return np.arange(len(fps))
+
+    rng = np.random.default_rng(seed)
     # Calculate the complementary similarities
     complementary_sims = jt_compl_isim(
         fps,
@@ -102,7 +112,7 @@ def jt_stratified_sampling(
     strata = np.array_split(sorted_indices, n_samples)
 
     # Randomly select one index from each stratum
-    return np.array([stratum[0] for stratum in strata if len(stratum) > 0])
+    return np.array([rng.choice(stratum) for stratum in strata if len(stratum) > 0])
 
 
 def _jt_isim_medoid_index(
