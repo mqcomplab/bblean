@@ -1596,8 +1596,8 @@ def _fps_from_smiles(
     out_dir = out_dir.resolve()
 
     # Pass 2: build the molecules
+    unique_id = format(random.getrandbits(32), "08x")
     if out_name is None:
-        unique_id = format(random.getrandbits(32), "08x")
         # Save the fingerprints as a NumPy array
         out_name = f"{'packed-' if pack else ''}fps-{dtype}-{kind}-{unique_id}"
     else:
@@ -1685,6 +1685,12 @@ def _fps_from_smiles(
             new_num = len(fps)
             console.print(f"Generated {new_num} fingerprints")
             console.print(f"Skipped {prev_num - new_num} invalid smiles")
+            invalid_name = f"invalid-{unique_id}.npy"
+            console.print(
+                f"Invalid smiles idxs written to {str(out_dir / invalid_name)}"
+            )
+            np.save(out_dir / f"invalid-{unique_id}.npy", mask.nonzero()[0].reshape(-1))
+
         np.save(
             out_dir / out_name,
             fps,

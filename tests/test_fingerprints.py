@@ -22,7 +22,8 @@ def test_fps_from_smiles() -> None:
 # NOTE: This is an acceptance test only
 def test_fps_from_smiles_invalid() -> None:
     smiles = load_smiles(Path(__file__).parent / "chembl-sample-bad.smi")
-    fps_raw = fps_from_smiles(smiles, skip_invalid=True, sanitize="minimal").reshape(-1)
+    fps_raw, _ = fps_from_smiles(smiles, skip_invalid=True, sanitize="minimal")
+    fps_raw = fps_raw.reshape(-1)
     nonzero = fps_raw.nonzero()[0].reshape(-1)
     actual = fps_raw[nonzero][:19].tolist()
     expect = [2, 4, 32, 1, 2, 128, 4, 128, 32, 32, 80, 128, 64, 128, 1, 16, 64, 4, 16]
