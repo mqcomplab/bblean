@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=768ea277"></script>
+    <script src="../_static/documentation_options.js?v=e5e03011"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -444,10 +444,10 @@ diffuse clusters</em>.</p>
 <p>The clustering results for a given threshold value will depend <strong>on the kind of
 fingerprint used</strong>. Sparse fingerprints (e. g. ECFPs) typically have lower pairwise
 Jaccard-Tanimoto similarities, which means you will want a low threshold to recover
-meaningful structure. Denser fingerprints (e. g. the default <a class="reference external" href="https://www.rdkit.org/docs/source/rdkit.html#module-rdkit" title="(in The RDKit v2025.03)"><code class="xref any docutils literal notranslate"><span class="pre">rdkit</span></code></a>
+meaningful structure. Denser fingerprints (e. g. the default <code class="xref any docutils literal notranslate"><span class="pre">rdkit</span></code>
 fingerprints) require larger threshold.</p>
 <p>A typical recommendation is to use a threshold in the range of <em>0.2-0.35</em> for ECFP4 or
-ECFP6, and a threshold in the range of <strong>0.5-0.65</strong> for <a class="reference external" href="https://www.rdkit.org/docs/source/rdkit.html#module-rdkit" title="(in The RDKit v2025.03)"><code class="xref any docutils literal notranslate"><span class="pre">rdkit</span></code></a> fingerprints. Within
+ECFP6, and a threshold in the range of <strong>0.5-0.65</strong> for <code class="xref any docutils literal notranslate"><span class="pre">rdkit</span></code> fingerprints. Within
 these ranges the method is not very sensitive to the threshold value chosen, but
 choosing the wrong range for a given fingerprint kind may be <strong>very disadvantageous</strong>.</p>
 </section>
