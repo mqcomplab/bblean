@@ -111,7 +111,7 @@ def jt_stratified_sampling(
     # Divide the sorted indices into n_samples strata
     strata = np.array_split(sorted_indices, n_samples)
 
-    # Randomly select one index from each stratum
+    # Randomly sample one idx from each stratum
     return np.array([rng.choice(stratum) for stratum in strata if len(stratum) > 0])
 
 
