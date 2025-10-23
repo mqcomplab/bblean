@@ -58,6 +58,7 @@ jobs:
           coverage report
 
       - name: upload-badge-artifact
+        if: runner.os == "Linux"
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
