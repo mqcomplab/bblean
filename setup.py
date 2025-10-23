@@ -20,16 +20,17 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
 
     # setuptools paths must be relative
     ext_sources = [str((Path(name) / "csrc" / "similarity.cpp"))]
-    extra_compile_args = ["-O3", "-mpopcnt"]  # -O3 includes -ftree-vectorize
+    extra_compile_args = ["-O3"]  # -O3 includes -ftree-vectorize
     if os.getenv("BITBIRCH_BUILD_X86"):
-        extra_compile_args.extend(["-march=nocona", "-mtune=haswell"])
+        extra_compile_args.extend(["-march=nocona", "-mtune=haswell", "-mpopcnt"])
     elif os.getenv("BITBIRCH_BUILD_AARCH64"):
+        # TODO: This is probably broken
         extra_compile_args.extend(["-march=armv8-a", "-mtune=generic"])
     else:
         if platform.machine() in ["arm64", "aarch64"]:
             extra_compile_args.extend(["-mcpu=native"])
         else:
-            extra_compile_args.extend(["-march=native", "-mtune=native"])
+            extra_compile_args.extend(["-march=native", "-mtune=native", "-mpopcnt"])
 
     if os.getenv("BITBIRCH_BUILD_CUSTOM_FLAGS"):
         # Override defaults and allow user to specify all flags, useful for attempting
