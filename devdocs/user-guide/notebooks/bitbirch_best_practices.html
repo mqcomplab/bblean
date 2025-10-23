@@ -1,0 +1,773 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>BitBIRCH best practices &#8212; BitBIRCH-Lean v0.0 (dev) Manual</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../../_static/style.css?v=a6cc4117" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=8520ccbe"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user-guide/notebooks/bitbirch_best_practices';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Linux Memory Setup" href="../linux_memory_setup.html" />
+    <link rel="prev" title="Tuning BitBIRCH parameters" href="../parameters.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0 (dev)" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-light-bw.svg" class="logo__image only-light" alt="BitBIRCH-Lean v0.0 (dev) Manual - Home"/>
+    <img src="../../_static/logo-dark-bw.svg" class="logo__image only-dark pst-js-only" alt="BitBIRCH-Lean v0.0 (dev) Manual - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installing.html">
+    Installing
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../user-guide.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api-reference.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../publications.html">
+    Publications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/mqcomplab/bblean" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../installing.html">
+    Installing
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../user-guide.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api-reference.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../publications.html">
+    Publications
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/mqcomplab/bblean" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="bitbirch_quickstart.html">Simple BitBIRCH workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Tuning BitBIRCH parameters</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">BitBIRCH best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../linux_memory_setup.html">Linux Memory Setup</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../user-guide.html" class="nav-link">User guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">BitBIRCH best practices</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="BitBIRCH-best-practices">
+<h1>BitBIRCH best practices<a class="headerlink" href="#BitBIRCH-best-practices" title="Link to this heading">#</a></h1>
+<p>This is a tutorial notebook that showcases a simple workflow of BitBIRCH clustering, incluiding threshold selection, and the refinement of singletons.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://doi.org/10.1039/D5DD00030K">BitBIRCH: efficient clustering of large molecular libraries</a></p></li>
+<li><p><a class="reference external" href="https://doi.org/10.1021/acs.jcim.5c00627">BitBIRCH Clustering Refinement Strategies</a></p></li>
+<li><p><em>BitBIRCH-Lean</em> <code class="docutils literal notranslate"><span class="pre">TO-BE-ADDED</span></code></p></li>
+</ul>
+<p>Please reach out to one of the following with any questions or concerns.</p>
+<ul class="simple">
+<li><p>Ramon Alain Miranda Quintana: <code class="docutils literal notranslate"><span class="pre">quintana</span> <span class="pre">At</span> <span class="pre">chem.ufl.edu</span></code></p></li>
+<li><p>Kenneth Lopez Perez: <code class="docutils literal notranslate"><span class="pre">klopezperez</span> <span class="pre">At</span> <span class="pre">chem.ufl.edu</span></code></p></li>
+<li><p>Ignacio Pickering: <code class="docutils literal notranslate"><span class="pre">ipickering</span> <span class="pre">At</span> <span class="pre">chem.ufl.edu</span></code></p></li>
+<li><p>Krisztina Zsigmond: <code class="docutils literal notranslate"><span class="pre">kzsigmond</span> <span class="pre">At</span> <span class="pre">ufl.edu</span></code></p></li>
+<li><p>Miroslav Lzicar: <code class="docutils literal notranslate"><span class="pre">miroslav.lzicar</span> <span class="pre">At</span> <span class="pre">deepmedchem.com</span></code></p></li>
+</ul>
+<section id="Set-Up">
+<h2>Set Up<a class="headerlink" href="#Set-Up" title="Link to this heading">#</a></h2>
+<p>First lets install the BitBirch-Lean package (if you have not already done so). To do this, run the following commands in your terminal:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/mqcomplab/bblean.git
+cd bblean
+pip install -v .
+</pre></div>
+</div>
+<p>Lets import the <code class="docutils literal notranslate"><span class="pre">bblean</span></code> package and some bblean modules, which we will use throughout this example.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import bblean
+import bblean.plotting as plotting
+import bblean.analysis as analysis
+import bblean.similarity as iSIM
+import numpy as np
+import matplotlib.pyplot as plt
+</pre></div>
+</div>
+</div>
+<p>Now let’s take some SMILES strings and compute molecular fingerprints:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>smiles = bblean.load_smiles(&quot;./chembl-33-natural-products-subset.smi&quot;, max_num=10000)
+
+# By default the fps created are of the &quot;ecfp4&quot; kind. Here we use &quot;rdkit&quot;
+fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind=&quot;ecfp4&quot;)
+print(f&quot;Shape: {fps.shape}, DType: {fps.dtype}&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">256</span><span style="font-weight: bold">)</span>, DType: uint8
+</pre></div>
+</div>
+<p>The most efficient way to store and manipulate fingerprints is using <em>packed</em> fingerprint arrays. Packed arrays save the features in a compressed representation. To convert between packed and unpacked fingerprints you can use <code class="docutils literal notranslate"><span class="pre">bblean.pack_fingerprints(fps)</span></code> and <code class="docutils literal notranslate"><span class="pre">bblean.unpack_fingerprints(fps)</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fps_unpacked = bblean.unpack_fingerprints(fps)
+print(f&quot;Shape unpacked: {fps_unpacked.shape}, DType unpacked: {fps_unpacked.dtype}&quot;)
+
+fps = bblean.pack_fingerprints(fps_unpacked)
+print(f&quot;Shape re-packed: {fps.shape}, DType re-packed: {fps.dtype}&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape unpacked: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2048</span><span style="font-weight: bold">)</span>, DType unpacked: uint8
+</pre></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape re-packed: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">256</span><span style="font-weight: bold">)</span>, DType re-packed: uint8
+</pre></div>
+</div>
+</section>
+<section id="Clustering-fingerprints">
+<h2>Clustering fingerprints<a class="headerlink" href="#Clustering-fingerprints" title="Link to this heading">#</a></h2>
+<p>First to define an optimal threshold we will take a look into the average similarity of the fingerprints we want to cluster. For this we will use the iSIM formalism which can calculate the average similarity with linear complexity.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>average_sim = iSIM.jt_isim_unpacked(fps_unpacked)
+print(f&quot;Average similarity: {average_sim:.4f}&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Average similarity: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.1312</span>
+</pre></div>
+</div>
+<p>Now, we will estimate the standard deviation of the similarities using a stratified sample from our data set.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Take a representative sample to estimate similarity std
+representative_samples = iSIM.jt_stratified_sampling(fps, n_samples=50)
+
+# Calculate similarity matrix for the representative samples and exclude self-similarities
+sim_matrix = iSIM.jt_sim_matrix_packed(fps[representative_samples])
+sim_matrix = sim_matrix[~np.eye(sim_matrix.shape[0], dtype=bool)]
+
+# Obtain mean and standard deviation
+_, std = np.mean(sim_matrix), np.std(sim_matrix)
+print(f&quot;Estimated similarity mean: {average_sim:.4f}, std: {std:.4f}&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Estimated similarity mean: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.1312</span>, std: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.0580</span>
+</pre></div>
+</div>
+<p>Now, we will do the initial clustering. We recommend using a threshold of the average plus 4 standard deviations.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Initialize the BitBirch tree. In general, diameter is the best merge criterion for
+optimal_threshold = average_sim + 4 * std
+bb_tree = bblean.BitBirch(branching_factor=50, threshold=optimal_threshold, merge_criterion=&quot;diameter&quot;)
+
+# Cluster the packed fingerprints (By default all bblean functions take packed
+# fingerprints)
+bb_tree.fit(fps)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+BitBirch(threshold=0.3631015470344815, branching_factor=50, merge_criterion=&#39;diameter&#39;)
+</pre></div></div>
+</div>
+<p>Lets analyze the results to check the number of singletons</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusters = bb_tree.get_cluster_mol_ids()
+print(&quot;Number of singletons&quot;, sum(1 for c in clusters if len(c) == 1))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of singletons <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">944</span>
+</pre></div>
+</div>
+<p>As we see, the number of singletons is quite high. To solve this we will recluster the tree. We will do this increasing the threshold by one standard deviation each iteration. Usually 5 iterations is enough to get rid of spurious singletons that are not really outliers.</p>
+<p>For this example we see a reduction of almost one third of the singletons, depending on your application, you may want to change the <code class="docutils literal notranslate"><span class="pre">extra_threshold</span></code> parameter, and the number of iterations.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.recluster_inplace(iterations=5, extra_threshold=std, shuffle=False, verbose=True)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Current number of clusters: 1971
+Current number of singletons: 944
+Current number of clusters: 1746
+Current number of singletons: 785
+Current number of clusters: 1679
+Current number of singletons: 729
+Current number of clusters: 1658
+Current number of singletons: 704
+Current number of clusters: 1656
+Current number of singletons: 702
+Final number of clusters: 1652
+Final number of singletons: 697
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+BitBirch(threshold=0.6530114120345158, branching_factor=50, merge_criterion=&#39;diameter&#39;)
+</pre></div></div>
+</div>
+<p>We see that the number of singletons significantly decreased</p>
+</section>
+<section id="Further-analysis-and-Visualization">
+<h2>Further analysis and Visualization<a class="headerlink" href="#Further-analysis-and-Visualization" title="Link to this heading">#</a></h2>
+<p>Lets inspect some features of the generated clusters:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># First we run a cluster analysis on the resulting ids
+clusters = bb_tree.get_cluster_mol_ids()
+ca = analysis.cluster_analysis(clusters, fps, smiles)
+
+# Afterwards we can use the utility functions on the bblean.plotting module
+plotting.summary_plot(ca, title=&quot;Diameter&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/user-guide_notebooks_bitbirch_best_practices_18_0.png" src="../../_images/user-guide_notebooks_bitbirch_best_practices_18_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Total clusters
+print(&quot;Number of clusters: &quot;, len(clusters))
+
+# Clusters with more than 10 molecules
+large_clusters = [c for c in clusters if len(c) &gt; 10]
+print(&quot;Number of clusters with more than 10 molecules: &quot;, len(large_clusters))
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1652</span>
+</pre></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters with more than <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10</span> molecules:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">227</span>
+</pre></div>
+</div>
+<p>We can visually inspect an individual cluster by calling <code class="docutils literal notranslate"><span class="pre">plotting.dump_mol_images</span></code>. By default this generates multiple images with 30 molecules each.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.dump_mol_images(smiles, clusters, cluster_idx=0)
+</pre></div>
+</div>
+</div>
+<p>We can also visualize the clusters using a t-SNE plot with <code class="docutils literal notranslate"><span class="pre">plotting.tsne_plot</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.tsne_plot(ca, title=&quot;Refined&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/user-guide_notebooks_bitbirch_best_practices_23_0.png" src="../../_images/user-guide_notebooks_bitbirch_best_practices_23_0.png" />
+</div>
+</div>
+</section>
+<section id="Final-cluster-assignments">
+<h2>Final cluster assignments<a class="headerlink" href="#Final-cluster-assignments" title="Link to this heading">#</a></h2>
+<p>Once we are happy with the clustering results, we can save the final cluster assignments. to a <code class="docutils literal notranslate"><span class="pre">*.csv</span></code> file.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.dump_assignments(&quot;smiles-assignments.csv&quot;, smiles)
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../parameters.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Tuning BitBIRCH parameters</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../linux_memory_setup.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Linux Memory Setup</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025  The Miranda-Quintana Lab and other BitBirch developers.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
