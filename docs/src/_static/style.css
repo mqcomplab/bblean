@@ -20,3 +20,10 @@ div.sphx-glr-download-link-note {
 html[data-theme=dark] .sd-card img[src*='.svg'] {
   filter: invert(0.82) brightness(0.8) contrast(1.2);
 }
+
+html[data-theme=dark] .bd-content .nboutput .output_area .widget-subarea, html[data-theme=dark] .bd-content .nboutput .output_area.rendered_html:not(:has(table.dataframe)) {
+    background-color: var(--pst-color-background);
+    border-radius: .25rem;
+    color: var(--pst-color-on-background);
+    padding: .5rem;
+}
