@@ -12,4 +12,5 @@ The bblean *user guide* is a work in progress. Expect updates soon!
 
    examples/bitbirch_quickstart.ipynb
    user-guide/parameters.rst
+   examples/bitbirch_best_practices.ipynb
    user-guide/linux_memory_setup.rst
