@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=ddaa0757"></script>
+    <script src="../../_static/documentation_options.js?v=896ad4dd"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -368,7 +368,8 @@
 <span class="c1">#   https://doi.org/10.1021/acs.jcim.5c00627</span>
 <span class="c1"># - BitBIRCH-Lean: TO-BE-ADDED</span>
 <span class="c1">#</span>
-<span class="c1"># Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, including:</span>
+<span class="c1"># Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, comprised</span>
+<span class="c1"># exclusively by:</span>
 <span class="c1"># - Ramon Alain Miranda Quintana &lt;ramirandaq@gmail.com&gt;, &lt;quintana@chem.ufl.edu&gt;</span>
 <span class="c1"># - Krisztina Zsigmond &lt;kzsigmond@ufl.edu&gt;</span>
 <span class="c1"># - Ignacio Pickering &lt;ipickering@chem.ufl.edu&gt;</span>
@@ -1391,24 +1392,24 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Refine singleton clusters by re-inserting them into the tree</span>
 
-<span class="sd">            Parameters</span>
-<span class="sd">            ----------</span>
-<span class="sd">            extra_threshold : float, default=0.0</span>
-<span class="sd">                The amount to increase the current threshold in each iteration.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        extra_threshold : float, default=0.0</span>
+<span class="sd">            The amount to increase the current threshold in each iteration.</span>
 
-<span class="sd">            iterations : int, default=1</span>
-<span class="sd">                The maximum number of refinement iterations to perform.</span>
+<span class="sd">        iterations : int, default=1</span>
+<span class="sd">            The maximum number of refinement iterations to perform.</span>
 
-<span class="sd">            Returns</span>
-<span class="sd">            -------</span>
-<span class="sd">            self : BitBirch</span>
-<span class="sd">                The fitted estimator with refined clusters.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self : BitBirch</span>
+<span class="sd">            The fitted estimator with refined clusters.</span>
 
-<span class="sd">            Raises</span>
-<span class="sd">            ------</span>
-<span class="sd">            ValueError</span>
-<span class="sd">                If the model has not been fitted.</span>
-<span class="sd">            &quot;&quot;&quot;</span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the model has not been fitted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model has not been fitted yet.&quot;</span><span class="p">)</span>
 
