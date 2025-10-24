@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=1d76244e"></script>
+    <script src="../../_static/documentation_options.js?v=f5c623c8"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -452,37 +452,6 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">jt_stratified_sampling</span><span class="p">(</span>
-    <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
-    <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]:</span>
-    <span class="c1"># Stratified sampling without replacement</span>
-    <span class="k">if</span> <span class="n">n_samples</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">n_samples</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_samples must be &lt;= len(fps)&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">n_samples</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">))</span>
-
-    <span class="c1"># Calculate the complementary similarities</span>
-    <span class="n">complementary_sims</span> <span class="o">=</span> <span class="n">jt_compl_isim</span><span class="p">(</span>
-        <span class="n">fps</span><span class="p">,</span>
-        <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span>
-        <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Get the indices that would sort the complementary similarities</span>
-    <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">complementary_sims</span><span class="p">)</span>
-
-    <span class="c1"># Divide the sorted indices into n_samples strata</span>
-    <span class="n">strata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">sorted_indices</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
-
-    <span class="c1"># Randomly sample one idx from each stratum</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">stratum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">stratum</span> <span class="ow">in</span> <span class="n">strata</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stratum</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">])</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">_jt_isim_medoid_index</span><span class="p">(</span>
     <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -585,42 +554,31 @@
 
 
 
-<div class="viewcode-block" id="jt_sim_packed">
-<a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.jt_sim_packed">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">jt_sim_packed</span><span class="p">(</span>
-    <span class="n">arr</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
-    <span class="n">vec</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_jt_sim_arr_vec_packed</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Tanimoto similarity between a matrix of packed fps and a single packed fp&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_jt_sim_packed_precalc_cardinalities</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">arr</span><span class="p">))</span></div>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Tanimoto similarity between packed fingerprints</span>
 
-
-
-<div class="viewcode-block" id="jt_sim_matrix_packed">
-<a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.jt_sim_matrix_packed">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">jt_sim_matrix_packed</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Tanimoto similarity matrix between all pairs of packed fps in arr&quot;&quot;&quot;</span>
-    <span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
-            <span class="c1"># Set the similarities for each row</span>
-            <span class="n">matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:]</span> <span class="o">=</span> <span class="n">jt_sim_packed</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-            <span class="c1"># Set the similarities for each column (symmetric)</span>
-            <span class="n">matrix</span><span class="p">[</span><span class="n">j</span><span class="p">:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:]</span>
-    <span class="k">return</span> <span class="n">matrix</span></div>
-
+<span class="sd">    Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or one is</span>
+<span class="sd">    an vector (F,) and the other an array of shape (N, F) (Numpy array of shape (N,) is</span>
+<span class="sd">    returned).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected a 2D array and a 1D vector as inputs&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_jt_sim_packed_precalc_cardinalities</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_jt_sim_packed_precalc_cardinalities</span><span class="p">(</span>
-    <span class="n">arr</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
-    <span class="n">vec</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
     <span class="n">cardinalities</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
     <span class="c1"># _cardinalities must be the result of calling _popcount(arr)</span>
 
     <span class="c1"># Maximum value in the denominator sum is the 2 * n_features (which is typically</span>
     <span class="c1"># uint16, but we use uint32 for safety)</span>
-    <span class="n">intersection</span> <span class="o">=</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">bitwise_and</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">vec</span><span class="p">))</span>
+    <span class="n">intersection</span> <span class="o">=</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">bitwise_and</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
 
     <span class="c1"># Return value requires an out-of-place operation since it casts uints to f64</span>
     <span class="c1">#</span>
@@ -629,7 +587,7 @@
     <span class="c1">#</span>
     <span class="c1"># In these cases the fps are equal so the similarity *should be 1*, so we</span>
     <span class="c1"># clamp the denominator, which is A | B (zero only if A &amp; B is zero too).</span>
-    <span class="k">return</span> <span class="n">intersection</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">cardinalities</span> <span class="o">+</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">vec</span><span class="p">)</span> <span class="o">-</span> <span class="n">intersection</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">intersection</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">cardinalities</span> <span class="o">+</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="n">intersection</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">jt_isim_unpacked</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>

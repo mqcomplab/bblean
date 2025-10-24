@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=1d76244e"></script>
+    <script src="../_static/documentation_options.js?v=f5c623c8"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -396,7 +396,7 @@
 <td><p>Average Tanimoto, using iSIM</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_sim_packed" title="bblean.similarity.jt_sim_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_sim_packed</span></code></a></p></td>
-<td><p>Tanimoto similarity between a matrix of packed fps and a single packed fp</p></td>
+<td><p>Tanimoto similarity between packed fingerprints</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_most_dissimilar_packed" title="bblean.similarity.jt_most_dissimilar_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_most_dissimilar_packed</span></code></a></p></td>
 <td><p>Finds two fps in a packed fp array that are the most Tanimoto-dissimilar</p></td>
@@ -431,8 +431,8 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_compl_isim" title="bblean.similarity.jt_compl_isim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_compl_isim</span></code></a></p></td>
 <td><p>Get all complementary (Tanimoto) similarities of a set of fps, using iSIM</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_stratified_sampling</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_stratified_sampling" title="bblean.similarity.jt_stratified_sampling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_stratified_sampling</span></code></a></p></td>
+<td><p>Sample from a set of fingerprints according to their complementary similarity</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#bblean.similarity.jt_sim_matrix_packed" title="bblean.similarity.jt_sim_matrix_packed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_sim_matrix_packed</span></code></a></p></td>
 <td><p>Tanimoto similarity matrix between all pairs of packed fps in arr</p></td>
@@ -498,8 +498,11 @@ not a multiple of 8</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bblean.similarity.jt_sim_packed">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_sim_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_sim_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_sim_packed" title="Link to this definition">#</a></dt>
-<dd><p>Tanimoto similarity between a matrix of packed fps and a single packed fp</p>
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_sim_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_sim_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_sim_packed" title="Link to this definition">#</a></dt>
+<dd><p>Tanimoto similarity between packed fingerprints</p>
+<p>Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or
+one is an vector (F,) and the other an array of shape (N, F) (Numpy array of
+shape (N,) is returned).</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -631,8 +634,25 @@ Raises ValueError for arrays of size 0</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="bblean.similarity.jt_stratified_sampling">
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_stratified_sampling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_stratified_sampling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_stratified_sampling" title="Link to this definition">#</a></dt>
+<dd><p>Sample from a set of fingerprints according to their complementary similarity</p>
+<p>Given a group of fingerprints, calculate all complementary similarities, order, and
+sample the first element from consecutive groups of length <code class="docutils literal notranslate"><span class="pre">num_fps</span> <span class="pre">//</span> <span class="pre">n_samples</span> <span class="pre">+</span>
+<span class="pre">1</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is not true statistical stratified sampling, it is not random, and the
+strata are not homogeneous. It is meant as a reliable, deterministic method to
+obtain a representative sample from a set of fingerprints.</p>
+</div>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="bblean.similarity.jt_sim_matrix_packed">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_sim_matrix_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#jt_sim_matrix_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_sim_matrix_packed" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">jt_sim_matrix_packed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/similarity.html#jt_sim_matrix_packed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.jt_sim_matrix_packed" title="Link to this definition">#</a></dt>
 <dd><p>Tanimoto similarity matrix between all pairs of packed fps in arr</p>
 <dl class="field-list simple">
 </dl>
@@ -701,6 +721,7 @@ Raises ValueError for arrays of size 0</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.centroid"><code class="docutils literal notranslate"><span class="pre">centroid()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_isim_medoid"><code class="docutils literal notranslate"><span class="pre">jt_isim_medoid()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_compl_isim"><code class="docutils literal notranslate"><span class="pre">jt_compl_isim()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_stratified_sampling"><code class="docutils literal notranslate"><span class="pre">jt_stratified_sampling()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.similarity.jt_sim_matrix_packed"><code class="docutils literal notranslate"><span class="pre">jt_sim_matrix_packed()</span></code></a></li>
 </ul>
   </nav></div>
