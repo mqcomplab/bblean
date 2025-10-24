@@ -7,7 +7,8 @@
 #   https://doi.org/10.1021/acs.jcim.5c00627
 # - BitBIRCH-Lean: TO-BE-ADDED
 #
-# Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, including:
+# Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, comprised
+# exclusively by:
 # - Ramon Alain Miranda Quintana <ramirandaq@gmail.com>, <quintana@chem.ufl.edu>
 # - Krisztina Zsigmond <kzsigmond@ufl.edu>
 # - Ignacio Pickering <ipickering@chem.ufl.edu>
@@ -999,24 +1000,24 @@ class BitBirch:
     ) -> tpx.Self:
         r"""Refine singleton clusters by re-inserting them into the tree
 
-            Parameters
-            ----------
-            extra_threshold : float, default=0.0
-                The amount to increase the current threshold in each iteration.
+        Parameters
+        ----------
+        extra_threshold : float, default=0.0
+            The amount to increase the current threshold in each iteration.
 
-            iterations : int, default=1
-                The maximum number of refinement iterations to perform.
+        iterations : int, default=1
+            The maximum number of refinement iterations to perform.
 
-            Returns
-            -------
-            self : BitBirch
-                The fitted estimator with refined clusters.
+        Returns
+        -------
+        self : BitBirch
+            The fitted estimator with refined clusters.
 
-            Raises
-            ------
-            ValueError
-                If the model has not been fitted.
-            """
+        Raises
+        ------
+        ValueError
+            If the model has not been fitted.
+        """
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
 
