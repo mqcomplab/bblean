@@ -1000,24 +1000,24 @@ class BitBirch:
     ) -> tpx.Self:
         r"""Refine singleton clusters by re-inserting them into the tree
 
-            Parameters
-            ----------
-            extra_threshold : float, default=0.0
-                The amount to increase the current threshold in each iteration.
+        Parameters
+        ----------
+        extra_threshold : float, default=0.0
+            The amount to increase the current threshold in each iteration.
 
-            iterations : int, default=1
-                The maximum number of refinement iterations to perform.
+        iterations : int, default=1
+            The maximum number of refinement iterations to perform.
 
-            Returns
-            -------
-            self : BitBirch
-                The fitted estimator with refined clusters.
+        Returns
+        -------
+        self : BitBirch
+            The fitted estimator with refined clusters.
 
-            Raises
-            ------
-            ValueError
-                If the model has not been fitted.
-            """
+        Raises
+        ------
+        ValueError
+            If the model has not been fitted.
+        """
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
 
