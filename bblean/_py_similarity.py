@@ -82,37 +82,6 @@ def jt_compl_isim(
     return np.array(comp_sims, dtype=np.float64)
 
 
-def jt_stratified_sampling(
-    fps: NDArray[np.uint8],
-    n_samples: int,
-    input_is_packed: bool = True,
-    n_features: int | None = None,
-) -> NDArray[np.int64]:
-    # Stratified sampling without replacement
-    if n_samples == 0:
-        return np.array([], dtype=np.int64)
-    if n_samples > len(fps):
-        raise ValueError("n_samples must be <= len(fps)")
-    if n_samples == len(fps):
-        return np.arange(len(fps))
-
-    # Calculate the complementary similarities
-    complementary_sims = jt_compl_isim(
-        fps,
-        input_is_packed=input_is_packed,
-        n_features=n_features,
-    )
-
-    # Get the indices that would sort the complementary similarities
-    sorted_indices = np.argsort(complementary_sims)
-
-    # Divide the sorted indices into n_samples strata
-    strata = np.array_split(sorted_indices, n_samples)
-
-    # Randomly sample one idx from each stratum
-    return np.array([stratum[0] for stratum in strata if len(stratum) > 0])
-
-
 def _jt_isim_medoid_index(
     fps: NDArray[np.uint8], input_is_packed: bool = True, n_features: int | None = None
 ) -> int:
@@ -209,36 +178,31 @@ def jt_most_dissimilar_packed(
     return fp_1, fp_2, sims_fp_1, sims_fp_2
 
 
-def jt_sim_packed(
-    arr: NDArray[np.uint8],
-    vec: NDArray[np.uint8],
+def _jt_sim_arr_vec_packed(
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
 ) -> NDArray[np.float64]:
-    r"""Tanimoto similarity between a matrix of packed fps and a single packed fp"""
-    return _jt_sim_packed_precalc_cardinalities(arr, vec, _popcount(arr))
+    r"""Tanimoto similarity between packed fingerprints
 
-
-def jt_sim_matrix_packed(arr: NDArray[np.uint8]) -> NDArray[np.float64]:
-    r"""Tanimoto similarity matrix between all pairs of packed fps in arr"""
-    matrix = np.zeros((len(arr), len(arr)), dtype=np.float64)
-    for i in range(len(arr)):
-        for j in range(i, len(arr)):
-            # Set the similarities for each row
-            matrix[i, j:] = jt_sim_packed(arr[i], arr[j])
-            # Set the similarities for each column (symmetric)
-            matrix[j:, i] = matrix[i, j:]
-    return matrix
+    Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or one is
+    an vector (F,) and the other an array of shape (N, F) (Numpy array of shape (N,) is
+    returned).
+    """
+    if x.ndim != 2 or y.ndim != 1:
+        raise ValueError("Expected a 2D array and a 1D vector as inputs")
+    return _jt_sim_packed_precalc_cardinalities(x, y, _popcount(x))
 
 
 def _jt_sim_packed_precalc_cardinalities(
-    arr: NDArray[np.uint8],
-    vec: NDArray[np.uint8],
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
     cardinalities: NDArray[np.integer],
 ) -> NDArray[np.float64]:
     # _cardinalities must be the result of calling _popcount(arr)
 
     # Maximum value in the denominator sum is the 2 * n_features (which is typically
     # uint16, but we use uint32 for safety)
-    intersection = _popcount(np.bitwise_and(arr, vec))
+    intersection = _popcount(np.bitwise_and(x, y))
 
     # Return value requires an out-of-place operation since it casts uints to f64
     #
@@ -247,7 +211,7 @@ def _jt_sim_packed_precalc_cardinalities(
     #
     # In these cases the fps are equal so the similarity *should be 1*, so we
     # clamp the denominator, which is A | B (zero only if A & B is zero too).
-    return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
+    return intersection / np.maximum(cardinalities + _popcount(y) - intersection, 1)
 
 
 def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:

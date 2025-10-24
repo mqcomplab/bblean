@@ -39,8 +39,6 @@ from bblean._py_similarity import (
     centroid,
     jt_compl_isim,
     jt_isim_medoid,
-    jt_sim_matrix_packed,
-    jt_stratified_sampling,
 )
 
 # jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for
@@ -51,14 +49,14 @@ if os.getenv("BITBIRCH_NO_EXTENSIONS"):
         jt_isim_from_sum,
         jt_isim_unpacked,
         jt_isim_packed,
-        jt_sim_packed,
+        _jt_sim_arr_vec_packed,
         jt_most_dissimilar_packed,
     )
 else:
     try:
         from bblean._cpp_similarity import (  # type: ignore
             jt_isim_from_sum,
-            jt_sim_packed,
+            _jt_sim_arr_vec_packed,
             jt_isim_unpacked_u8,
             jt_isim_packed_u8,
             jt_most_dissimilar_packed,
@@ -95,7 +93,7 @@ else:
             jt_isim_from_sum,
             jt_isim_unpacked,
             jt_isim_packed,
-            jt_sim_packed,
+            _jt_sim_arr_vec_packed,
             jt_most_dissimilar_packed,
         )
 
@@ -214,3 +212,93 @@ def jt_isim_diameter_from_sum(ls: NDArray[np.integer], n: int) -> float:
 
     Equivalent to ``1 - jt_isim_from_sum(ls, n)``"""
     return 1 - jt_isim_from_sum(ls, n)
+
+
+# General wrapper that works both in C++ and python
+def jt_sim_packed(
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
+) -> NDArray[np.float64]:
+    r"""Tanimoto similarity between packed fingerprints
+
+    Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or
+    one is an vector (F,) and the other an array of shape (N, F) (Numpy array of
+    shape (N,) is returned).
+    """
+    if x.ndim == 1 and y.ndim == 1:
+        return _jt_sim_arr_vec_packed(x.reshape(1, -1), y)[0]
+    if x.ndim == 2:
+        return _jt_sim_arr_vec_packed(x, y)
+    if y.ndim == 2:
+        return _jt_sim_arr_vec_packed(y, x)
+    raise ValueError(
+        "Expected either two 1D vectors, or one 1D vector and one 2D array"
+    )
+
+
+def jt_sim_matrix_packed(arr: NDArray[np.uint8]) -> NDArray[np.float64]:
+    r"""Tanimoto similarity matrix between all pairs of packed fps in arr"""
+    matrix = np.ones((len(arr), len(arr)), dtype=np.float64)
+    for i in range(len(arr)):
+        # Set the similarities for each row
+        matrix[i, i + 1 :] = jt_sim_packed(arr[i], arr[i + 1 :])
+        # Set the similarities for each column (symmetric)
+        matrix[i + 1 :, i] = matrix[i, i + 1 :]
+    return matrix
+
+
+def estimate_jt_std(
+    fps: NDArray[np.uint8],
+    n_samples: int | None = None,
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+) -> float:
+    r"""Estimate std of tanimoto sim using a deterministic sample"""
+    num_fps = len(fps)
+    if n_samples is None:
+        n_samples = max(num_fps // 1000, 50)
+    sample_idxs = jt_stratified_sampling(fps, n_samples, input_is_packed, n_features)
+
+    # Work with sample from now on
+    fps = fps[sample_idxs]
+    num_fps = len(fps)
+    pairs = np.empty(num_fps * (num_fps - 1) // 2, dtype=np.float64)
+    # NOTE: Calc upper triangular part of pairwise matrix only, slightly more efficient,
+    # but difference is negligible in tests
+    offset = 0
+    for i in range(len(fps)):
+        num = num_fps - i - 1
+        pairs[offset : offset + num] = jt_sim_packed(fps[i], fps[i + 1 :])
+        offset += num
+    return np.std(pairs).item()
+
+
+def jt_stratified_sampling(
+    fps: NDArray[np.uint8],
+    n_samples: int,
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+) -> NDArray[np.int64]:
+    r"""Sample from a set of fingerprints according to their complementary similarity
+
+    Given a group of fingerprints, calculate all complementary similarities, order, and
+    sample the first element from consecutive groups of length ``num_fps // n_samples +
+    1``.
+
+    ..  note ::
+
+        This is not true statistical stratified sampling, it is not random, and the
+        strata are not homogeneous. It is meant as a reliable, deterministic method to
+        obtain a representative sample from a set of fingerprints.
+    """
+    # Stratified sampling without replacement
+    if n_samples == 0:
+        return np.array([], dtype=np.int64)
+    if n_samples > len(fps):
+        raise ValueError("n_samples must be <= len(fps)")
+    # Get the indices that would sort the complementary similarities
+    sorted_indices = np.argsort(jt_compl_isim(fps, input_is_packed, n_features))
+    # Split into n_samples strata
+    strata = np.array_split(sorted_indices, n_samples)
+    # Get first index of each strata
+    return np.array([s[0] for s in strata])

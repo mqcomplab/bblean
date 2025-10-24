@@ -67,8 +67,6 @@ def jt_isim_chi(
         total_linear_sum = sum(np.sum(c, axis=0) for c in unpacked_clusts)
         all_fps_central = centroid_from_sum(total_linear_sum, all_fps_num)
 
-    # TODO: Remove reshapes once jt_sim_packed is generic over shapes
-    all_fps_central = all_fps_central.reshape(1, -1)
     if isinstance(centrals, str):
         if not centrals == "centroid":
             raise NotImplementedError("Currently only 'centroid' implemented for CHI")
@@ -149,8 +147,6 @@ def jt_dbi(
             )
         numerator = 0.0
         for i, central in enumerate(centrals):
-            # TODO: Remove reshape once jt_sim_packed is generic over shapes
-            central = central.reshape(1, -1)
             max_d = 0.0
             for j, other_central in enumerate(centrals):
                 if i == j:

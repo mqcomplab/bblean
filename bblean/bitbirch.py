@@ -68,7 +68,7 @@ from bblean.fingerprints import (
     _get_fingerprints_from_file_seq,
 )
 from bblean.similarity import (
-    jt_sim_packed,
+    _jt_sim_arr_vec_packed,
     jt_most_dissimilar_packed,
     centroid_from_sum,
 )
@@ -311,7 +311,9 @@ class _BFNode:
             return False
 
         # Within this node, find the closest subcluster to the one to-be-inserted
-        sim_matrix = jt_sim_packed(self.packed_centroids, subcluster.packed_centroid)
+        sim_matrix = _jt_sim_arr_vec_packed(
+            self.packed_centroids, subcluster.packed_centroid
+        )
         closest_idx = np.argmax(sim_matrix)
         closest_subcluster = self._subclusters[closest_idx]
         closest_node = closest_subcluster.child

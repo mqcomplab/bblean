@@ -18,6 +18,7 @@ except ImportError:
     CSIM_AVAIL = False
 from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
 from bblean.similarity import centroid_from_sum, centroid as centroid_from_fps
+import bblean.similarity as gensim
 
 
 def test_jt_most_dissimilar_packed() -> None:
@@ -151,11 +152,22 @@ def test_jt_sim_packed() -> None:
         ],
         dtype=np.float64,
     )
-    out = pysim.jt_sim_packed(fps, first)
+    out = pysim._jt_sim_arr_vec_packed(fps, first)
     assert np.isclose(out, expect).all()
+
     if CSIM_AVAIL:
-        out = csim.jt_sim_packed(fps, first)
+        out = csim._jt_sim_arr_vec_packed(fps, first)
         assert np.isclose(out, expect).all()
+
+    # General
+    out = gensim.jt_sim_packed(fps, first)
+    assert np.isclose(out, expect).all()
+
+    out = gensim.jt_sim_packed(first, fps)
+    assert np.isclose(out, expect).all()
+
+    out = gensim.jt_sim_packed(fps[0], first)
+    assert out == expect[0]
 
 
 def test_jt_isim_from_sum() -> None:
