@@ -23,7 +23,8 @@ If you find this software useful please cite the following articles:
     https://doi.org/10.1039/D5DD00030K
 - *BitBIRCH Clustering Refinement Strategies*:
     https://doi.org/10.1021/acs.jcim.5c00627
-- *BitBIRCH-Lean*: TO-BE-ADDED
+- *BitBIRCH-Lean*:
+    (preprint) https://www.biorxiv.org/content/10.1101/2025.10.22.684015v1
 
 **NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
 we hit version 1.0
