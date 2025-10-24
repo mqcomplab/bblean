@@ -23,7 +23,8 @@ If you find this software useful please cite the following articles:
     https://doi.org/10.1039/D5DD00030K
 - *BitBIRCH Clustering Refinement Strategies*:
     https://doi.org/10.1021/acs.jcim.5c00627
-- *BitBIRCH-Lean*: TO-BE-ADDED
+- *BitBIRCH-Lean*:
+    (preprint) https://www.biorxiv.org/content/10.1101/2025.10.22.684015v1
 
 **NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
 we hit version 1.0
@@ -65,7 +66,7 @@ and tag it with `C++`.
 ## CLI Quickstart
 
 <div align="center">
-<img src="bblean-demo.gif" width="600" />
+<img src="bblean-demo-v2.gif" width="600" />
 </div>
 
 BitBIRCH-Lean provides a convenient CLI interface, `bb`. The CLI can be used to convert

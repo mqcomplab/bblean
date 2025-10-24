@@ -33,7 +33,7 @@ If you find this software useful please cite the following articles:
     [yellow]•[/yellow] [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
         https://doi.org/10.1021/acs.jcim.5c00627
     [yellow]•[/yellow] [italic]BitBIRCH-Lean[/italic]:
-        TO-BE-ADDED"""  # noqa
+        (preprint) https://www.biorxiv.org/content/10.1101/2025.10.22.684015v1"""  # noqa
         )
 
     def print_peak_mem(self, out_dir: Path, indent: bool = True) -> None:
