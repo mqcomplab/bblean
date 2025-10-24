@@ -12,7 +12,7 @@ If you find this software useful please cite the following articles:
 - *BitBIRCH Clustering Refinement Strategies*:
     https://doi.org/10.1021/acs.jcim.5c00627
 - *BitBIRCH-Lean*:
-    COMING SOON
+    (preprint) https://www.biorxiv.org/content/10.1101/2025.10.22.684015v1
 
 BitBIRCH-Lean relies on the ``iSIM`` "instant average similarity" framework. The
 relevant iSIM publications are:
