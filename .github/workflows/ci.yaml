@@ -33,7 +33,10 @@ jobs:
         run: flake8 .
 
   tests:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
@@ -55,6 +58,7 @@ jobs:
           coverage report
 
       - name: upload-badge-artifact
+        if: ${{ runner.os == 'Linux' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -73,8 +77,9 @@ jobs:
 
       - name: install-repo-and-docs-deps
         run: |
+          sudo apt-get install -y pandoc
           python -m pip install --upgrade pip
-          pip install sphinx sphinx-design pydata-sphinx-theme
+          pip install sphinx sphinx-design pydata-sphinx-theme nbsphinx
           pip install --verbose --editable .
 
       - name: build-docs

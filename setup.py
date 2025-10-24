@@ -1,4 +1,5 @@
 import os
+import platform
 from pathlib import Path
 import tomli
 
@@ -19,13 +20,17 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
 
     # setuptools paths must be relative
     ext_sources = [str((Path(name) / "csrc" / "similarity.cpp"))]
-    extra_compile_args = ["-O3", "-mpopcnt"]  # -O3 includes -ftree-vectorize
+    extra_compile_args = ["-O3"]  # -O3 includes -ftree-vectorize
     if os.getenv("BITBIRCH_BUILD_X86"):
-        extra_compile_args.extend(["-march=nocona", "-mtune=haswell"])
+        extra_compile_args.extend(["-march=nocona", "-mtune=haswell", "-mpopcnt"])
     elif os.getenv("BITBIRCH_BUILD_AARCH64"):
+        # TODO: This is probably broken
         extra_compile_args.extend(["-march=armv8-a", "-mtune=generic"])
     else:
-        extra_compile_args.extend(["-march=native", "-mtune=native"])
+        if platform.machine() in ["arm64", "aarch64"]:
+            extra_compile_args.extend(["-mcpu=native"])
+        else:
+            extra_compile_args.extend(["-march=native", "-mtune=native", "-mpopcnt"])
 
     if os.getenv("BITBIRCH_BUILD_CUSTOM_FLAGS"):
         # Override defaults and allow user to specify all flags, useful for attempting
@@ -42,7 +47,7 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
             ext_sources,
             include_dirs=[pybind11.get_include()],
             language="c++",
-            cx_std=17,
+            cxx_std=17,
             extra_compile_args=extra_compile_args,
         ),
     ]

@@ -76,14 +76,41 @@ def jt_compl_isim(
         warnings.warn(msg, RuntimeWarning, stacklevel=2)
         return np.full(len(fps), fill_value=np.nan, dtype=np.float64)
     linear_sum = np.sum(fps, axis=0)
-    compl_ls = linear_sum - fps  # Holds all complementary linear sums
-    sum_kqs = np.sum(compl_ls, axis=1)
-    mask = sum_kqs == 0
-    sum_kqs_sq = (compl_ls**2).sum(axis=1)
-    a = (sum_kqs_sq - sum_kqs) / 2
-    # isim of fingerprints that are all zeros should be 1 (they are all equal)
-    a[mask] = 1
-    return a / (a + n_objects * sum_kqs - sum_kqs_sq)
+    n_objects = len(fps) - 1
+    comp_sims = [jt_isim_from_sum(linear_sum - fp, n_objects) for fp in fps]
+
+    return np.array(comp_sims, dtype=np.float64)
+
+
+def jt_stratified_sampling(
+    fps: NDArray[np.uint8],
+    n_samples: int,
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+) -> NDArray[np.int64]:
+    # Stratified sampling without replacement
+    if n_samples == 0:
+        return np.array([], dtype=np.int64)
+    if n_samples > len(fps):
+        raise ValueError("n_samples must be <= len(fps)")
+    if n_samples == len(fps):
+        return np.arange(len(fps))
+
+    # Calculate the complementary similarities
+    complementary_sims = jt_compl_isim(
+        fps,
+        input_is_packed=input_is_packed,
+        n_features=n_features,
+    )
+
+    # Get the indices that would sort the complementary similarities
+    sorted_indices = np.argsort(complementary_sims)
+
+    # Divide the sorted indices into n_samples strata
+    strata = np.array_split(sorted_indices, n_samples)
+
+    # Randomly sample one idx from each stratum
+    return np.array([stratum[0] for stratum in strata if len(stratum) > 0])
 
 
 def _jt_isim_medoid_index(
@@ -195,6 +222,18 @@ def _jt_sim_arr_vec_packed(
     if x.ndim != 2 or y.ndim != 1:
         raise ValueError("Expected a 2D array and a 1D vector as inputs")
     return _jt_sim_packed_precalc_cardinalities(x, y, _popcount(x))
+
+
+def jt_sim_matrix_packed(arr: NDArray[np.uint8]) -> NDArray[np.float64]:
+    r"""Tanimoto similarity matrix between all pairs of packed fps in arr"""
+    matrix = np.zeros((len(arr), len(arr)), dtype=np.float64)
+    for i in range(len(arr)):
+        for j in range(i, len(arr)):
+            # Set the similarities for each row
+            matrix[i, j:] = jt_sim_packed(arr[i], arr[j])
+            # Set the similarities for each column (symmetric)
+            matrix[j:, i] = matrix[i, j:]
+    return matrix
 
 
 def _jt_sim_packed_precalc_cardinalities(

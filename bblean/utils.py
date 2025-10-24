@@ -69,6 +69,9 @@ def _import_bitbirch_variant(
 
 
 def _num_avail_cpus() -> int:
+    if sys.platform == "darwin":
+        # macOS doesn't expose cpu affinity, so assume all cpu's are available
+        return os.cpu_count()
     return len(psutil.Process().cpu_affinity())
 
 

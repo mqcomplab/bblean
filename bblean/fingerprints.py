@@ -128,6 +128,32 @@ def _get_sanitize_flags(sanitize: str) -> tp.Any:
         raise ValueError("Unknown 'sanitize', must be one of 'all', 'minimal'")
 
 
+@tp.overload
+def fps_from_smiles(
+    smiles: tp.Iterable[str],
+    kind: str = DEFAULTS.fp_kind,
+    n_features: int = DEFAULTS.n_features,
+    dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: tp.Literal[False] = False,
+    pack: bool = True,
+) -> NDArray[np.uint8]:
+    pass
+
+
+@tp.overload
+def fps_from_smiles(
+    smiles: tp.Iterable[str],
+    kind: str = DEFAULTS.fp_kind,
+    n_features: int = DEFAULTS.n_features,
+    dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: tp.Literal[True] = True,
+    pack: bool = True,
+) -> tuple[NDArray[np.uint8], NDArray[np.int64]]:
+    pass
+
+
 def fps_from_smiles(
     smiles: tp.Iterable[str],
     kind: str = DEFAULTS.fp_kind,
@@ -136,7 +162,7 @@ def fps_from_smiles(
     sanitize: str = "all",
     skip_invalid: bool = False,
     pack: bool = True,
-) -> NDArray[np.uint8]:
+) -> tp.Union[NDArray[np.uint8], tuple[NDArray[np.uint8], NDArray[np.int64]]]:
     r"""Convert a sequence of smiles into chemical fingerprints"""
     if n_features < 1 or n_features % 8 != 0:
         raise ValueError("n_features must be a multiple of 8, and greater than 0")
@@ -151,10 +177,12 @@ def fps_from_smiles(
     sanitize_flags = _get_sanitize_flags(sanitize)
 
     mols = []
-    for smi in smiles:
+    invalid_idxs = []
+    for i, smi in enumerate(smiles):
         mol = MolFromSmiles(smi, sanitize=False)
         if mol is None:
             if skip_invalid:
+                invalid_idxs.append(i)
                 continue
             else:
                 raise ValueError(f"Unable to parse smiles {smi}")
@@ -162,6 +190,7 @@ def fps_from_smiles(
             SanitizeMol(mol, sanitizeOps=sanitize_flags)
         except Exception:
             if skip_invalid:
+                invalid_idxs.append(i)
                 continue
             raise
         mols.append(mol)
@@ -172,7 +201,11 @@ def fps_from_smiles(
     for i, mol in enumerate(mols):
         fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
     if pack:
+        if skip_invalid:
+            return pack_fingerprints(fps), np.array(invalid_idxs, dtype=np.int64)
         return pack_fingerprints(fps)
+    if skip_invalid:
+        return fps, np.array(invalid_idxs, dtype=np.int64)
     return fps
 
 

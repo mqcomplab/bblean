@@ -21,6 +21,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",  # For google-style docstr
     "sphinx_design",  # For grid directive
+    "nbsphinx",
 ]
 # Autosummary
 templates_path = ["_templates"]

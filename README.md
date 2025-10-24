@@ -32,7 +32,7 @@ The [documentation](https://mqcomplab.github.io/bblean/devdocs) of the developer
 
 ⚠️  **Important**: In version 0.3 (beta) the default `threshold` was changed to 0.3 and the
 default fingerprint kind to *ecfp4*. We recommend setting `threshold` to 0.5-0.65 for
-*rdkit* fingerprints and 0.20-0.35 for *ecfp4* or *ecfp6* fingerprints (although you may
+*rdkit* fingerprints and 0.3-0.4 for *ecfp4* or *ecfp6* fingerprints (although you may
 need further tuning for your specific library / fingerprint set).
 
 ## Installation
@@ -156,6 +156,7 @@ A quick summary:
 ```python
 import pickle
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import bblean
@@ -167,13 +168,13 @@ smiles = bblean.load_smiles("./examples/chembl-33-natural-products-sample.smi")
 fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind="rdkit")
 
 # Fit the figerprints (by default all bblean functions take *packed* fingerprints)
-# A threhsold of 0.5-0.65 is good for rdkit fingerprints, a threshold of 0.2-0.35
+# A threhsold of 0.5-0.65 is good for rdkit fingerprints, a threshold of 0.3-0.4
 # is better for ECFPs
 tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion="diameter")
 tree.fit(fps)
 
 # Refine the tree (if needed)
-tree.set_merge(merge_criterion="tolerance-diameter", tolerance=0.05)
+tree.set_merge(merge_criterion="tolerance-diameter", tolerance=0.0)
 tree.refine_inplace(fps)
 
 # Visualize the results
@@ -216,3 +217,11 @@ idea/request (or directly open a PR from a fork if you prefer).
 Currently we don't directly accept PRs with new features that have not been extensively
 validated, but if you have an idea to improve the BitBIRCH algorithm you may want to
 contact the Miranda-Quintana Lab, we are open to collaborations.
+
+To contribute, first create a
+[fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo),
+then clone your fork (`git clone git@github.com:<user>/bblean`. We recommend you install
+`pre-commit` (`pre-commit install --hook-type pre-push`), which will run some checks
+before you push to your branch. After you have finished work on your branch, [open a
+pull
+request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).

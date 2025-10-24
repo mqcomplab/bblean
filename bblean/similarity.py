@@ -30,6 +30,8 @@ __all__ = [
     "jt_isim_medoid",
     # Complementary similarity
     "jt_compl_isim",
+    "jt_stratified_sampling",
+    "jt_sim_matrix_packed",
 ]
 
 from bblean._py_similarity import (
@@ -37,6 +39,8 @@ from bblean._py_similarity import (
     centroid,
     jt_compl_isim,
     jt_isim_medoid,
+    jt_sim_matrix_packed,
+    jt_stratified_sampling,
 )
 
 # jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for

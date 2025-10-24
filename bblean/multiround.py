@@ -7,7 +7,8 @@
 #   https://doi.org/10.1021/acs.jcim.5c00627
 # - BitBIRCH-Lean: TO-BE-ADDED
 #
-# Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, including:
+# Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, comprised
+# exclusively by:
 # - Ramon Alain Miranda Quintana <ramirandaq@gmail.com>, <quintana@chem.ufl.edu>
 # - Krisztina Zsigmond <kzsigmond@ufl.edu>
 # - Ignacio Pickering <ipickering@chem.ufl.edu>
