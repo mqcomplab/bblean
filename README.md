@@ -217,3 +217,11 @@ idea/request (or directly open a PR from a fork if you prefer).
 Currently we don't directly accept PRs with new features that have not been extensively
 validated, but if you have an idea to improve the BitBIRCH algorithm you may want to
 contact the Miranda-Quintana Lab, we are open to collaborations.
+
+To contribute, first create a
+[fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo),
+then clone your fork (`git clone git@github.com:<user>/bblean`. We recommend you install
+`pre-commit` (`pre-commit install --hook-type pre-push`), which will run some checks
+before you push to your branch. After you have finished work on your branch, [open a
+pull
+request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
