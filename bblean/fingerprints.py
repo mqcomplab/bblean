@@ -176,38 +176,37 @@ def fps_from_smiles(
 
     sanitize_flags = _get_sanitize_flags(sanitize)
 
-    mols = []
+    fps = np.empty((len(smiles), n_features), dtype=dtype)
+
     invalid_idxs = []
     for i, smi in enumerate(smiles):
         mol = MolFromSmiles(smi, sanitize=False)
         if mol is None:
             if skip_invalid:
                 invalid_idxs.append(i)
+                fps[i, :] = np.zeros((n_features,), dtype=dtype)
                 continue
             else:
                 raise ValueError(f"Unable to parse smiles {smi}")
         try:
             SanitizeMol(mol, sanitizeOps=sanitize_flags)
+            fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
         except Exception:
             if skip_invalid:
                 invalid_idxs.append(i)
+                fps[i, :] = np.zeros((n_features,), dtype=dtype)
                 continue
             raise
-        mols.append(mol)
-
-    fps = np.empty((len(mols), n_features), dtype=dtype)
-    # This is significantly faster than getting the fps in a batch with
-    # GetFingerprints(mols) and then using ConvertToNumpyArray.
-    for i, mol in enumerate(mols):
-        fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
+        
     if pack:
         if skip_invalid:
+            fps = np.delete(fps, invalid_idxs, axis=0)
             return pack_fingerprints(fps), np.array(invalid_idxs, dtype=np.int64)
         return pack_fingerprints(fps)
     if skip_invalid:
+        fps = np.delete(fps, invalid_idxs, axis=0)
         return fps, np.array(invalid_idxs, dtype=np.int64)
     return fps
-
 
 def _get_fps_file_num(path: Path) -> int:
     with open(path, mode="rb") as f:
