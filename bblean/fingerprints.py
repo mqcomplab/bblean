@@ -197,7 +197,7 @@ def fps_from_smiles(
                 fps[i, :] = np.zeros((n_features,), dtype=dtype)
                 continue
             raise
-        
+
     if pack:
         if skip_invalid:
             fps = np.delete(fps, invalid_idxs, axis=0)
@@ -207,6 +207,7 @@ def fps_from_smiles(
         fps = np.delete(fps, invalid_idxs, axis=0)
         return fps, np.array(invalid_idxs, dtype=np.int64)
     return fps
+
 
 def _get_fps_file_num(path: Path) -> int:
     with open(path, mode="rb") as f:
