@@ -176,6 +176,7 @@ def fps_from_smiles(
 
     sanitize_flags = _get_sanitize_flags(sanitize)
 
+    smiles = list(smiles)
     fps = np.empty((len(smiles), n_features), dtype=dtype)
 
     invalid_idxs = []
