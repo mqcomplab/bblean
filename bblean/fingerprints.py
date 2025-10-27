@@ -184,7 +184,6 @@ def fps_from_smiles(
         if mol is None:
             if skip_invalid:
                 invalid_idxs.append(i)
-                fps[i, :] = np.zeros((n_features,), dtype=dtype)
                 continue
             else:
                 raise ValueError(f"Unable to parse smiles {smi}")
