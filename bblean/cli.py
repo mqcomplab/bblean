@@ -1781,6 +1781,35 @@ def _split_fps(
         f"Finished. Outputs written to {str(tp.cast(Path, out_dir) / stem)}.<idx>.npy"
     )
 
+@app.command("fps-sort", rich_help_panel="Fingerprints")
+def _sort_fps(
+    in_file: Annotated[
+        Path,
+        Argument(help="`*.npy` file with packed fingerprints"),
+    ],
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+    seed: Annotated[
+        int | None,
+        Option("--seed", hidden=True, rich_help_panel="Debug"),
+    ] = None,
+) -> None:
+    import numpy as np
+    from bblean._py_similarity import _popcount
+
+    fps = np.load(in_file)
+    stem = in_file.stem
+    counts = _popcount(fps)
+    sort_idxs = np.argsort(counts)
+    fps = fps[sort_idxs]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    np.save(out_dir / f"sorted-{stem}.npy", fps)
+
 
 @app.command("fps-shuffle", rich_help_panel="Fingerprints")
 def _shuffle_fps(
