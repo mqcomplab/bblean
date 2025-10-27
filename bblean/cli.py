@@ -1781,6 +1781,7 @@ def _split_fps(
         f"Finished. Outputs written to {str(tp.cast(Path, out_dir) / stem)}.<idx>.npy"
     )
 
+
 @app.command("fps-sort", rich_help_panel="Fingerprints")
 def _sort_fps(
     in_file: Annotated[
