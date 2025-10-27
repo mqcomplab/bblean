@@ -198,7 +198,7 @@ def fps_from_smiles(
             raise
 
     if invalid_idxs:
-       fps = np.delete(fps, invalid_idxs, axis=0)
+        fps = np.delete(fps, invalid_idxs, axis=0)
     if pack:
         if skip_invalid:
             return pack_fingerprints(fps), np.array(invalid_idxs, dtype=np.int64)
