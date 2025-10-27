@@ -624,6 +624,8 @@ class BitBirch:
         self._num_fitted_fps = 0
         self._root: _BFNode | None = None
         self._dummy_leaf = _BFNode(branching_factor=2, n_features=0)
+        # TODO: Type correctly
+        self._global_clustering_centroid_labels: tp.Any = None
 
         # For backwards compatibility, weak-register in global state This is used to
         # update the merge_accept function if the global set_merge() is called
@@ -925,8 +927,16 @@ class BitBirch:
             iterator = (
                 s.mol_indices for leaf in self._get_leaves() for s in leaf._subclusters
             )
-        for i, mol_ids in enumerate(iterator, 1):
-            assignments[mol_ids] = i
+
+        if self._global_clustering_centroid_labels is not None:
+            # Assign according to global clustering labels
+            final_labels = self._global_clustering_centroid_labels
+            for mol_ids, label in zip(iterator, final_labels):
+                assignments[mol_ids] = label
+        else:
+            # Assign according to mol_ids from the subclusters
+            for i, mol_ids in enumerate(iterator, 1):
+                assignments[mol_ids] = i
 
         # Check that there are no unassigned molecules
         if check_valid and (assignments == 0).any():
@@ -1201,6 +1211,42 @@ class BitBirch:
         if self.tolerance is not None:
             parts.append(f"tolerance={self.tolerance}")
         return f"{self.__class__.__name__}({', '.join(parts)})"
+
+    def global_clustering(
+        self,
+        n_clusters: int,
+        *,
+        method: str = "kmeans",
+        # TODO: Type correctly
+        **method_kwargs: tp.Any,
+    ) -> tpx.Self:
+        r""":meta private:"""
+        # Lazy import because sklearn is very heavy
+        from sklearn.cluster import KMeans, AgglomerativeClustering
+        from sklearn.exceptions import ConvergenceWarning
+
+        if not self.is_init:
+            raise ValueError("The model has not been fitted yet.")
+
+        if method == "kmeans":
+            predictor = KMeans(n_clusters=n_clusters, **method_kwargs)
+        elif method == "agglomerative":
+            predictor = AgglomerativeClustering(n_clusters=n_clusters, **method_kwargs)
+        else:
+            raise ValueError("method must be one of 'kmeans' or 'agglomerative'")
+
+        centroids = self.get_centroids(packed=False)
+        num_centroids = len(centroids)
+        if num_centroids < n_clusters:
+            msg = (
+                f"Number of subclusters found ({num_centroids}) by BitBIRCH is less "
+                "than ({n_clusters}). Decrease k or the threshold."
+            )
+            warnings.warn(msg, ConvergenceWarning, stacklevel=2)
+            n_clusters = num_centroids
+
+        self._global_clustering_centroid_labels = predictor.fit_predict(centroids)
+        return self
 
 
 # There are 4 cases here:
