@@ -193,7 +193,6 @@ def fps_from_smiles(
         except Exception:
             if skip_invalid:
                 invalid_idxs.append(i)
-                fps[i, :] = np.zeros((n_features,), dtype=dtype)
                 continue
             raise
 
