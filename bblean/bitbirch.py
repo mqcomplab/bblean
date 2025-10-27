@@ -914,7 +914,6 @@ class BitBirch:
                 f"Provided n_mols {n_mols} is different"
                 f" from the number of fitted fingerprints {self.num_fitted_fps}"
             )
-
         if check_valid:
             assignments = np.full(self.num_fitted_fps, 0, dtype=np.uint64)
         else:
@@ -1228,14 +1227,16 @@ class BitBirch:
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
 
-        if method == "kmeans":
+        if method in ["kmeans", "kmeans-normalized"]:
             predictor = KMeans(n_clusters=n_clusters, **method_kwargs)
         elif method == "agglomerative":
             predictor = AgglomerativeClustering(n_clusters=n_clusters, **method_kwargs)
         else:
             raise ValueError("method must be one of 'kmeans' or 'agglomerative'")
 
-        centroids = self.get_centroids(packed=False)
+        centroids = np.vstack(self.get_centroids(packed=False))
+        if method == "kmeans-normalized":
+            centroids = centroids / np.linalg.norm(centroids, axis=1, keepdims=True)
         num_centroids = len(centroids)
         if num_centroids < n_clusters:
             msg = (
@@ -1245,7 +1246,9 @@ class BitBirch:
             warnings.warn(msg, ConvergenceWarning, stacklevel=2)
             n_clusters = num_centroids
 
-        self._global_clustering_centroid_labels = predictor.fit_predict(centroids)
+        # Add 1 to start labels from 1 instead of 0, so 0 can be used as sentinel
+        # value
+        self._global_clustering_centroid_labels = predictor.fit_predict(centroids) + 1
         return self
 
 
