@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=0ca15ee6"></script>
+    <script src="../../_static/documentation_options.js?v=f1577feb"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -1294,7 +1294,6 @@
                 <span class="sa">f</span><span class="s2">&quot;Provided n_mols </span><span class="si">{</span><span class="n">n_mols</span><span class="si">}</span><span class="s2"> is different&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot; from the number of fitted fingerprints </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
-
         <span class="k">if</span> <span class="n">check_valid</span><span class="p">:</span>
             <span class="n">assignments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1624,14 +1623,16 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model has not been fitted yet.&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;kmeans&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;kmeans&quot;</span><span class="p">,</span> <span class="s2">&quot;kmeans-normalized&quot;</span><span class="p">]:</span>
             <span class="n">predictor</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_clusters</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;agglomerative&quot;</span><span class="p">:</span>
             <span class="n">predictor</span> <span class="o">=</span> <span class="n">AgglomerativeClustering</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_clusters</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;method must be one of &#39;kmeans&#39; or &#39;agglomerative&#39;&quot;</span><span class="p">)</span>
 
-        <span class="n">centroids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_centroids</span><span class="p">(</span><span class="n">packed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">centroids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_centroids</span><span class="p">(</span><span class="n">packed</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;kmeans-normalized&quot;</span><span class="p">:</span>
+            <span class="n">centroids</span> <span class="o">=</span> <span class="n">centroids</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">centroids</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">num_centroids</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">centroids</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">num_centroids</span> <span class="o">&lt;</span> <span class="n">n_clusters</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
@@ -1641,7 +1642,9 @@
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ConvergenceWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
             <span class="n">n_clusters</span> <span class="o">=</span> <span class="n">num_centroids</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_global_clustering_centroid_labels</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">centroids</span><span class="p">)</span>
+        <span class="c1"># Add 1 to start labels from 1 instead of 0, so 0 can be used as sentinel</span>
+        <span class="c1"># value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_global_clustering_centroid_labels</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">centroids</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
 
