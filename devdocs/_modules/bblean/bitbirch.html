@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=a00d1e19"></script>
+    <script src="../../_static/documentation_options.js?v=0ca15ee6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -987,6 +987,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_num_fitted_fps</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">:</span> <span class="n">_BFNode</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_leaf</span> <span class="o">=</span> <span class="n">_BFNode</span><span class="p">(</span><span class="n">branching_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># TODO: Type correctly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_global_clustering_centroid_labels</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># For backwards compatibility, weak-register in global state This is used to</span>
         <span class="c1"># update the merge_accept function if the global set_merge() is called</span>
@@ -1305,8 +1307,16 @@
             <span class="n">iterator</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">s</span><span class="o">.</span><span class="n">mol_indices</span> <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_leaves</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">leaf</span><span class="o">.</span><span class="n">_subclusters</span>
             <span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mol_ids</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="n">assignments</span><span class="p">[</span><span class="n">mol_ids</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_global_clustering_centroid_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Assign according to global clustering labels</span>
+            <span class="n">final_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_global_clustering_centroid_labels</span>
+            <span class="k">for</span> <span class="n">mol_ids</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">final_labels</span><span class="p">):</span>
+                <span class="n">assignments</span><span class="p">[</span><span class="n">mol_ids</span><span class="p">]</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Assign according to mol_ids from the subclusters</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mol_ids</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">assignments</span><span class="p">[</span><span class="n">mol_ids</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
 
         <span class="c1"># Check that there are no unassigned molecules</span>
         <span class="k">if</span> <span class="n">check_valid</span> <span class="ow">and</span> <span class="p">(</span><span class="n">assignments</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
@@ -1596,7 +1606,43 @@
         <span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tolerance=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">global_clustering</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n_clusters</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;kmeans&quot;</span><span class="p">,</span>
+        <span class="c1"># TODO: Type correctly</span>
+        <span class="o">**</span><span class="n">method_kwargs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+        <span class="c1"># Lazy import because sklearn is very heavy</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">KMeans</span><span class="p">,</span> <span class="n">AgglomerativeClustering</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConvergenceWarning</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_init</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The model has not been fitted yet.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;kmeans&quot;</span><span class="p">:</span>
+            <span class="n">predictor</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_clusters</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;agglomerative&quot;</span><span class="p">:</span>
+            <span class="n">predictor</span> <span class="o">=</span> <span class="n">AgglomerativeClustering</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">n_clusters</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;method must be one of &#39;kmeans&#39; or &#39;agglomerative&#39;&quot;</span><span class="p">)</span>
+
+        <span class="n">centroids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_centroids</span><span class="p">(</span><span class="n">packed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">num_centroids</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">centroids</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_centroids</span> <span class="o">&lt;</span> <span class="n">n_clusters</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Number of subclusters found (</span><span class="si">{</span><span class="n">num_centroids</span><span class="si">}</span><span class="s2">) by BitBIRCH is less &quot;</span>
+                <span class="s2">&quot;than (</span><span class="si">{n_clusters}</span><span class="s2">). Decrease k or the threshold.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">ConvergenceWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">n_clusters</span> <span class="o">=</span> <span class="n">num_centroids</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_global_clustering_centroid_labels</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">centroids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 
 
