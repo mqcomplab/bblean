@@ -1040,6 +1040,18 @@ def _run(
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
     ] = True,
+    build_idx: Annotated[
+        bool,
+        Option("--build-idx/--no-build-idx"),
+    ] = False,
+    idx_method: Annotated[
+        str,
+        Option("--idx-method"),
+    ] = "kmeans",
+    idx_n_clusters: Annotated[
+        int | None,
+        Option("--n-clusters"),
+    ] = None,
 ) -> None:
     r"""Run standard, serial BitBIRCH clustering over `*.npy` fingerprint files"""
     # TODO: Remove code duplication with multiround
@@ -1178,6 +1190,10 @@ def _run(
             (input_fps_dir / file.name).symlink_to(file.resolve())
         if smiles_path:
             (input_smiles_dir / smiles_path.name).symlink_to(smiles_path.resolve())
+
+    # Build the index with defaults
+    if build_idx:
+        _build_idx(out_dir, method=idx_method, n_clusters=idx_n_clusters)
 
 
 # TODO: Currently sometimes after a round is triggered *more* files are output, since
