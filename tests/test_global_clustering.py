@@ -1,5 +1,6 @@
+import numpy as np
 from bblean.bitbirch import BitBirch
-from bblean.fingerprints import make_fake_fingerprints
+from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
 from inline_snapshot import snapshot
 
 
@@ -29,24 +30,29 @@ def test_random_fps_consistency() -> None:
             [255, 255, 255, 255, 255],
         ]
     )
-    tree.global_clustering(20, method="kmeans", n_init=1, random_state=42)
+    tree.global_clustering(
+        20,
+        method="kmeans",
+        n_init=1,
+        init=unpack_fingerprints(np.vstack(output_cent))[::2][:20],
+    )
     output_mol_ids = tree.get_cluster_mol_ids(global_clusters=True)
     output_med = tree.get_medoids(fps, global_clusters=True)
     assert [o[:5] for o in output_mol_ids[:5]] == snapshot(
         [
-            [2320, 2272, 2862, 2501, 2076],
-            [2957, 2738, 2811, 2617, 1994],
-            [1786, 1803, 1818, 1839, 1920],
-            [2435, 2406, 2534, 2266, 1152],
-            [1943, 2632, 2859, 2788, 2684],
+            [2195, 2196, 2378, 2440, 2443],
+            [1958, 1800, 1928, 1948, 1959],
+            [1943, 2823, 2907, 2974, 2988],
+            [2216, 2272, 2632, 2651, 2843],
+            [1844, 1921, 2866, 2854, 2731],
         ]
     )
     assert output_med[:5, :5].tolist() == snapshot(
         [
-            [13, 88, 95, 198, 249],
-            [43, 246, 40, 153, 77],
-            [120, 30, 49, 212, 24],
-            [134, 93, 118, 102, 210],
-            [247, 128, 177, 211, 238],
+            [255, 255, 255, 255, 255],
+            [190, 127, 215, 234, 114],
+            [174, 83, 47, 191, 71],
+            [22, 64, 107, 90, 159],
+            [248, 199, 94, 119, 88],
         ]
     )
