@@ -1184,12 +1184,12 @@ def _run(
         for file in input_files:
             shutil.copy(file, input_fps_dir / file.name)
         if smiles_path:
-            shutil.copy(smiles_path, input_smiles_dir / smiles_path.name)
+            shutil.copy(smiles_path, input_smiles_dir / "smiles.smi")
     else:
         for file in input_files:
             (input_fps_dir / file.name).symlink_to(file.resolve())
         if smiles_path:
-            (input_smiles_dir / smiles_path.name).symlink_to(smiles_path.resolve())
+            (input_smiles_dir / "smiles.smi").symlink_to(smiles_path.resolve())
 
     # Build the index with defaults
     if build_idx:
