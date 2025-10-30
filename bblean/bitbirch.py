@@ -70,6 +70,7 @@ from bblean.fingerprints import (
 from bblean.similarity import (
     _jt_sim_arr_vec_packed,
     jt_most_dissimilar_packed,
+    jt_isim_medoid,
     centroid_from_sum,
 )
 
@@ -528,6 +529,11 @@ class _CentroidsMolIds(tp.TypedDict):
     mol_ids: list[list[int]]
 
 
+class _MedoidsMolIds(tp.TypedDict):
+    medoids: NDArray[np.uint8]
+    mol_ids: list[list[int]]
+
+
 class BitBirch:
     r"""Implements the BitBIRCH clustering algorithm, 'Lean' version
 
@@ -626,7 +632,8 @@ class BitBirch:
         self._root: _BFNode | None = None
         self._dummy_leaf = _BFNode(branching_factor=2, n_features=0)
         # TODO: Type correctly
-        self._global_clustering_centroid_labels: tp.Any = None
+        self._global_clustering_centroid_labels: NDArray[np.int64] | None = None
+        self._n_global_clusters = 0
 
         # For backwards compatibility, weak-register in global state This is used to
         # update the merge_accept function if the global set_merge() is called
@@ -778,10 +785,12 @@ class BitBirch:
                 mmanager.release_curr_page_and_update_addr()
         return self
 
-    def _fit_np(
+    def _fit_buffers(
         self,
         X: _Input | Path | str,
-        reinsert_index_seqs: tp.Iterable[tp.Sequence[int]] | None = None,
+        reinsert_index_seqs: (
+            tp.Iterable[tp.Sequence[int]] | tp.Literal["omit"]
+        ) = "omit",
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
@@ -790,9 +799,11 @@ class BitBirch:
             - buffer[-1] = n_samples
         And X is either an array or a list of such buffers
 
-        if `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
+        If `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
         reinserted into the tree, and `reinsert_index_seqs` are the sequences
         of indices associated with such buffers.
+
+        If `reinsert_index_seqs` is "omit", then no indices are collected in the tree.
 
         Parameters
         ----------
@@ -826,13 +837,15 @@ class BitBirch:
         branching_factor = self.branching_factor
         idx_provider: tp.Iterable[tp.Sequence[int]]
         arr_idx = 0
-        if reinsert_index_seqs is None:
-            idx_provider = ([idx] for idx in range(self.num_fitted_fps))
+        if reinsert_index_seqs == "omit":
+            idx_provider = (() for idx in range(self.num_fitted_fps))
+            check = False
         else:
             idx_provider = reinsert_index_seqs
+            check = True
         for idxs, buf in zip(idx_provider, arr_iterable):
             subcluster = _BFSubcluster(
-                buffer=buf, mol_indices=idxs, n_features=n_features
+                buffer=buf, mol_indices=idxs, n_features=n_features, check_indices=check
             )
             split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
@@ -892,7 +905,9 @@ class BitBirch:
         return {"centroids": centroids, "mol_ids": mol_ids}
 
     def get_centroids(
-        self, sort: bool = True, packed: bool = True
+        self,
+        sort: bool = True,
+        packed: bool = True,
     ) -> list[NDArray[np.uint8]]:
         r"""Get a list of arrays with the centroids' fingerprints"""
         # NOTE: This is different from the original bitbirch, here outputs are sorted by
@@ -900,12 +915,94 @@ class BitBirch:
         attr = "packed_centroid" if packed else "unpacked_centroid"
         return [getattr(s, attr) for s in self._get_leaf_bfs(sort=sort)]
 
-    def get_cluster_mol_ids(self, sort: bool = True) -> list[list[int]]:
+    def get_medoids_mol_ids(
+        self,
+        fps: NDArray[np.uint8],
+        sort: bool = True,
+        pack: bool = True,
+        global_clusters: bool = False,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+    ) -> _MedoidsMolIds:
+        """Get a dict with medoids and mol indices of the leaves"""
+        cluster_members = self.get_cluster_mol_ids(
+            sort=sort, global_clusters=global_clusters
+        )
+
+        if input_is_packed:
+            fps = _unpack_fingerprints(fps, n_features=n_features)
+        cluster_medoids = self._unpacked_medoids_from_members(fps, cluster_members)
+        if pack:
+            cluster_medoids = pack_fingerprints(cluster_medoids)
+        return {"medoids": cluster_medoids, "mol_ids": cluster_members}
+
+    @staticmethod
+    def _unpacked_medoids_from_members(
+        unpacked_fps: NDArray[np.uint8], cluster_members: tp.Sequence[list[int]]
+    ) -> NDArray[np.uint8]:
+        cluster_medoids = np.zeros(
+            (len(cluster_members), unpacked_fps.shape[1]), dtype=np.uint8
+        )
+        for idx, members in enumerate(cluster_members):
+            cluster_medoids[idx, :] = jt_isim_medoid(
+                unpacked_fps[members],
+                input_is_packed=False,
+                pack=False,
+            )[1]
+        return cluster_medoids
+
+    def get_medoids(
+        self,
+        fps: NDArray[np.uint8],
+        sort: bool = True,
+        pack: bool = True,
+        global_clusters: bool = False,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+    ) -> NDArray[np.uint8]:
+        return self.get_medoids_mol_ids(
+            fps, sort, pack, global_clusters, input_is_packed, n_features
+        )["medoids"]
+
+    def get_cluster_mol_ids(
+        self, sort: bool = True, global_clusters: bool = False
+    ) -> list[list[int]]:
         r"""Get the indices of the molecules in each cluster"""
+        if global_clusters:
+            if self._global_clustering_centroid_labels is None:
+                raise ValueError(
+                    "Must perform global clustering before fetching global labels"
+                )
+            bf_labels = (
+                self._global_clustering_centroid_labels - 1
+            )  # sub 1 to use as idxs
+
+            # Collect the members of all clusters
+            it = (bf.mol_indices for bf in self._get_leaf_bfs(sort=sort))
+            return self._new_ids_from_labels(it, bf_labels, self._n_global_clusters)
+
         return [s.mol_indices for s in self._get_leaf_bfs(sort=sort)]
 
+    @staticmethod
+    def _new_ids_from_labels(
+        members: tp.Iterable[list[int]],
+        labels: NDArray[np.int64],
+        n_labels: int | None = None,
+    ) -> list[list[int]]:
+        r"""Get the indices of the molecules in each cluster"""
+        if n_labels is None:
+            n_labels = len(np.unique(labels))
+        new_members: list[list[int]] = [[] for _ in range(n_labels)]
+        for i, idxs in enumerate(members):
+            new_members[labels[i]].extend(idxs)
+        return new_members
+
     def get_assignments(
-        self, n_mols: int | None = None, sort: bool = True, check_valid: bool = True
+        self,
+        n_mols: int | None = None,
+        sort: bool = True,
+        check_valid: bool = True,
+        global_clusters: bool = False,
     ) -> NDArray[np.uint64]:
         r"""Get an array with the cluster labels associated with each fingerprint idx"""
         if n_mols is not None:
@@ -928,7 +1025,11 @@ class BitBirch:
                 s.mol_indices for leaf in self._get_leaves() for s in leaf._subclusters
             )
 
-        if self._global_clustering_centroid_labels is not None:
+        if global_clusters:
+            if self._global_clustering_centroid_labels is None:
+                raise ValueError(
+                    "Must perform global clustering before fetching global labels"
+                )
             # Assign according to global clustering labels
             final_labels = self._global_clustering_centroid_labels
             for mol_ids, label in zip(iterator, final_labels):
@@ -948,6 +1049,7 @@ class BitBirch:
         path: Path | str,
         smiles: tp.Iterable[str] = (),
         sort: bool = True,
+        global_clusters: bool = False,
         check_valid: bool = True,
     ) -> None:
         r"""Dump the cluster assignments to a ``*.csv`` file"""
@@ -958,7 +1060,9 @@ class BitBirch:
             smiles = [smiles]
         smiles = np.asarray(smiles, dtype=np.str_)
         # Dump cluster assignments to *.csv
-        assignments = self.get_assignments(sort=sort, check_valid=check_valid)
+        assignments = self.get_assignments(
+            sort=sort, check_valid=check_valid, global_clusters=global_clusters
+        )
         if smiles.size and (len(assignments) != len(smiles)):
             raise ValueError(
                 f"Len of the provided smiles {len(smiles)}"
@@ -1068,7 +1172,7 @@ class BitBirch:
 
             # Refit the subsclusters
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+                self._fit_buffers(bufs, reinsert_index_seqs=mol_idxs)
 
         # Print final stats
         if verbose:
@@ -1104,7 +1208,7 @@ class BitBirch:
 
         # Rebuild the tree again from scratch, reinserting all the subclusters
         for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-            self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+            self._fit_buffers(bufs, reinsert_index_seqs=mol_idxs)
         return self
 
     def _get_leaf_bfs(self, sort: bool = True) -> list[_BFSubcluster]:
@@ -1221,13 +1325,56 @@ class BitBirch:
         **method_kwargs: tp.Any,
     ) -> tpx.Self:
         r""":meta private:"""
+        warnings.warn(
+            "Global clustering is an experimental features"
+            " it will be modified without warning, please do not use"
+        )
+        if not self.is_init:
+            raise ValueError("The model has not been fitted yet.")
+        centroids = np.vstack(self.get_centroids(packed=False))
+        labels = self._centrals_global_clustering(
+            centroids, n_clusters, method=method, input_is_packed=False, **method_kwargs
+        )
+        num_centroids = len(centroids)
+        self._n_global_clusters = (
+            n_clusters if num_centroids > n_clusters else num_centroids
+        )
+        self._global_clustering_centroid_labels = labels
+        return self
+
+    @staticmethod
+    def _centrals_global_clustering(
+        centrals: NDArray[np.uint8],
+        n_clusters: int,
+        *,
+        method: str = "kmeans",
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+        # TODO: Type correctly
+        **method_kwargs: tp.Any,
+    ) -> NDArray[np.int64]:
+        r""":meta private:"""
+        if method not in {"agglomerative", "kmeans", "kmeans-normalized"}:
+            raise ValueError(f"Unknown method {method}")
+        # Returns the labels associated with global clustering
         # Lazy import because sklearn is very heavy
         from sklearn.cluster import KMeans, AgglomerativeClustering
         from sklearn.exceptions import ConvergenceWarning
 
-        if not self.is_init:
-            raise ValueError("The model has not been fitted yet.")
+        if input_is_packed:
+            centrals = _unpack_fingerprints(centrals, n_features)
 
+        num_centrals = len(centrals)
+        if num_centrals < n_clusters:
+            msg = (
+                f"Number of subclusters found ({num_centrals}) by BitBIRCH is less "
+                "than ({n_clusters}). Decrease k or the threshold."
+            )
+            warnings.warn(msg, ConvergenceWarning, stacklevel=2)
+            n_clusters = num_centrals
+
+        if method == "kmeans-normalized":
+            centrals = centrals / np.linalg.norm(centrals, axis=1, keepdims=True)
         if method in ["kmeans", "kmeans-normalized"]:
             predictor = KMeans(n_clusters=n_clusters, **method_kwargs)
         elif method == "agglomerative":
@@ -1235,22 +1382,11 @@ class BitBirch:
         else:
             raise ValueError("method must be one of 'kmeans' or 'agglomerative'")
 
-        centroids = np.vstack(self.get_centroids(packed=False))
-        if method == "kmeans-normalized":
-            centroids = centroids / np.linalg.norm(centroids, axis=1, keepdims=True)
-        num_centroids = len(centroids)
-        if num_centroids < n_clusters:
-            msg = (
-                f"Number of subclusters found ({num_centroids}) by BitBIRCH is less "
-                "than ({n_clusters}). Decrease k or the threshold."
-            )
-            warnings.warn(msg, ConvergenceWarning, stacklevel=2)
-            n_clusters = num_centroids
-
         # Add 1 to start labels from 1 instead of 0, so 0 can be used as sentinel
         # value
-        self._global_clustering_centroid_labels = predictor.fit_predict(centroids) + 1
-        return self
+        # This is the bottleneck for building this index
+        # K-means is feasible, agglomerative is extremely expensive
+        return predictor.fit_predict(centrals) + 1
 
 
 # There are 4 cases here:
