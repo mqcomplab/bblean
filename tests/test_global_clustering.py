@@ -35,23 +35,23 @@ def test_random_fps_consistency() -> None:
         init=unpack_fingerprints(np.vstack(output_cent))[::2][:20],
         max_iter=10,
     )
-    output_mol_ids = tree.get_cluster_mol_ids(global_clusters=True)
-    output_med = tree.get_medoids(fps, global_clusters=True)
+    output_mol_ids = tree.get_cluster_mol_ids(global_clusters=True, sort=False)
+    output_med = tree.get_medoids(fps, global_clusters=True, sort=False)
     assert [o[:5] for o in output_mol_ids[:5]] == snapshot(
         [
-            [563, 568, 584, 585, 862],
-            [1843, 1868, 1888, 1951, 1919],
-            [57, 1855, 1848, 2023, 1996],
-            [73, 1867, 2046, 2064, 2141],
-            [53, 7, 18, 34, 46],
+            [16, 1023, 1793, 2, 15],
+            [1873, 1882, 1912, 1954, 1970],
+            [12, 1877, 1861, 2068, 2012],
+            [1560, 1901, 2065, 2037, 2396],
+            [62, 73, 75, 87, 121],
         ]
     )
     assert output_med[:5, :5].tolist() == snapshot(
         [
-            [255, 255, 126, 255, 111],
-            [135, 255, 78, 138, 230],
-            [159, 189, 11, 228, 126],
-            [74, 98, 71, 150, 111],
-            [196, 41, 184, 55, 216],
+            [255, 127, 252, 111, 223],
+            [255, 255, 95, 255, 239],
+            [123, 239, 238, 135, 126],
+            [223, 14, 207, 187, 104],
+            [255, 255, 255, 247, 255],
         ]
     )
