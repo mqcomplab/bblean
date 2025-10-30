@@ -72,6 +72,8 @@ cluster-mol-ids*.json
 config*.json
 timings*.json
 max-rss.txt
+index/*.smi
+input-smiles/*.smi
 
 # Pickle
 *.pkl
