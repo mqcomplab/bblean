@@ -132,7 +132,10 @@ def _plot_pops(
         bool,
         Option("--show/--no-show", hidden=True),
     ] = True,
-    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
+    use_global: Annotated[
+        bool,
+        Option("--global/--no-global"),
+    ] = False,
 ) -> None:
     r"""Population plot of the clustering results"""
     from bblean._console import get_console
@@ -251,7 +254,10 @@ def _plot_umap(
             rich_help_panel="Advanced",
         ),
     ] = None,
-    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
+    use_global: Annotated[
+        bool,
+        Option("--global/--no-global"),
+    ] = False,
 ) -> None:
     r"""UMAP visualization of the clustering results"""
     from bblean._console import get_console
@@ -353,7 +359,10 @@ def _plot_pca(
         str | None,
         Option("--filename"),
     ] = None,
-    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
+    use_global: Annotated[
+        bool,
+        Option("--global/--no-global"),
+    ] = False,
 ) -> None:
     r"""PCA visualization of the clustering results"""
     from bblean._console import get_console
@@ -510,7 +519,10 @@ def _plot_tsne(
         bool,
         Option("--show/--no-show", hidden=True),
     ] = True,
-    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
+    use_global: Annotated[
+        bool,
+        Option("--global/--no-global"),
+    ] = False,
 ) -> None:
     r"""t-SNE visualization of the clustering results"""
     from bblean._console import get_console
@@ -627,7 +639,10 @@ def _table_summary(
         int,
         Option("--metrics-min-size", hidden=True),
     ] = 1,
-    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
+    use_global: Annotated[
+        bool,
+        Option("--global/--no-global"),
+    ] = False,
     verbose: Annotated[
         bool,
         Option("--verbose/--no-verbose", hidden=True),
@@ -830,7 +845,10 @@ def _plot_summary(
         bool,
         Option("--show/--no-show", hidden=True),
     ] = True,
-    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
+    use_global: Annotated[
+        bool,
+        Option("--global/--no-global"),
+    ] = False,
 ) -> None:
     r"""Summary plot of the clustering results"""
     from bblean._console import get_console
