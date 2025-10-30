@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from inline_snapshot import snapshot
-from legacy_fns import calculate_comp_sim, calculate_medoid
+from legacy_fns import calculate_comp_sim, calculate_medoid  # type: ignore
 
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
 # _cpp_similarity are tested independently
