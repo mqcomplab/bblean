@@ -33,6 +33,7 @@ def test_random_fps_consistency() -> None:
         method="kmeans",
         n_init=1,
         init=unpack_fingerprints(np.vstack(output_cent))[::2][:20],
+        max_iter=10,
     )
     output_mol_ids = tree.get_cluster_mol_ids(global_clusters=True)
     output_med = tree.get_medoids(fps, global_clusters=True)
