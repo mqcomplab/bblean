@@ -1799,8 +1799,8 @@ def _split_fps(
     )
 
 
-@app.command("query-ivf", hidden=True)
-def _query_ivf(
+@app.command("query-idx", hidden=True)
+def _query_idx(
     ivf_path: Annotated[
         Path,
         Argument(help="Path to the IVF file, or a dir with a ivf.pkl file"),
@@ -1844,8 +1844,8 @@ def _query_ivf(
         console.print(r)
 
 
-@app.command("build-ivf", hidden=True)
-def _build_ivf(
+@app.command("build-idx", hidden=True)
+def _build_idx(
     clusters_path: Annotated[
         Path,
         Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
