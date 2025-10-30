@@ -4,6 +4,8 @@ IVF is efficient search index for chemical fingerprints that uses BitBIRCH to pa
 the cluster space. Searches in this space use approximate nearest neighbors (ANN).
 """
 
+import pickle
+from pathlib import Path
 import typing_extensions as tpx
 import dataclasses
 import math
@@ -12,6 +14,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from bblean.bitbirch import BitBirch
+from bblean.smiles import load_smiles
 from bblean.similarity import jt_sim_packed
 from bblean.fingerprints import pack_fingerprints, unpack_fingerprints
 
@@ -66,6 +69,19 @@ class IVFIndex:
         self._smiles = np.asarray(smiles, dtype=np.str_)
 
     @classmethod
+    def from_dir(cls, idx_path: Path) -> tpx.Self:
+        global_cluster_medoids_path = idx_path / "global-cluster-medoids-packed.npy"
+        global_clusters_path = idx_path / "global-clusters.pkl"
+        fps_path = idx_path / "fps.npy"
+        smiles_path = idx_path / "smiles.smi"
+        with open(global_clusters_path, "rb") as f:
+            members = pickle.load(f)
+        medoids_packed = np.load(global_cluster_medoids_path)
+        fps = np.load(fps_path)
+        smiles = load_smiles(smiles_path)
+        return cls(medoids_packed, members, fps, smiles)
+
+    @classmethod
     def from_bitbirch_clusters(
         cls,
         members: tp.Sequence[list[int]],
@@ -76,6 +92,7 @@ class IVFIndex:
         n_clusters: int | None = None,
         input_is_packed: bool = True,
         n_features: int | None = None,
+        sort: bool = True,
         **method_kwargs: tp.Any,
     ) -> tpx.Self:
         """Build the IVF index from bitbirch clusters"""
@@ -89,7 +106,6 @@ class IVFIndex:
         if input_is_packed:
             fps = unpack_fingerprints(fps, n_features)
             centrals = unpack_fingerprints(centrals, n_features)
-
         labels = BitBirch._centrals_global_clustering(
             centrals, n_clusters, method=method, **method_kwargs
         )
@@ -97,6 +113,8 @@ class IVFIndex:
         num_centrals = len(centrals)
         n_clusters = n_clusters if num_centrals > n_clusters else num_centrals
         mol_ids = BitBirch._new_ids_from_labels(members, labels - 1, n_clusters)
+        if sort:
+            mol_ids.sort(key=lambda x: len(x), reverse=True)
         medoids = BitBirch._unpacked_medoids_from_members(fps, mol_ids)
         fps = pack_fingerprints(fps)
         return cls(pack_fingerprints(medoids), mol_ids, fps, smiles)
