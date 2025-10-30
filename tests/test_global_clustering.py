@@ -29,7 +29,7 @@ def test_random_fps_consistency() -> None:
             [255, 255, 255, 255, 255],
         ]
     )
-    tree.global_clustering(20, method="kmeans", random_state=42)
+    tree.global_clustering(20, method="kmeans", n_init=1, random_state=42)
     output_mol_ids = tree.get_cluster_mol_ids(global_clusters=True)
     output_med = tree.get_medoids(fps, global_clusters=True)
     assert [o[:5] for o in output_mol_ids[:5]] == snapshot(
