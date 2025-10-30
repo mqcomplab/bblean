@@ -1,6 +1,5 @@
 r"""Command line interface entrypoints"""
 
-import numpy as np
 import warnings
 import random
 import typing as tp
@@ -133,6 +132,7 @@ def _plot_pops(
         bool,
         Option("--show/--no-show", hidden=True),
     ] = True,
+    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
 ) -> None:
     r"""Population plot of the clustering results"""
     from bblean._console import get_console
@@ -157,6 +157,7 @@ def _plot_pops(
             verbose=verbose,
             save=save,
             show=show,
+            use_global=use_global,
         )
 
 
@@ -250,6 +251,7 @@ def _plot_umap(
             rich_help_panel="Advanced",
         ),
     ] = None,
+    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
 ) -> None:
     r"""UMAP visualization of the clustering results"""
     from bblean._console import get_console
@@ -282,6 +284,7 @@ def _plot_umap(
             verbose=verbose,
             save=save,
             show=show,
+            use_global=use_global,
         )
 
 
@@ -350,6 +353,7 @@ def _plot_pca(
         str | None,
         Option("--filename"),
     ] = None,
+    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
 ) -> None:
     r"""PCA visualization of the clustering results"""
     from bblean._console import get_console
@@ -374,6 +378,7 @@ def _plot_pca(
             verbose=verbose,
             save=save,
             show=show,
+            use_global=use_global,
         )
 
 
@@ -505,6 +510,7 @@ def _plot_tsne(
         bool,
         Option("--show/--no-show", hidden=True),
     ] = True,
+    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
 ) -> None:
     r"""t-SNE visualization of the clustering results"""
     from bblean._console import get_console
@@ -541,6 +547,7 @@ def _plot_tsne(
             verbose=verbose,
             save=save,
             show=show,
+            use_global=use_global,
         )
 
 
@@ -620,6 +627,7 @@ def _table_summary(
         int,
         Option("--metrics-min-size", hidden=True),
     ] = 1,
+    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
     verbose: Annotated[
         bool,
         Option("--verbose/--no-verbose", hidden=True),
@@ -637,7 +645,9 @@ def _table_summary(
     # Imports may take a bit of time since sklearn is slow, so start the spinner here
     with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
         if clusters_path.is_dir():
-            clusters_path = clusters_path / "clusters.pkl"
+            clusters_path = clusters_path / (
+                "global-clusters.pkl" if use_global else "clusters.pkl"
+            )
         with open(clusters_path, mode="rb") as f:
             clusters = pickle.load(f)
         if fps_path is None:
@@ -820,6 +830,7 @@ def _plot_summary(
         bool,
         Option("--show/--no-show", hidden=True),
     ] = True,
+    use_global: Annotated[bool, Option("--global/--no-global"),] = False,
 ) -> None:
     r"""Summary plot of the clustering results"""
     from bblean._console import get_console
@@ -846,6 +857,7 @@ def _plot_summary(
             verbose=verbose,
             save=save,
             show=show,
+            use_global=use_global,
         )
 
 
@@ -1801,9 +1813,9 @@ def _split_fps(
 
 @app.command("query-idx", hidden=True)
 def _query_idx(
-    ivf_path: Annotated[
+    idx_path: Annotated[
         Path,
-        Argument(help="Path to the IVF file, or a dir with a ivf.pkl file"),
+        Argument(help="Path to the index dir, or its parent dir with index files"),
     ],
     query: Annotated[
         str,
@@ -1824,24 +1836,39 @@ def _query_idx(
 ) -> None:
     from bblean._console import get_console
     from bblean.fingerprints import fps_from_smiles
+    from bblean._ivf import IVFIndex
 
     console = get_console()
-
-    if ivf_path.is_dir():
-        ivf_file = ivf_path / "ivf.pkl"
+    if idx_path.is_dir() and (idx_path / "index").is_dir():
+        idx_path = idx_path / "index"
     else:
-        ivf_file = ivf_path
+        idx_path = idx_path
 
-    with open(ivf_file, mode="rb") as f:
-        ivf_index = pickle.load(f)
+    index = IVFIndex.from_dir(idx_path)
     # TODO: This is a placeholder, must be modified!!
     query_fp = fps_from_smiles([query], kind="rdkit", n_features=2048, pack=True)[0]
-    results_list = ivf_index.search(
-        query_fp, n_probe=num_probe, threshold=threshold, k=k
-    )
+    results_list = index.search(query_fp, n_probe=num_probe, threshold=threshold, k=k)
 
     for r in results_list:
         console.print(r)
+
+
+def _get_centroids_and_clusters_paths(clusters_path: Path) -> tuple[Path, Path]:
+    if clusters_path.is_dir():
+        centroids_path = clusters_path / "cluster-centroids-packed.pkl"
+        clusters_path = clusters_path / "clusters.pkl"
+        # TODO: If this file doesn't exist, it will have to be created on-the-fly
+        if not centroids_path.exists():
+            raise ValueError(
+                "Centroids must be saved for building IVF or global clustering."
+                " This limitation may be lifted in the future"
+            )
+    else:
+        raise ValueError(
+            "clusters path must be a dir for building IVF or global clustering."
+            " This limitation may be lifted in the future"
+        )
+    return clusters_path, centroids_path
 
 
 @app.command("build-idx", hidden=True)
@@ -1881,31 +1908,17 @@ def _build_idx(
         Option("--verbose/--no-verbose"),
     ] = True,
 ) -> None:
+    import numpy as np
     from bblean.utils import _has_files_or_valid_symlinks
     from bblean._ivf import IVFIndex
     from bblean.smiles import load_smiles
     from bblean._console import get_console
 
     console = get_console(silent=not verbose)
-
-    if clusters_path.is_dir():
-        centroids_path = clusters_path / "cluster-centroids-packed.pkl"
-        clusters_path = clusters_path / "clusters.pkl"
-        if not centroids_path.exists():
-            raise ValueError(
-                "Centroids must be saved for building IVF."
-                " This limitation may be lifted in the future"
-            )
-    else:
-        raise ValueError(
-            "clusters path must be a dir for building IVF"
-            " This limitation may be lifted in the future"
-        )
-
+    clusters_path, centroids_path = _get_centroids_and_clusters_paths(clusters_path)
     with open(clusters_path, mode="rb") as f:
         cluster_members = pickle.load(f)
 
-    # TODO: If this file doesn't exist, it will have to be created on-the-fly
     with open(centroids_path, mode="rb") as f:
         centroids_packed = np.vstack(pickle.load(f))
 
@@ -1946,8 +1959,11 @@ def _build_idx(
             "Currently only a single fp file is supported,"
             " this restriction will be lifted in the future"
         )
+    fps_path = fps_paths[0]
 
-    fps = np.load(fps_paths[0])  # packed
+    fps = np.load(fps_path)  # packed
+    kwargs = {"random_state": 42} if method.startswith("kmeans") else {}
+
     with console.status("[italic]Building IVF index...[/italic]", spinner="dots"):
         index = IVFIndex.from_bitbirch_clusters(
             cluster_members,
@@ -1957,12 +1973,32 @@ def _build_idx(
             method,
             n_clusters,
             input_is_packed=True,
-            random_state=42,
+            sort=True,
+            **kwargs,
         )
 
-    with console.status("[italic]Saving IVF index...[/italic]", spinner="dots"):
-        with open(clusters_path.parent / "ivf.pkl", mode="wb") as f:
-            pickle.dump(index, f)
+    with console.status("[italic]Saving global clusters...[/italic]", spinner="dots"):
+        global_cluster_medoids_path = (
+            clusters_path.parent / "global-cluster-medoids-packed.npy"
+        )
+        np.save(
+            global_cluster_medoids_path,
+            index._medoids_packed,
+        )
+        global_clusters_path = clusters_path.parent / "global-clusters.pkl"
+        with open(global_clusters_path, mode="wb") as f:
+            pickle.dump(index._members, f)
+        idx_path = clusters_path.parent / "index"
+        if idx_path.exists():
+            shutil.rmtree(idx_path)
+        idx_path.mkdir(exist_ok=True)
+        if smiles_path is not None:
+            (idx_path / "smiles.smi").symlink_to(smiles_path.resolve())
+        (idx_path / "fps.npy").symlink_to(fps_path.resolve())
+        (idx_path / "global-clusters.pkl").symlink_to(global_clusters_path.resolve())
+        (idx_path / "global-cluster-medoids-packed.npy").symlink_to(
+            global_cluster_medoids_path.resolve()
+        )
     console.print("Successfully built IVF index")
 
 
