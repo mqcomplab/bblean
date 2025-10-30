@@ -1836,7 +1836,7 @@ def _query_idx(
 ) -> None:
     from bblean._console import get_console
     from bblean.fingerprints import fps_from_smiles
-    from bblean._ivf import IVFIndex
+    from bblean.ivf import IVFIndex
 
     console = get_console()
     if idx_path.is_dir() and (idx_path / "index").is_dir():
@@ -1910,7 +1910,7 @@ def _build_idx(
 ) -> None:
     import numpy as np
     from bblean.utils import _has_files_or_valid_symlinks
-    from bblean._ivf import IVFIndex
+    from bblean.ivf import IVFIndex
     from bblean.smiles import load_smiles
     from bblean._console import get_console
 
