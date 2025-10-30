@@ -5,9 +5,7 @@ from inline_snapshot import snapshot
 
 
 def test_random_fps_consistency() -> None:
-    fps = make_fake_fingerprints(
-        3000, n_features=2048, seed=126205095409235, pack=True
-    )
+    fps = make_fake_fingerprints(3000, n_features=2048, seed=126205095409235, pack=True)
     tree = BitBirch(branching_factor=50, threshold=0.65, merge_criterion="diameter")
     tree.fit(fps, n_features=2048)
     output_cent = tree.get_centroids()
