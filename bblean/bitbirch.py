@@ -396,6 +396,7 @@ class _BFSubcluster:
         mol_indices: tp.Sequence[int] = (),
         n_features: int = 2048,
         buffer: NDArray[np.integer] | None = None,
+        check_indices: bool = True,
     ):
         # NOTE: Internally, _buffer holds both "linear_sum" and "n_samples" It is
         # guaranteed to always have the minimum required uint dtype It should not be
@@ -408,7 +409,7 @@ class _BFSubcluster:
         if buffer is not None:
             if linear_sum is not None:
                 raise ValueError("'linear_sum' and 'buffer' are mutually exclusive")
-            if len(mol_indices) != buffer[-1]:
+            if check_indices and len(mol_indices) != buffer[-1]:
                 raise ValueError(
                     "Expected len(mol_indices) == buffer[-1],"
                     f" but found {len(mol_indices)} != {buffer[-1]}"
@@ -417,7 +418,7 @@ class _BFSubcluster:
             self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
         else:
             if linear_sum is not None:
-                if len(mol_indices) != 1:
+                if check_indices and len(mol_indices) != 1:
                     raise ValueError(
                         "Expected len(mol_indices) == 1,"
                         f" but found {len(mol_indices)} != 1"
@@ -431,7 +432,7 @@ class _BFSubcluster:
                 )
             else:
                 # Empty subcluster
-                if len(mol_indices) != 0:
+                if check_indices and len(mol_indices) != 0:
                     raise ValueError(
                         "Expected len(mol_indices) == 0 for empty subcluster,"
                         f" but found {len(mol_indices)} != 0"
