@@ -1375,6 +1375,8 @@ class BitBirch:
 
         # Add 1 to start labels from 1 instead of 0, so 0 can be used as sentinel
         # value
+        # This is the bottleneck for building this index
+        # K-means is feasible, agglomerative is extremely expensive
         return predictor.fit_predict(centrals) + 1
 
 
