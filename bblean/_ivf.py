@@ -34,7 +34,7 @@ class SearchResult:
             raise RuntimeError("Negative similarity found")
         out = f"SearchResult(index={self.index}, similarity={sim_str}"
         if self.smi is not None:
-            return f"{out}, smi={self.smi})"
+            return f"{out}, smi='{self.smi}')"
         return f"{out})"
 
 
@@ -170,6 +170,6 @@ class IVFIndex:
         results = []
         for idx in sorted_indices:
             fp_idx = candidates[idx].item()
-            smi = self._smiles[fp_idx] if self._smiles.size > 0 else None
+            smi = self._smiles[fp_idx].strip() if self._smiles.size > 0 else None
             results.append(SearchResult(fp_idx, similarities[idx].item(), smi))
         return results

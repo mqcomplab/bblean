@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import numpy as np
 import warnings
 import random
 import typing as tp
@@ -863,6 +864,15 @@ def _run(
             help="Dir to dump the output files",
         ),
     ] = None,
+    smiles_path: Annotated[
+        Path | None,
+        Option(
+            "-s",
+            "--smiles",
+            show_default=False,
+            help="Optional smiles path, to store smiles with results",
+        ),
+    ] = None,
     overwrite: Annotated[bool, Option(help="Allow overwriting output files")] = False,
     branching_factor: Annotated[
         int,
@@ -1125,12 +1135,19 @@ def _run(
     # Symlink or copy fingerprint files
     input_fps_dir = (out_dir / "input-fps").resolve()
     input_fps_dir.mkdir()
+
+    input_smiles_dir = (out_dir / "input-smiles").resolve()
+    input_smiles_dir.mkdir()
     if copy_inputs:
         for file in input_files:
             shutil.copy(file, input_fps_dir / file.name)
+        if smiles_path:
+            shutil.copy(smiles_path, input_smiles_dir / smiles_path.name)
     else:
         for file in input_files:
             (input_fps_dir / file.name).symlink_to(file.resolve())
+        if smiles_path:
+            (input_smiles_dir / smiles_path.name).symlink_to(smiles_path.resolve())
 
 
 # TODO: Currently sometimes after a round is triggered *more* files are output, since
@@ -1780,6 +1797,173 @@ def _split_fps(
     console.print(
         f"Finished. Outputs written to {str(tp.cast(Path, out_dir) / stem)}.<idx>.npy"
     )
+
+
+@app.command("query-ivf", hidden=True)
+def _query_ivf(
+    ivf_path: Annotated[
+        Path,
+        Argument(help="Path to the IVF file, or a dir with a ivf.pkl file"),
+    ],
+    query: Annotated[
+        str,
+        Option("-s", "--smiles"),
+    ] = "",
+    k: Annotated[
+        int,
+        Option("-k", "--num"),
+    ] = 10,
+    threshold: Annotated[
+        float,
+        Option("-t", "--threshold"),
+    ] = 0.0,
+    num_probe: Annotated[
+        int,
+        Option("-p", "--probe"),
+    ] = 1,
+) -> None:
+    from bblean._console import get_console
+    from bblean.fingerprints import fps_from_smiles
+
+    console = get_console()
+
+    if ivf_path.is_dir():
+        ivf_file = ivf_path / "ivf.pkl"
+    else:
+        ivf_file = ivf_path
+
+    with open(ivf_file, mode="rb") as f:
+        ivf_index = pickle.load(f)
+    # TODO: This is a placeholder, must be modified!!
+    query_fp = fps_from_smiles([query], kind="rdkit", n_features=2048, pack=True)[0]
+    results_list = ivf_index.search(
+        query_fp, n_probe=num_probe, threshold=threshold, k=k
+    )
+
+    for r in results_list:
+        console.print(r)
+
+
+@app.command("build-ivf", hidden=True)
+def _build_ivf(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    smiles_path: Annotated[
+        Path | None,
+        Option(
+            "-s",
+            "--smiles-path",
+            show_default=False,
+            help="Optional smiles path, if used smiles are returned in search results",
+        ),
+    ] = None,
+    method: Annotated[
+        str,
+        Option("--method"),
+    ] = "kmeans",
+    n_clusters: Annotated[
+        int | None,
+        Option("--n-clusters"),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("--verbose/--no-verbose"),
+    ] = True,
+) -> None:
+    from bblean.utils import _has_files_or_valid_symlinks
+    from bblean._ivf import IVFIndex
+    from bblean.smiles import load_smiles
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+
+    if clusters_path.is_dir():
+        centroids_path = clusters_path / "cluster-centroids-packed.pkl"
+        clusters_path = clusters_path / "clusters.pkl"
+        if not centroids_path.exists():
+            raise ValueError(
+                "Centroids must be saved for building IVF."
+                " This limitation may be lifted in the future"
+            )
+    else:
+        raise ValueError(
+            "clusters path must be a dir for building IVF"
+            " This limitation may be lifted in the future"
+        )
+
+    with open(clusters_path, mode="rb") as f:
+        cluster_members = pickle.load(f)
+
+    # TODO: If this file doesn't exist, it will have to be created on-the-fly
+    with open(centroids_path, mode="rb") as f:
+        centroids_packed = np.vstack(pickle.load(f))
+
+    if fps_path is None:
+        input_fps_path = clusters_path.parent / "input-fps"
+        if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+            fps_path = input_fps_path
+        else:
+            msg = (
+                "Could not find input fingerprints. Please use --fps-path."
+                " Summary plot without fingerprints doesn't include isim values"
+            )
+            warnings.warn(msg)
+    if smiles_path is None:
+        input_smiles_path = clusters_path.parent / "input-smiles"
+        if input_smiles_path.is_dir() and _has_files_or_valid_symlinks(
+            input_smiles_path
+        ):
+            smiles_paths = sorted(input_smiles_path.glob("*.smi"))
+            if len(smiles_paths) > 1:
+                raise ValueError("Currently only a single smiles file is supported")
+            smiles_path = smiles_paths[0]
+        else:
+            msg = (
+                "Could not find input smiles. Please use --smiles-path."
+                " Search results won't include smiles"
+            )
+            warnings.warn(msg)
+
+    if fps_path is None:
+        raise ValueError("Fingerprints are required to build the index")
+    elif fps_path.is_dir():
+        fps_paths = sorted(fps_path.glob("*.npy"))
+    else:
+        fps_paths = [fps_path]
+    if len(fps_paths) > 1:
+        raise ValueError(
+            "Currently only a single fp file is supported,"
+            " this restriction will be lifted in the future"
+        )
+
+    fps = np.load(fps_paths[0])  # packed
+    with console.status("[italic]Building IVF index...[/italic]", spinner="dots"):
+        index = IVFIndex.from_bitbirch_clusters(
+            cluster_members,
+            centroids_packed,
+            fps,
+            load_smiles(smiles_path) if smiles_path is not None else (),
+            method,
+            n_clusters,
+            input_is_packed=True,
+            random_state=42,
+        )
+
+    with console.status("[italic]Saving IVF index...[/italic]", spinner="dots"):
+        with open(clusters_path.parent / "ivf.pkl", mode="wb") as f:
+            pickle.dump(index, f)
+    console.print("Successfully built IVF index")
 
 
 @app.command("fps-shuffle", rich_help_panel="Fingerprints")
