@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=f1577feb"></script>
+    <script src="../../_static/documentation_options.js?v=9762f624"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -567,7 +567,7 @@
                     <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_threshold_change</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-                    <span class="n">tree</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+                    <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span><span class="n">bufs</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
                     <span class="k">del</span> <span class="n">mol_idxs</span>
                     <span class="k">del</span> <span class="n">bufs</span>
 
@@ -610,7 +610,7 @@
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
 
         <span class="c1"># Either do a refinement step, or fetch and save the bufs and idxs for the next</span>
@@ -654,7 +654,7 @@
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_np</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
 
         <span class="c1"># Save clusters and exit</span>
