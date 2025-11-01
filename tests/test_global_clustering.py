@@ -1,3 +1,4 @@
+# import sys
 import numpy as np
 from bblean.bitbirch import BitBirch
 from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
@@ -28,6 +29,9 @@ def test_random_fps_consistency() -> None:
             [235, 255, 123, 255, 255],
         ]
     )
+    # For some strage reason this test *fails on macOS*
+    # The kmeans implementation of sklearn seems to work different in linux and macOS
+    # if sys.platform != "darwin":
     tree.global_clustering(
         20,
         method="kmeans",

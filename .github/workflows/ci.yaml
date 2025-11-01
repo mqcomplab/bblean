@@ -54,7 +54,7 @@ jobs:
 
       - name: run-pytest
         run: |
-          pytest --cov=bblean --cov-report=json -s -k 'not regression' ./tests
+          MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 pytest --cov=bblean --cov-report=json -s -k 'not regression' ./tests
           coverage report
 
       - name: upload-badge-artifact
