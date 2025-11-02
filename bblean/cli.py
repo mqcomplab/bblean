@@ -586,7 +586,7 @@ def _table_summary(
         Path | None,
         Option(
             "-s",
-            "--smiles-path",
+            "--smiles",
             show_default=False,
             help="Optional smiles path, if passed a scaffold analysis is performed",
         ),
@@ -795,7 +795,7 @@ def _plot_summary(
         Path | None,
         Option(
             "-s",
-            "--smiles-path",
+            "--smiles",
             show_default=False,
             help="Optional smiles path, if passed a scaffold analysis is performed",
         ),
@@ -1046,11 +1046,11 @@ def _run(
     ] = False,
     idx_method: Annotated[
         str,
-        Option("--idx-method"),
+        Option("--idx-method", hidden=True),
     ] = "kmeans",
     idx_n_clusters: Annotated[
         int | None,
-        Option("--n-clusters"),
+        Option("--n-clusters", hidden=True),
     ] = None,
 ) -> None:
     r"""Run standard, serial BitBIRCH clustering over `*.npy` fingerprint files"""
@@ -1180,16 +1180,24 @@ def _run(
 
     input_smiles_dir = (out_dir / "input-smiles").resolve()
     input_smiles_dir.mkdir()
+
+    smiles_files = []
+    if smiles_path:
+        smiles_files = (
+            [smiles_path]
+            if not smiles_path.is_dir()
+            else sorted(smiles_path.glob("*.smi"))
+        )
     if copy_inputs:
         for file in input_files:
             shutil.copy(file, input_fps_dir / file.name)
-        if smiles_path:
-            shutil.copy(smiles_path, input_smiles_dir / "smiles.smi")
+        for file in smiles_files:
+            shutil.copy(file, input_smiles_dir / file.name)
     else:
         for file in input_files:
             (input_fps_dir / file.name).symlink_to(file.resolve())
-        if smiles_path:
-            (input_smiles_dir / "smiles.smi").symlink_to(smiles_path.resolve())
+        for file in smiles_files:
+            (input_smiles_dir / file.name).symlink_to(file.resolve())
 
     # Build the index with defaults
     if build_idx:
@@ -1391,6 +1399,18 @@ def _multiround(
         bool,
         Option("--cleanup/--no-cleanup", hidden=True),
     ] = True,
+    build_idx: Annotated[
+        bool,
+        Option("--build-idx/--no-build-idx"),
+    ] = False,
+    idx_method: Annotated[
+        str,
+        Option("--idx-method", hidden=True),
+    ] = "kmeans",
+    idx_n_clusters: Annotated[
+        int | None,
+        Option("--n-clusters", hidden=True),
+    ] = None,
 ) -> None:
     r"""Run multi-round BitBIRCH clustering, optionally parallelize over `*.npy` files"""  # noqa:E501
     from bblean._console import get_console
@@ -1479,6 +1499,10 @@ def _multiround(
     else:
         for file in input_files:
             (input_fps_dir / file.name).symlink_to(file.resolve())
+
+    # Build the index with defaults
+    if build_idx:
+        _build_idx(out_dir, method=idx_method, n_clusters=idx_n_clusters)
 
 
 @app.command("fps-info", rich_help_panel="Fingerprints")
@@ -1873,11 +1897,6 @@ def _query_idx(
     from bblean.ivf import IVFIndex
 
     console = get_console()
-    if idx_path.is_dir() and (idx_path / "index").is_dir():
-        idx_path = idx_path / "index"
-    else:
-        idx_path = idx_path
-
     index = IVFIndex.from_dir(idx_path)
     # TODO: This is a placeholder, must be modified!!
     query_fp = fps_from_smiles([query], kind="rdkit", n_features=2048, pack=True)[0]
@@ -1924,7 +1943,7 @@ def _build_idx(
         Path | None,
         Option(
             "-s",
-            "--smiles-path",
+            "--smiles",
             show_default=False,
             help="Optional smiles path, if used smiles are returned in search results",
         ),
@@ -1945,7 +1964,7 @@ def _build_idx(
     import numpy as np
     from bblean.utils import _has_files_or_valid_symlinks
     from bblean.ivf import IVFIndex
-    from bblean.smiles import load_smiles
+
     from bblean._console import get_console
 
     console = get_console(silent=not verbose)
@@ -1956,54 +1975,61 @@ def _build_idx(
     with open(centroids_path, mode="rb") as f:
         centroids_packed = np.vstack(pickle.load(f))
 
+    inferred_fps_path = clusters_path.parent / "input-fps"
+    symlink_fps = False
     if fps_path is None:
-        input_fps_path = clusters_path.parent / "input-fps"
-        if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
-            fps_path = input_fps_path
-        else:
-            msg = (
-                "Could not find input fingerprints. Please use --fps-path."
-                " Summary plot without fingerprints doesn't include isim values"
-            )
-            warnings.warn(msg)
-    if smiles_path is None:
-        input_smiles_path = clusters_path.parent / "input-smiles"
-        if input_smiles_path.is_dir() and _has_files_or_valid_symlinks(
-            input_smiles_path
-        ):
-            smiles_paths = sorted(input_smiles_path.glob("*.smi"))
-            if len(smiles_paths) > 1:
-                raise ValueError("Currently only a single smiles file is supported")
-            smiles_path = smiles_paths[0]
-        else:
-            msg = (
-                "Could not find input smiles. Please use --smiles-path."
-                " Search results won't include smiles"
-            )
-            warnings.warn(msg)
-
-    if fps_path is None:
-        raise ValueError("Fingerprints are required to build the index")
-    elif fps_path.is_dir():
-        fps_paths = sorted(fps_path.glob("*.npy"))
+        fps_path = inferred_fps_path
+    elif inferred_fps_path.is_dir():
+        raise ValueError("Fingerprints are already present in cluster dir")
     else:
-        fps_paths = [fps_path]
-    if len(fps_paths) > 1:
-        raise ValueError(
-            "Currently only a single fp file is supported,"
-            " this restriction will be lifted in the future"
-        )
-    fps_path = fps_paths[0]
+        symlink_fps = True
 
-    fps = np.load(fps_path)  # packed
+    if fps_path.is_dir() and _has_files_or_valid_symlinks(fps_path):
+        fps_files = sorted(fps_path.glob("*.npy"))
+    elif fps_path.is_file():
+        fps_files = [fps_path]
+        fps_path = fps_path.parent
+    else:
+        raise ValueError("Fingerprints are required to build the index")
+
+    if len(fps_files) > 1:
+        with console.status(
+            "[italic]Merging fingerprint files for IVF index...[/italic]",
+            spinner="dots",
+        ):
+            fps_path = fps_path.parent / "merged-fps"
+            _merge_fps(fps_path.parent / "input-fps", fps_path)
+            fps_files = sorted(fps_path.glob("*.npy"))
+            assert len(fps_files) == 1
+            symlink_fps = False
+
+    inferred_smiles_path = clusters_path.parent / "input-smiles"
+    if smiles_path is not None:
+        if inferred_smiles_path.is_dir():
+            raise ValueError("Smiles already present in cluster dir")
+        if smiles_path.is_dir():
+            smiles_files = sorted(smiles_path.glob("*.smi"))
+        else:
+            smiles_files = [smiles_path]
+            smiles_path = smiles_path.parent
+    else:
+        if not (
+            inferred_smiles_path.is_dir()
+            and _has_files_or_valid_symlinks(inferred_smiles_path)
+        ):
+            msg = "Smiles won't be returned when searching index, please use --smiles"
+            warnings.warn(msg)
+
+    fps = np.load(fps_files[0])  # packed
     kwargs = {"random_state": 42} if method.startswith("kmeans") else {}
 
     with console.status("[italic]Building IVF index...[/italic]", spinner="dots"):
+        # Build with no smiles, since we don't need to search anyting yet
         index = IVFIndex.from_bitbirch_clusters(
             cluster_members,
             centroids_packed,
             fps,
-            load_smiles(smiles_path) if smiles_path is not None else (),
+            (),
             method,
             n_clusters,
             input_is_packed=True,
@@ -2022,17 +2048,12 @@ def _build_idx(
         global_clusters_path = clusters_path.parent / "global-clusters.pkl"
         with open(global_clusters_path, mode="wb") as f:
             pickle.dump(index._members, f)
-        idx_path = clusters_path.parent / "index"
-        if idx_path.exists():
-            shutil.rmtree(idx_path)
-        idx_path.mkdir(exist_ok=True)
+        if symlink_fps:
+            for file in fps_files:
+                (fps_path / file.name).symlink_to(file.resolve())
         if smiles_path is not None:
-            (idx_path / "smiles.smi").symlink_to(smiles_path.resolve())
-        (idx_path / "fps.npy").symlink_to(fps_path.resolve())
-        (idx_path / "global-clusters.pkl").symlink_to(global_clusters_path.resolve())
-        (idx_path / "global-cluster-medoids-packed.npy").symlink_to(
-            global_cluster_medoids_path.resolve()
-        )
+            for file in smiles_files:
+                (smiles_path / file.name).symlink_to(file.resolve())
     console.print("Successfully built IVF index")
 
 

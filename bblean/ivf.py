@@ -72,14 +72,19 @@ class IVFIndex:
     def from_dir(cls, idx_path: Path) -> tpx.Self:
         global_cluster_medoids_path = idx_path / "global-cluster-medoids-packed.npy"
         global_clusters_path = idx_path / "global-clusters.pkl"
-        fps_path = idx_path / "fps.npy"
-        smiles_path = idx_path / "smiles.smi"
+        if (idx_path / "merged-fps").is_dir():
+            fps_paths = sorted((idx_path / "merged-fps").glob("*.npy"))
+        else:
+            fps_paths = sorted((idx_path / "input-fps").glob("*.npy"))
+        if len(fps_paths) > 1:
+            raise ValueError("Currently only a single fp file is supported")
+        fps_path = fps_paths[0]
+        smiles_files = sorted((idx_path / "input-smiles").glob("*.smi"))
         with open(global_clusters_path, "rb") as f:
             members = pickle.load(f)
         medoids_packed = np.load(global_cluster_medoids_path)
         fps = np.load(fps_path)
-        smiles = load_smiles(smiles_path)
-        return cls(medoids_packed, members, fps, smiles)
+        return cls(medoids_packed, members, fps, load_smiles(smiles_files))
 
     @classmethod
     def from_bitbirch_clusters(
