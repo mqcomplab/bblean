@@ -397,6 +397,7 @@ class _BFSubcluster:
         mol_indices: tp.Sequence[int] = (),
         n_features: int = 2048,
         buffer: NDArray[np.integer] | None = None,
+        check_indices: bool = True,
     ):
         # NOTE: Internally, _buffer holds both "linear_sum" and "n_samples" It is
         # guaranteed to always have the minimum required uint dtype It should not be
@@ -409,7 +410,7 @@ class _BFSubcluster:
         if buffer is not None:
             if linear_sum is not None:
                 raise ValueError("'linear_sum' and 'buffer' are mutually exclusive")
-            if len(mol_indices) != buffer[-1]:
+            if check_indices and len(mol_indices) != buffer[-1]:
                 raise ValueError(
                     "Expected len(mol_indices) == buffer[-1],"
                     f" but found {len(mol_indices)} != {buffer[-1]}"
@@ -418,7 +419,7 @@ class _BFSubcluster:
             self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
         else:
             if linear_sum is not None:
-                if len(mol_indices) != 1:
+                if check_indices and len(mol_indices) != 1:
                     raise ValueError(
                         "Expected len(mol_indices) == 1,"
                         f" but found {len(mol_indices)} != 1"
@@ -432,7 +433,7 @@ class _BFSubcluster:
                 )
             else:
                 # Empty subcluster
-                if len(mol_indices) != 0:
+                if check_indices and len(mol_indices) != 0:
                     raise ValueError(
                         "Expected len(mol_indices) == 0 for empty subcluster,"
                         f" but found {len(mol_indices)} != 0"
@@ -784,10 +785,12 @@ class BitBirch:
                 mmanager.release_curr_page_and_update_addr()
         return self
 
-    def _fit_np(
+    def _fit_buffers(
         self,
         X: _Input | Path | str,
-        reinsert_index_seqs: tp.Iterable[tp.Sequence[int]] | None = None,
+        reinsert_index_seqs: (
+            tp.Iterable[tp.Sequence[int]] | tp.Literal["omit"]
+        ) = "omit",
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
@@ -796,9 +799,11 @@ class BitBirch:
             - buffer[-1] = n_samples
         And X is either an array or a list of such buffers
 
-        if `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
+        If `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
         reinserted into the tree, and `reinsert_index_seqs` are the sequences
         of indices associated with such buffers.
+
+        If `reinsert_index_seqs` is "omit", then no indices are collected in the tree.
 
         Parameters
         ----------
@@ -832,13 +837,15 @@ class BitBirch:
         branching_factor = self.branching_factor
         idx_provider: tp.Iterable[tp.Sequence[int]]
         arr_idx = 0
-        if reinsert_index_seqs is None:
-            idx_provider = ([idx] for idx in range(self.num_fitted_fps))
+        if reinsert_index_seqs == "omit":
+            idx_provider = (() for idx in range(self.num_fitted_fps))
+            check = False
         else:
             idx_provider = reinsert_index_seqs
+            check = True
         for idxs, buf in zip(idx_provider, arr_iterable):
             subcluster = _BFSubcluster(
-                buffer=buf, mol_indices=idxs, n_features=n_features
+                buffer=buf, mol_indices=idxs, n_features=n_features, check_indices=check
             )
             split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
@@ -1165,7 +1172,7 @@ class BitBirch:
 
             # Refit the subsclusters
             for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+                self._fit_buffers(bufs, reinsert_index_seqs=mol_idxs)
 
         # Print final stats
         if verbose:
@@ -1201,7 +1208,7 @@ class BitBirch:
 
         # Rebuild the tree again from scratch, reinserting all the subclusters
         for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-            self._fit_np(bufs, reinsert_index_seqs=mol_idxs)
+            self._fit_buffers(bufs, reinsert_index_seqs=mol_idxs)
         return self
 
     def _get_leaf_bfs(self, sort: bool = True) -> list[_BFSubcluster]:
@@ -1318,10 +1325,12 @@ class BitBirch:
         **method_kwargs: tp.Any,
     ) -> tpx.Self:
         r""":meta private:"""
+        warnings.warn(
+            "Global clustering is an experimental features"
+            " it will be modified without warning, please do not use"
+        )
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
-        # Add 1 to start labels from 1 instead of 0, so 0 can be used as sentinel
-        # value
         centroids = np.vstack(self.get_centroids(packed=False))
         labels = self._centrals_global_clustering(
             centroids, n_clusters, method=method, input_is_packed=False, **method_kwargs
