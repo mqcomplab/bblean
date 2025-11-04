@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: setup-python
         uses: actions/setup-python@v6
@@ -67,6 +69,8 @@ jobs:
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: setup-python
         uses: actions/setup-python@v6
