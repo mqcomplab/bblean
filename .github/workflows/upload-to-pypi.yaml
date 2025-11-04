@@ -1,0 +1,114 @@
+name: upload-to-pypi
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Force version
+      upload-pypi:
+        description: Upload to pypi
+        required: false
+        default: false
+        type: boolean
+      upload-testpypi:
+        description: Upload to test-pypi
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  SETUPTOOLS_SCM_PRETEND_VERSION: ${{ github.event.inputs.version }}
+  # cibuildwheel configuration:
+  # Skip 32 bit and musllinux (Alpine) wheels
+  CIBW_SKIP: "*-manylinux_i686 *-win32 *-musllinux_*"
+  CIBW_TEST_REQUIRES: pytest pytest-subtests inline-snapshot
+  CIBW_TEST_COMMAND: pytest -k 'not regression' {project}/tests
+  CIBW_PRERELEASE_PYTHONS: False
+  CIBW_ENVIRONMENT: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.event.inputs.version }} BITBIRCH_BUILD_CPP=1"
+  # Build wheels that support both aarch64 and x86_64 on macOS
+  CIBW_ARCHS_MACOS: "universal2"
+  CIBW_BUILD_VERBOSITY: 3
+
+jobs:
+  make_sdist:
+    name: make-source-distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout-repo
+        uses: actions/checkout@v5
+
+      - name: setup-python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: install-sdist-deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: build-sdist
+        run: python -m build --sdist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+
+      - name: validate-sdist-metadata
+        run: twine check dist/*
+
+  build_wheels:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    name: build-${{ matrix.os }}-wheels
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: checkout-repo
+        uses: actions/checkout@v5
+
+      - name: setup-python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: install-wheel-deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install cibuildwheel
+
+      - name: build-wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: wheelhouse/*.whl
+
+  upload_all:
+    needs: [build_wheels, make_sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - name: publish-to-testpypi
+        if: ${{ github.event.inputs.upload-testpypi == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: publish-to-pypi
+        if: ${{ github.event.inputs.upload-pypi == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+
+      - name: no-pypi-publish
+        if: ${{ github.event.inputs.uploadToPyPI != 'true' }}
+        run: echo "Skipping pypi upload"

@@ -53,7 +53,7 @@ classifiers=[
 readme = {file = ["README.md"]}
 
 [build-system]
-requires = ["setuptools>=75.6", "setuptools-scm>=9", "pybind11"]
+requires = ["setuptools>=75.6", "setuptools-scm>=9", "pybind11", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
