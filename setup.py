@@ -11,7 +11,12 @@ with open(root / "pyproject.toml", "rb") as f:
 
 name = pyproject["project"]["name"]
 
-_setup_kwargs = dict(name=name, use_scm_version=True, build_requires=["setuptools_scm"])
+_setup_kwargs = dict(
+    name=name,
+    use_scm_version=True,
+    build_requires=["setuptools_scm"],
+    long_description_content_type="text/markdown",
+)
 
 # Build C++ extensions (recommended)
 if os.getenv("BITBIRCH_BUILD_CPP"):
