@@ -86,29 +86,45 @@ jobs:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: wheelhouse/*.whl
 
-  upload_all:
+  publish_to_testpypi:
     needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.upload-testpypi == 'true' }}
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/bblean
+    permissions:
+      id-token: write 
+
     steps:
       - uses: actions/download-artifact@v5
         with:
           pattern: cibw-*
           path: dist
           merge-multiple: true
-
-      - name: publish-to-testpypi
-        if: ${{ github.event.inputs.upload-testpypi == 'true' }}
+      - name: publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
           repository-url: https://test.pypi.org/legacy/
 
-      - name: publish-to-pypi
-        if: ${{ github.event.inputs.upload-pypi == 'true' }}
+  publish_to_pypi:
+    needs: [build_wheels, make_sdist]
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.upload-pypi == 'true' }}
+    environment:
+      name: pypi
+      url: https://pypi.org/p/bblean
+    permissions:
+      id-token: write 
+
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+      - name: publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
-
-      - name: no-pypi-publish
-        if: ${{ github.event.inputs.uploadToPyPI != 'true' }}
-        run: echo "Skipping pypi upload"
