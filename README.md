@@ -31,34 +31,51 @@ we hit version 1.0
 
 The [documentation](https://mqcomplab.github.io/bblean/devdocs) of the developer version is a work in progress. Please let us know if you find any issues.
 
-⚠️  **Important**: In version 0.3 (beta) the default `threshold` was changed to 0.3 and the
-default fingerprint kind to *ecfp4*. We recommend setting `threshold` to 0.5-0.65 for
-*rdkit* fingerprints and 0.3-0.4 for *ecfp4* or *ecfp6* fingerprints (although you may
-need further tuning for your specific library / fingerprint set).
+⚠️  **Important**: The default `threshold` is 0.3 and the default fingerprint kind to
+*ecfp4*. We recommend setting `threshold` to 0.5-0.65 for *rdkit* fingerprints and
+0.3-0.4 for *ecfp4* or *ecfp6* fingerprints (although you may need further tuning for
+your specific library / fingerprint set). For more information on tuning these
+parameters see [the best
+practices](https://mqcomplab.github.io/bblean/devdocs/user-guide/notebooks/bitbirch_best_practices.html)
+and [parameter
+tuning](https://mqcomplab.github.io/bblean/devdocs/user-guide/parameters.html) guides.
 
 ## Installation
 
-BitBIRCH-Lean requires Python 3.11. To build from source, editable mode, using a conda
-environment:
+BitBIRCH-Lean requires Python 3.11 or higher, and can be installed in Windows, Linux or
+macOS via pip, which automatically includes C++ extensions:
 
 ```bash
+pip install bblean
+bb --help
+```
+
+We recommend installing `bblean` in a conda environment or a `venv`.
+
+Memory usage and C++ extensions are most optimized for Linux / macOS. We support windows
+on a best-effort basis, some releases may not have Windows support.
+
+### From source
+
+To build from source instead (editable mode):
+
+```bash
+git clone git@github.com:mqcomplab/bblean,
+cd bblean
+
 conda env create --file ./environment.yaml
 conda activate bblean
 
+BITBIRCH_BUILD_CPP=1 pip install -e .
+
+# If you want to build without the C++ extensions run this instead:
 pip install -e .
 
 bb --help
 ```
 
-BitBirch-Lean has optional C++ extensions. These have been currently tested
-on Linux x86 only. You should expect a speedup of ~1.8-2.0x on Linux. To install the
-extensions from source run the following command:
-
-```bash
-BITBIRCH_BUILD_CPP=1 pip install -e .
-```
-If the extensions install successfully, they will be automatically used each time BitBirch-Lean or
-its classes are used. No need to do anything else.
+If the extensions install successfully, they will be automatically used each time
+BitBirch-Lean or its classes are used. No need to do anything else.
 
 If you run into any issues when installing the extensions, please open a GitHub issue
 and tag it with `C++`.

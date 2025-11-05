@@ -23,6 +23,7 @@ eggs/
 *.egg-info/
 *.egg
 wheels/
+wheelhouse/
 share/python-wheels/
 
 # Coverage

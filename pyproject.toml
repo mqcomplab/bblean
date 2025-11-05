@@ -12,7 +12,8 @@ license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 description = "BitBirch-Lean Python package"
 requires-python = ">=3.11"
-dynamic = ["version", "readme"]
+dynamic = ["version"]
+readme = "README.md"
 dependencies = [
     "scipy",
     "rdkit",
@@ -22,7 +23,6 @@ dependencies = [
     "matplotlib",
     "colorcet",
     "seaborn",
-    "opentsne",
     "scikit-learn",
     "rich",
     "typer",
@@ -38,7 +38,7 @@ classifiers=[
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",
   "Development Status :: 4 - Beta",
-  "Operating System :: Microsoft :: Windows",
+  #"Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Operating System :: Unix",
   "Operating System :: MacOS",
@@ -49,11 +49,8 @@ classifiers=[
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 
-[tool.setuptools.dynamic]
-readme = {file = ["README.md"]}
-
 [build-system]
-requires = ["setuptools>=75.6", "setuptools-scm>=9", "pybind11"]
+requires = ["setuptools>=75.6", "setuptools-scm>=9", "pybind11", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
