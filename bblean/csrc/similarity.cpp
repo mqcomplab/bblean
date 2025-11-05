@@ -69,7 +69,7 @@ uint32_t _popcount_1d(const py::array_t<uint8_t>& arr) {
 #endif
     uint32_t count{0};  // Output scalar
     py::ssize_t steps = arr.shape(0);
-    if (is_8byte_aligned(arr) and (steps % 64 == 0)) {
+    if (is_8byte_aligned(arr) && (steps % 64 == 0)) {
 #ifdef DEBUG_LOGS
         py::print("DEBUG: _popcount_1d fn triggered uint64 + popcount 64");
 #endif
@@ -110,7 +110,7 @@ py::array_t<uint32_t> _popcount_2d(const CArrayForcecast<uint8_t>& arr) {
     print_8byte_alignment_check(arr);
 #endif
     py::ssize_t steps = arr.shape(1);
-    if (is_8byte_aligned(arr) and (steps % 64 == 0)) {
+    if (is_8byte_aligned(arr) && (steps % 64 == 0)) {
 #ifdef DEBUG_LOGS
         py::print("DEBUG: _popcount_2d fn triggered uint64 + popcount 64");
 #endif
@@ -351,7 +351,7 @@ py::array_t<double> jt_sim_packed_precalc_cardinalities(
     }
     auto out = py::array_t<double>(n_samples);
 
-    if (is_8byte_aligned(arr) and is_8byte_aligned(vec) and
+    if (is_8byte_aligned(arr) && is_8byte_aligned(vec) and
         (n_features % 64 == 0)) {
 #ifdef DEBUG_LOGS
         py::print("DEBUG: jt_sim_packed fn triggered uint64 + popcount 64");
