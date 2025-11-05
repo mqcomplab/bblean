@@ -23,7 +23,7 @@ env:
   # Skip py 3.14, 32 bit and musllinux (Alpine) wheels
   CIBW_SKIP: "cp314-* cp314t-* *-manylinux_i686 *-win32 *-musllinux_*"
   CIBW_TEST_REQUIRES: pytest pytest-subtests inline-snapshot
-  CIBW_TEST_COMMAND: pytest -k 'not regression' {project}/tests
+  CIBW_TEST_COMMAND: pytest -k "not regression" {project}/tests
   CIBW_PRERELEASE_PYTHONS: False
   CIBW_ENVIRONMENT: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.event.inputs.version }} BITBIRCH_BUILD_CPP=1"
   # Build wheels that support both aarch64 and x86_64 on macOS
