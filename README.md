@@ -42,14 +42,18 @@ tuning](https://mqcomplab.github.io/bblean/devdocs/user-guide/parameters.html) g
 
 ## Installation
 
-BitBIRCH-Lean requires Python 3.11 or higher, and can be installed in Linux or macOS.
-Via pip, which automatically includes C++ extensions:
+BitBIRCH-Lean requires Python 3.11 or higher, and can be installed in Windows, Linux or
+macOS via pip, which automatically includes C++ extensions:
 
 ```bash
 pip install bblean
 bb --help
 ```
+
 We recommend installing `bblean` in a conda environment or a `venv`.
+
+Memory usage and C++ extensions are most optimized for Linux / macOS. We support windows
+on a best-effort basis, some releases may not have Windows support.
 
 ### From source
 
