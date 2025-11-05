@@ -23,13 +23,15 @@ APPLE_SILICON = platform.machine().lower() in ["arm64", "aarch64"]
 ARM = platform.machine().lower().startswith("arm") and not APPLE_SILICON
 
 # Build C++ extensions (recommended)
+extra_compile_args = []
 if os.getenv("BITBIRCH_BUILD_CPP"):
     import pybind11
     from pybind11.setup_helpers import Pybind11Extension, WIN
 
     # setuptools paths must be relative
     ext_sources = [str((Path(name) / "csrc" / "similarity.cpp"))]
-    extra_compile_args = ["-O3"]  # -O3 includes -ftree-vectorize
+    if not WIN:
+        extra_compile_args.append("-O3")  # -O3 includes -ftree-vectorize
     if not WIN:
         if X86:
             if os.getenv("BITBIRCH_BUILD_NATIVE"):
