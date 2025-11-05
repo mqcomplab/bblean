@@ -351,7 +351,7 @@ py::array_t<double> jt_sim_packed_precalc_cardinalities(
     }
     auto out = py::array_t<double>(n_samples);
 
-    if (is_8byte_aligned(arr) && is_8byte_aligned(vec) and
+    if (is_8byte_aligned(arr) && is_8byte_aligned(vec) &&
         (n_features % 64 == 0)) {
 #ifdef DEBUG_LOGS
         py::print("DEBUG: jt_sim_packed fn triggered uint64 + popcount 64");

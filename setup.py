@@ -29,7 +29,8 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
 
     # setuptools paths must be relative
     ext_sources = [str((Path(name) / "csrc" / "similarity.cpp"))]
-    extra_compile_args = ["-O3"]  # -O3 includes -ftree-vectorize
+    if not WIN:
+        extra_compile_args = ["-O3"]  # -O3 includes -ftree-vectorize
     if not WIN:
         if X86:
             if os.getenv("BITBIRCH_BUILD_NATIVE"):
