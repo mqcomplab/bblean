@@ -47,6 +47,7 @@ macOS via pip, which automatically includes C++ extensions:
 
 ```bash
 pip install bblean
+# Alternatively you can use 'uv pip install'
 bb --help
 ```
 
