@@ -243,7 +243,7 @@ py::array_t<uint8_t> centroid_from_sum(const CArrayForcecast<T>& linear_sum,
         }
     }
 
-    if (not pack) {
+    if (!pack) {
         return centroid_unpacked;
     }
 
