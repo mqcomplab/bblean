@@ -47,6 +47,7 @@ Via pip, which automatically includes C++ extensions:
 
 ```bash
 pip install bblean
+bb --help
 ```
 We recommend installing `bblean` in a conda environment or a `venv`.
 
