@@ -957,7 +957,6 @@ def _run(
         bool,
         Option(
             "--monitor-mem/--no-monitor-mem",
-            "--monitor-rss/--no-monitor-rss",
             help="Monitor RAM used by all processes",
             rich_help_panel="Advanced",
         ),
@@ -966,7 +965,6 @@ def _run(
         float,
         Option(
             "--monitor-mem-seconds",
-            "--monitor-rss-seconds",
             help="Interval in seconds for RAM monitoring",
             rich_help_panel="Debug",
             hidden=True,
@@ -1284,8 +1282,7 @@ def _multiround(
     monitor_rss: Annotated[
         bool,
         Option(
-            "--monitor-mem",
-            "--monitor-rss",
+            "--monitor-mem/--no-monitor-mem",
             help="Monitor RAM used by all processes",
             rich_help_panel="Advanced",
         ),
@@ -1294,7 +1291,6 @@ def _multiround(
         float,
         Option(
             "--monitor-mem-seconds",
-            "--monitor-rss-seconds",
             help="Interval in seconds for RAM monitoring",
             rich_help_panel="Debug",
             hidden=True,
