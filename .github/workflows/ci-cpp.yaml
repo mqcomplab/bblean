@@ -56,8 +56,8 @@ jobs:
 
       - name: run-pytest
         run: |
-        $env:BITBIRCH_CANT_SKIP_CPP_TESTS="1"
-        pytest -s ./tests/test_similarity.py
+          $env:BITBIRCH_CANT_SKIP_CPP_TESTS="1"
+          pytest -s ./tests/test_similarity.py
 
 
   # Ubuntu 24.04 for reproducibility in regression tests only
