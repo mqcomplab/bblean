@@ -77,7 +77,7 @@ def test_speed_regression(subtests) -> None:
     # all_max_allowed_ns = [1_200_000_000, 1_900_000_000, 2_500_000_000]
     # For the ubuntu-24.04 in gh CI the following are required:
     if CSIM_AVAIL:
-        all_max_allowed_ns = [900_000_000, 1_400_000_000, 2_000_000_000]
+        all_max_allowed_ns = [900_000_000, 1_500_000_000, 2_000_000_000]
     else:
         all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_600_000_000]
     for fps_num, max_allowed_ns in zip(all_fps_nums, all_max_allowed_ns):

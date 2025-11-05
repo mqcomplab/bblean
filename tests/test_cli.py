@@ -254,6 +254,7 @@ def test_multiround() -> None:
                 "--no-verbose",
                 "--set-mid-merge",
                 "tolerance-legacy",
+                "--no-monitor-mem",
             ],
         )
         with open(out_dir / "clusters.pkl", mode="rb") as f:
@@ -288,7 +289,18 @@ def test_run() -> None:
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
         result = runner.invoke(
-            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.65"]
+            app,
+            [
+                "run",
+                str(dir),
+                "-o",
+                str(out_dir),
+                "-b",
+                "50",
+                "-t",
+                "0.65",
+                "--no-monitor-mem",
+            ],
         )
         with open(out_dir / "clusters.pkl", mode="rb") as f:
             obj = pickle.load(f)
