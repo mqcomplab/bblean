@@ -399,13 +399,17 @@ def dump_mol_images(
     clusters: list[list[int]],
     cluster_idx: int = 0,
     batch_size: int = 30,
+    limit: int = -1,
 ) -> None:
     r"""Dump smiles associated with a specific cluster as ``*.png`` image files"""
     if isinstance(smiles, str):
         smiles = [smiles]
     smiles = np.asarray(smiles)
     idxs = clusters[cluster_idx]
+    num = 0
     for i, idx_seq in enumerate(batched(idxs, batch_size)):
+        if num + len(idx_seq) > limit:
+            idx_seq = idx_seq[: num + len(idx_seq) - limit]
         mols = []
         for smi in smiles[list(idx_seq)]:
             mol = Chem.MolFromSmiles(smi)
@@ -415,6 +419,9 @@ def dump_mol_images(
         img = Draw.MolsToGridImage(mols, molsPerRow=5)
         with open(f"cluster_{cluster_idx}_{i}.png", "wb") as f:
             f.write(img.data)
+        num += len(idx_seq)
+        if num >= limit:
+            break
 
 
 # For internal use, dispatches a visualization workflow and optionally saves

@@ -1096,8 +1096,10 @@ def _run(
 
     timer.end_timing("total", console, indent=False)
     console.print_peak_mem(out_dir, indent=False)
-    if variant == "lean":
-        if save_tree:
+    if save_tree:
+        if variant != "lean":
+            console.print("Can't save tree for non-lean variants", style="red")
+        else:
             # TODO: BitBIRCH is highly recursive. pickling may crash python,
             # an alternative solution would be better
             _old_limit = sys.getrecursionlimit()
@@ -1105,17 +1107,23 @@ def _run(
             with open(out_dir / "bitbirch.pkl", mode="wb") as f:
                 pickle.dump(tree, f)
             sys.setrecursionlimit(_old_limit)
+    if variant == "lean":
         tree.delete_internal_nodes()
-        # Dump outputs (peak memory, timings, config, cluster ids)
-        if save_centroids:
+    # Dump outputs (peak memory, timings, config, cluster ids)
+    if save_centroids:
+        if variant != "lean":
+            console.print("Can't save centroids for non-lean variants", style="red")
+            with open(out_dir / "clusters.pkl", mode="wb") as f:
+                pickle.dump(tree.get_cluster_mol_ids(), f)
+        else:
             output = tree.get_centroids_mol_ids()
             with open(out_dir / "clusters.pkl", mode="wb") as f:
                 pickle.dump(output["mol_ids"], f)
             with open(out_dir / "cluster-centroids-packed.pkl", mode="wb") as f:
                 pickle.dump(output["centroids"], f)
-        else:
-            with open(out_dir / "clusters.pkl", mode="wb") as f:
-                pickle.dump(tree.get_cluster_mol_ids(), f)
+    else:
+        with open(out_dir / "clusters.pkl", mode="wb") as f:
+            pickle.dump(tree.get_cluster_mol_ids(), f)
 
     collect_system_specs_and_dump_config(ctx.params)
     timer.dump(out_dir / "timings.json")
