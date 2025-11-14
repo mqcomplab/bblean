@@ -1107,7 +1107,8 @@ def _run(
             with open(out_dir / "bitbirch.pkl", mode="wb") as f:
                 pickle.dump(tree, f)
             sys.setrecursionlimit(_old_limit)
-    tree.delete_internal_nodes()
+    if variant == "lean":
+        tree.delete_internal_nodes()
     # Dump outputs (peak memory, timings, config, cluster ids)
     if save_centroids:
         if variant != "lean":
