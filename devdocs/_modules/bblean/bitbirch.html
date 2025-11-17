@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=96708787"></script>
+    <script src="../../_static/documentation_options.js?v=e9c008c6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -408,6 +408,8 @@
 <span class="c1"># ./LICENSES/GPL-3.0-only.txt.  If not, see &lt;http://www.gnu.org/licenses/gpl-3.0.html&gt;.</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;BitBirch &#39;Lean&#39; class for fast, memory-efficient O(N) clustering&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>  <span class="c1"># Stringize type annotations for no runtime overhead</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tpx</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
@@ -1714,6 +1716,40 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tolerance=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+        <span class="c1"># TODO: BitBIRCH is highly recursive. pickling may crash python,</span>
+        <span class="c1"># an alternative solution would be better</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Saving large BitBIRCH trees may result in large memory peaks.&quot;</span>
+            <span class="s2">&quot; An alternative serialization method may be implemented in the future&quot;</span>
+        <span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">_old_limit</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getrecursionlimit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">1_000_000_000</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="n">_old_limit</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+        <span class="c1"># TODO: BitBIRCH is highly recursive. pickling may crash python,</span>
+        <span class="c1"># an alternative solution would be better</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Loading large BitBIRCH trees may result in large memory peaks.&quot;</span>
+            <span class="s2">&quot; An alternative serialization method may be implemented in the future&quot;</span>
+        <span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">_old_limit</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getrecursionlimit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">1_000_000_000</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="n">_old_limit</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Path does not contain a bitbirch object&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tree</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">global_clustering</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>

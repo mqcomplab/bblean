@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=96708787"></script>
+    <script src="../../_static/documentation_options.js?v=e9c008c6"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -659,13 +659,8 @@
 
         <span class="c1"># Save clusters and exit</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_tree</span><span class="p">:</span>
-            <span class="c1"># TODO: BitBIRCH is highly recursive. pickling may crash python,</span>
-            <span class="c1"># an alternative solution would be better</span>
-            <span class="n">_old_limit</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getrecursionlimit</span><span class="p">()</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">100_000</span><span class="p">)</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;bitbirch.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="n">_old_limit</span><span class="p">)</span>
+            <span class="c1"># TODO: Find alternative solution</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">save_pickle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;bitbirch.pkl&quot;</span><span class="p">)</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_centroids</span><span class="p">:</span>
             <span class="n">output</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">get_centroids_mol_ids</span><span class="p">()</span>
