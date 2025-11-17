@@ -1100,13 +1100,8 @@ def _run(
         if variant != "lean":
             console.print("Can't save tree for non-lean variants", style="red")
         else:
-            # TODO: BitBIRCH is highly recursive. pickling may crash python,
-            # an alternative solution would be better
-            _old_limit = sys.getrecursionlimit()
-            sys.setrecursionlimit(100_000)
-            with open(out_dir / "bitbirch.pkl", mode="wb") as f:
-                pickle.dump(tree, f)
-            sys.setrecursionlimit(_old_limit)
+            # TODO: Find alternative solution
+            tree.save_pickle(out_dir / "bitbirch.pkl")
     if variant == "lean":
         tree.delete_internal_nodes()
     # Dump outputs (peak memory, timings, config, cluster ids)
