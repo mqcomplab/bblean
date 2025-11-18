@@ -298,13 +298,8 @@ class _FinalTreeMergingRound(_TreeMergingRound):
 
         # Save clusters and exit
         if self.save_tree:
-            # TODO: BitBIRCH is highly recursive. pickling may crash python,
-            # an alternative solution would be better
-            _old_limit = sys.getrecursionlimit()
-            sys.setrecursionlimit(100_000)
-            with open(self.out_dir / "bitbirch.pkl", mode="wb") as f:
-                pickle.dump(tree, f)
-            sys.setrecursionlimit(_old_limit)
+            # TODO: Find alternative solution
+            tree.save_pickle(self.out_dir / "bitbirch.pkl")
         tree.delete_internal_nodes()
         if self.save_centroids:
             output = tree.get_centroids_mol_ids()
