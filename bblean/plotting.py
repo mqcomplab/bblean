@@ -442,9 +442,12 @@ def _dispatch_visualization(
     verbose: bool = True,
     save: bool = True,
     show: bool = True,
+    use_global: bool = False,
 ) -> None:
     if clusters_path.is_dir():
-        clusters_path = clusters_path / "clusters.pkl"
+        clusters_path = clusters_path / (
+            "global-clusters.pkl" if use_global else "clusters.pkl"
+        )
     with open(clusters_path, mode="rb") as f:
         clusters = pickle.load(f)
     if fps_path is None:
