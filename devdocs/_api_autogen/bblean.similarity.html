@@ -387,7 +387,7 @@
 <span id="bblean-similarity"></span><h1>bblean.similarity<a class="headerlink" href="#module-bblean.similarity" title="Link to this heading">#</a></h1>
 <p>Optimized molecular similarity calculators</p>
 <p class="rubric">Functions</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#bblean.similarity.jt_isim_from_sum" title="bblean.similarity.jt_isim_from_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jt_isim_from_sum</span></code></a></p></td>
 <td><p>iSIM Tanimoto, from sum of rows of a fingerprint array and number of rows</p></td>
@@ -582,7 +582,7 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bblean.similarity.centroid_from_sum">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">centroid_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#centroid_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.centroid_from_sum" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">centroid_from_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">linear_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#centroid_from_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.centroid_from_sum" title="Link to this definition">#</a></dt>
 <dd><p>Calculates the majority vote centroid from a sum of fingerprint values</p>
 <p>The majority vote centroid is an good approximation of the Tanimoto centroid.</p>
 <dl class="field-list simple">
@@ -604,7 +604,7 @@ to the centroid. Finally find fp_2, the most dissimilar molecule to fp_1</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="bblean.similarity.centroid">
-<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">centroid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#centroid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.centroid" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">bblean.similarity.</span></span><span class="sig-name descname"><span class="pre">centroid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/_py_similarity.html#centroid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.similarity.centroid" title="Link to this definition">#</a></dt>
 <dd><p>Calculates the majority vote centroid from a set of fingerprints</p>
 <p>The majority vote centroid is an good approximation of the Tanimoto centroid.</p>
 <dl class="field-list simple">
@@ -760,7 +760,7 @@ obtain a representative sample from a set of fingerprints.</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
     <br/>
   </p>
 </div>
