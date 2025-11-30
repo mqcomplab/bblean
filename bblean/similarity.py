@@ -260,10 +260,12 @@ def estimate_jt_std(
         fps_ = np.random.choice(num_fps, size=1_000_000, replace=False)
         fps_ = fps[fps_]
         num_fps = len(fps_)
+    else:
+        fps_ = fps
     if n_samples is None:
         n_samples = max(num_fps // 1000, 50)
     sample_idxs = jt_stratified_sampling(fps_, n_samples, input_is_packed, n_features)
-    
+
     # Work with only the sampled fingerprints
     fps_ = fps_[sample_idxs]
     num_fps = len(fps_)
