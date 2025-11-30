@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import bblean.similarity as iSIM
 
+
 def recluster_iteration_metrics(fps: np.ndarray,
                                 threshold: float = None,
                                 sigmas: float = 3.5,
@@ -10,8 +11,7 @@ def recluster_iteration_metrics(fps: np.ndarray,
                                 branching_factor: int = 1024,
                                 iterations: int = 11,
                                 ) -> pd.DataFrame:
-    
-    
+
     if threshold is None:
         # Obtain the iSIM and iSIM-sigma
         isim = iSIM.jt_isim_packed(fps)
@@ -19,7 +19,7 @@ def recluster_iteration_metrics(fps: np.ndarray,
         threshold = isim + sigmas * isim_sigma
     else:
         isim_sigma = iSIM.estimate_jt_std(fps, n_samples=50)
-    
+
     # Do the initial clustering
     bbc = bblean.BitBirch(threshold=threshold,
                           branching_factor=branching_factor,
@@ -37,7 +37,7 @@ def recluster_iteration_metrics(fps: np.ndarray,
 
     # Do refinement steps
     for _ in range(iterations):
-        bbc.recluster_inplace(iterations=1, extra_threshold=extra * isim_sigma) # Change
+        bbc.recluster_inplace(iterations=1, extra_threshold=extra * isim_sigma)
         clusters = bbc.get_cluster_mol_ids()
 
         # Collect statistics
@@ -45,7 +45,10 @@ def recluster_iteration_metrics(fps: np.ndarray,
         n_singletons.append(len([c for c in clusters if len(c) == 1]))
         medoids = bbc.get_medoids(fps=fps)
         dispersion.append(iSIM.jt_isim(medoids))
-        dispersion_no_singletons.append(iSIM.jt_isim(medoids[:n_clusters[-1] - n_singletons[-1]]))
+        end_idx = n_clusters[-1] - n_singletons[-1]
+        dispersion_no_singletons.append(
+            iSIM.jt_isim(medoids[:end_idx])
+        )
         top_sizes.append([len(c) for c in clusters[:10]])
 
         if bbc.threshold >= 1.0:
@@ -62,13 +65,14 @@ def recluster_iteration_metrics(fps: np.ndarray,
     }
 
     df = pd.DataFrame(results)
-    
+
     return df
+
 
 def threshold_scan(fps: np.ndarray,
                    max_sigmas: float = 10,
                    branching_factor: int = 1024,):
-    
+
     # Obtain the iSIM and iSIM-sigma
     isim = iSIM.jt_isim_packed(fps)
     isim_sigma = iSIM.estimate_jt_std(fps, n_samples=50)
@@ -80,8 +84,11 @@ def threshold_scan(fps: np.ndarray,
     dispersions = []
     dispersions_non_singleton = []
     top_sizes = []
-    for threshold in np.arange(isim, min(isim + max_sigmas * isim_sigma, 1.0), isim_sigma):
-        bbc = bblean.BitBirch(threshold=threshold, branching_factor=branching_factor, merge_criterion='diameter')
+    top_range = min(isim + max_sigmas * isim_sigma, 1.0)
+    for threshold in np.arange(isim, top_range, isim_sigma):
+        bbc = bblean.BitBirch(threshold=threshold,
+                              branching_factor=branching_factor,
+                              merge_criterion='diameter')
         bbc.fit(fps)
         clusters = bbc.get_cluster_mol_ids()
 
@@ -92,7 +99,8 @@ def threshold_scan(fps: np.ndarray,
         n_clusters.append(len(clusters))
         n_singletons.append(len([c for c in clusters if len(c) == 1]))
         dispersions.append(iSIM.jt_isim(medoids))
-        dispersions_non_singleton.append(iSIM.jt_isim(medoids[:n_clusters[-1] - n_singletons[-1]]))
+        end_idx = n_clusters[-1] - n_singletons[-1]
+        dispersions_non_singleton.append(iSIM.jt_isim(medoids[:end_idx]))
         top_sizes.append([len(c) for c in clusters[:10]])
 
         # Save the results
@@ -106,8 +114,9 @@ def threshold_scan(fps: np.ndarray,
         }
 
         df = pd.DataFrame(results)
-        
+
     return df
+
 
 def branching_factor_scan(fps: np.ndarray,
                           sigmas_list: list[float],
@@ -131,7 +140,9 @@ def branching_factor_scan(fps: np.ndarray,
     memory = []
     for threshold in thresholds_list:
         for bf in branching_factor_list:
-            bbc = bblean.BitBirch(threshold=threshold, branching_factor=bf, merge_criterion='diameter')
+            bbc = bblean.BitBirch(threshold=threshold,
+                                  branching_factor=bf,
+                                  merge_criterion='diameter')
             bbc.fit(fps)
 
             clusters = bbc.get_cluster_mol_ids()
@@ -144,7 +155,8 @@ def branching_factor_scan(fps: np.ndarray,
             n_singletons.append(len([c for c in clusters if len(c) == 1]))
             branching_factors.append(bf)
             dispersions.append(iSIM.jt_isim(medoids))
-            dispersions_non_singleton.append(iSIM.jt_isim(medoids[:n_clusters[-1] - n_singletons[-1]]))
+            end_idx = n_clusters[-1] - n_singletons[-1]
+            dispersions_non_singleton.append(iSIM.jt_isim(medoids[:end_idx]))
             top_sizes.append([len(c) for c in clusters[:10]])
 
             # Save the results
