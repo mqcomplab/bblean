@@ -131,8 +131,7 @@ class BitBirch(
             .astype(np.uint8, copy=False)
             .view(np.bool)
         )
-        # TODO: Even when both inputs are bool, this function warns for some reason
-        # I believe this may be a sklearn bug
+        # TODO: Due to a sklearn bug this performs unnecessary casts
         centers = self.subcluster_centers_.astype(np.uint8, copy=False).view(np.bool)
         argmin = pairwise_distances_argmin(X, centers, metric="jaccard")
         return self.subcluster_labels_[argmin]

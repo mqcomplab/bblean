@@ -633,6 +633,7 @@ class BitBirch:
             X = X[:max_fps]
         threshold = self.threshold
         branching_factor = self.branching_factor
+
         n_features = _validate_n_features(X, input_is_packed, n_features)
         d_type = X.dtype
 
@@ -718,6 +719,7 @@ class BitBirch:
         """
         threshold = self.threshold
         branching_factor = self.branching_factor
+
         n_features = _validate_n_features(X, input_is_packed, n_features)
         d_type = X.dtype
 

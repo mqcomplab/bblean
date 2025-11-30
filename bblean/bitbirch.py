@@ -47,6 +47,8 @@
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
 from __future__ import annotations  # Stringize type annotations for no runtime overhead
+import pickle
+import sys
 import typing_extensions as tpx
 import os
 import random
@@ -1315,6 +1317,40 @@ class BitBirch:
         if self.tolerance is not None:
             parts.append(f"tolerance={self.tolerance}")
         return f"{self.__class__.__name__}({', '.join(parts)})"
+
+    def save(self, path: Path | str) -> None:
+        r""":meta private:"""
+        # TODO: BitBIRCH is highly recursive. pickling may crash python,
+        # an alternative solution would be better
+        msg = (
+            "Saving large BitBIRCH trees may result in large memory peaks."
+            " An alternative serialization method may be implemented in the future"
+        )
+        warnings.warn(msg)
+        _old_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(1_000_000_000)
+        with open(path, mode="wb") as f:
+            pickle.dump(self, f)
+        sys.setrecursionlimit(_old_limit)
+
+    @classmethod
+    def load(cls, path: Path | str) -> tpx.Self:
+        r""":meta private:"""
+        # TODO: BitBIRCH is highly recursive. pickling may crash python,
+        # an alternative solution would be better
+        msg = (
+            "Loading large BitBIRCH trees may result in large memory peaks."
+            " An alternative serialization method may be implemented in the future"
+        )
+        warnings.warn(msg)
+        _old_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(1_000_000_000)
+        with open(path, mode="rb") as f:
+            tree = pickle.load(f)
+        sys.setrecursionlimit(_old_limit)
+        if not isinstance(tree, cls):
+            raise ValueError("Path does not contain a bitbirch object")
+        return tree
 
     def global_clustering(
         self,
