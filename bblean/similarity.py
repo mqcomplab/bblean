@@ -252,30 +252,37 @@ def estimate_jt_std(
     n_samples: int | None = None,
     input_is_packed: bool = True,
     n_features: int | None = None,
+    min_samples: int = 1_000_000,
 ) -> float:
-    r"""Estimate std of tanimoto sim using a deterministic sample"""
+    r"""Estimate the std of all pairwise Tanimoto.
+
+    Returns
+    -------
+    std : float
+        The standard deviation of all pairwise Tanimoto among the sampled fingerprints.
+    """
     num_fps = len(fps)
-    if num_fps > 1_000_000:
+    if num_fps > min_samples:
         np.random.seed(42)
-        fps_ = np.random.choice(num_fps, size=1_000_000, replace=False)
-        fps_ = fps[fps_]
-        num_fps = len(fps_)
-    else:
-        fps_ = fps
+        random_choices = np.random.choice(num_fps, size=min_samples, replace=False)
+        fps = fps[random_choices]
+        num_fps = len(fps)
     if n_samples is None:
-        n_samples = max(num_fps // 1000, 50)
-    sample_idxs = jt_stratified_sampling(fps_, n_samples, input_is_packed, n_features)
+        # Heuristic: use at least 50 samples, or 1 per 10,000 fingerprints,
+        # to balance statistical representativeness and computational efficiency
+        n_samples = max(num_fps // 10_000, 50)
+    sample_idxs = jt_stratified_sampling(fps, n_samples, input_is_packed, n_features)
 
     # Work with only the sampled fingerprints
-    fps_ = fps_[sample_idxs]
-    num_fps = len(fps_)
+    fps = fps[sample_idxs]
+    num_fps = len(fps)
     pairs = np.empty(num_fps * (num_fps - 1) // 2, dtype=np.float64)
     # NOTE: Calc upper triangular part of pairwise matrix only, slightly more efficient,
     # but difference is negligible in tests
     offset = 0
-    for i in range(len(fps_)):
+    for i in range(len(fps)):
         num = num_fps - i - 1
-        pairs[offset : offset + num] = jt_sim_packed(fps_[i], fps_[i + 1 :])
+        pairs[offset : offset + num] = jt_sim_packed(fps[i], fps[i + 1 :])
         offset += num
     return np.std(pairs).item()
 
