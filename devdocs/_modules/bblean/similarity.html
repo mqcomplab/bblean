@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=e9c008c6"></script>
+    <script src="../../_static/documentation_options.js?v=ad461d72"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -640,14 +640,28 @@
     <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Estimate std of tanimoto sim using a deterministic sample&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Estimate the std of all pairwise Tanimoto.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    std : float</span>
+<span class="sd">        The standard deviation of all pairwise Tanimoto among the sampled fingerprints.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">num_fps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_fps</span> <span class="o">&gt;</span> <span class="n">min_samples</span><span class="p">:</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+        <span class="n">random_choices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">num_fps</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">min_samples</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">fps</span> <span class="o">=</span> <span class="n">fps</span><span class="p">[</span><span class="n">random_choices</span><span class="p">]</span>
+        <span class="n">num_fps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">n_samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">num_fps</span> <span class="o">//</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+        <span class="c1"># Heuristic: use at least 50 samples, or 1 per 10,000 fingerprints,</span>
+        <span class="c1"># to balance statistical representativeness and computational efficiency</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">num_fps</span> <span class="o">//</span> <span class="mi">10_000</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
     <span class="n">sample_idxs</span> <span class="o">=</span> <span class="n">jt_stratified_sampling</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
 
-    <span class="c1"># Work with sample from now on</span>
+    <span class="c1"># Work with only the sampled fingerprints</span>
     <span class="n">fps</span> <span class="o">=</span> <span class="n">fps</span><span class="p">[</span><span class="n">sample_idxs</span><span class="p">]</span>
     <span class="n">num_fps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
     <span class="n">pairs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_fps</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_fps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>

@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=e9c008c6"></script>
+    <script src="../../_static/documentation_options.js?v=ad461d72"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -485,7 +485,11 @@
         <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetMorganGenerator</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;ecfp6&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetMorganGenerator</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknonw kind </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">. Should be one of &#39;rdkit|ecfp4|ecfp6&#39;&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;topological&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetTopologicalTorsionGenerator</span><span class="p">(</span><span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;ap&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetAtomPairGenerator</span><span class="p">(</span><span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown kind </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">. Use &#39;rdkit|ecfp4|ecfp6|topological|ap&#39;&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_sanitize_flags</span><span class="p">(</span><span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>
