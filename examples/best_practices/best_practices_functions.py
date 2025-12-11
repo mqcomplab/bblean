@@ -1,3 +1,4 @@
+# type: ignore
 import bblean
 import numpy as np
 import pandas as pd
