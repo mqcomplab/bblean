@@ -787,6 +787,7 @@ class BitBirch:
         # to avoid memory usage if this function is unused, so the return value is
         # untyped
         import pandas as pd
+
         r""":meta private:"""
         if isinstance(X, (Path, str)):
             X = _mmap_file_and_madvise_sequential(Path(X), max_fps=max_fps)
