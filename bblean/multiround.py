@@ -299,7 +299,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         # Save clusters and exit
         if self.save_tree:
             # TODO: Find alternative solution
-            tree.save_pickle(self.out_dir / "bitbirch.pkl")
+            tree.save(self.out_dir / "bitbirch.pkl")
         tree.delete_internal_nodes()
         if self.save_centroids:
             output = tree.get_centroids_mol_ids()

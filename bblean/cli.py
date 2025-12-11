@@ -1101,7 +1101,7 @@ def _run(
             console.print("Can't save tree for non-lean variants", style="red")
         else:
             # TODO: Find alternative solution
-            tree.save_pickle(out_dir / "bitbirch.pkl")
+            tree.save(out_dir / "bitbirch.pkl")
     if variant == "lean":
         tree.delete_internal_nodes()
     # Dump outputs (peak memory, timings, config, cluster ids)
