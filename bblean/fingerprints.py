@@ -115,7 +115,11 @@ def _get_generator(kind: str, n_features: int) -> tp.Any:
         return rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=n_features)
     elif kind == "ecfp6":
         return rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=n_features)
-    raise ValueError(f"Unknonw kind {kind}. Should be one of 'rdkit|ecfp4|ecfp6'")
+    elif kind == "topological":
+        return rdFingerprintGenerator.GetTopologicalTorsionGenerator(fpSize=n_features)
+    elif kind == "ap":
+        return rdFingerprintGenerator.GetAtomPairGenerator(fpSize=n_features)
+    raise ValueError(f"Unknown kind {kind}. Use 'rdkit|ecfp4|ecfp6|topological|ap'")
 
 
 def _get_sanitize_flags(sanitize: str) -> tp.Any:
