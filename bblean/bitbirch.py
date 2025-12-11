@@ -211,6 +211,12 @@ def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
     return new_subcluster1, new_subcluster2
 
 
+class _Assignment(tp.NamedTuple):
+    cluster_idx: int
+    similarity: float
+    is_mergeable: bool
+
+
 class _BFNode:
     """Each node in a BitBirch tree is a _BFNode.
 
@@ -356,6 +362,36 @@ class _BFNode:
         ].packed_centroid
         return False
 
+    def find_highest_similarity_subcluster(
+        self,
+        fp: NDArray[np.uint8],
+        merge_accept_fn: MergeAcceptFunction,
+        threshold: float,
+        packed_fp: tp.Optional[NDArray[np.uint8]] = None,
+    ) -> _Assignment:
+        """Find the highest similarity subcluster to a given fingerprint.
+        Return a 3-tuple [subcluster index, similarity, is_mergeable]"""
+        # In this case the node *must have* subclusters always
+        # Within this node, find the closest subcluster to the one to-be-inserted
+        if packed_fp is None:
+            packed_fp = pack_fingerprints(fp)
+
+        sim_matrix = _jt_sim_arr_vec_packed(self.packed_centroids, packed_fp)
+        closest_idx = np.argmax(sim_matrix)
+        closest_subclust = self._subclusters[closest_idx]
+        closest_node = closest_subclust.child
+        # Return a 3-tuple <closest subcluster index>, <similarity>, <can be inserted>
+        if closest_node is None:
+            return _Assignment(
+                closest_subclust._index,
+                sim_matrix[closest_idx],
+                closest_subclust.fp_is_mergeable(fp, threshold, merge_accept_fn),
+            )
+        # Recurse
+        return closest_node.find_highest_similarity_subcluster(
+            fp, merge_accept_fn, threshold, packed_fp
+        )
+
 
 class _BFSubcluster:
     r"""Each subcluster in a BFNode is called a BFSubcluster.
@@ -390,7 +426,7 @@ class _BFSubcluster:
     """
 
     # NOTE: Slots deactivates __dict__, and thus reduces memory usage of python objects
-    __slots__ = ("_buffer", "packed_centroid", "child", "mol_indices")
+    __slots__ = ("_buffer", "packed_centroid", "child", "mol_indices", "_index")
 
     def __init__(
         self,
@@ -446,6 +482,7 @@ class _BFSubcluster:
                 )  # Will be overwritten
         self.mol_indices = list(mol_indices)
         self.child: tp.Optional["_BFNode"] = None
+        self._index: int = -1
 
     @property
     def unpacked_centroid(self) -> NDArray[np.uint8]:
@@ -524,6 +561,21 @@ class _BFSubcluster:
             self.mol_indices.extend(nominee_cluster.mol_indices)
             return True
         return False
+
+    def fp_is_mergeable(
+        self,
+        fp: NDArray[np.uint8],
+        threshold: float,
+        merge_accept_fn: MergeAcceptFunction,
+    ) -> bool:
+        """Check if a cluster is worthy enough to be merged"""
+        old_n = self.n_samples
+        new_n = old_n + 1
+        old_ls = self.linear_sum
+        # np.add with explicit dtype is safe from overflows, e.g. :
+        # np.add(np.uint8(255), np.uint8(255), dtype=np.uint16) = np.uint16(510)
+        new_ls = np.add(old_ls, fp, dtype=min_safe_uint(new_n))
+        return merge_accept_fn(threshold, new_ls, new_n, old_ls, fp, old_n, 1)
 
 
 class _CentroidsMolIds(tp.TypedDict):
@@ -701,6 +753,85 @@ class BitBirch:
             self.threshold = threshold
         if branching_factor is not None:
             self.branching_factor = branching_factor
+
+    def assign(
+        self,
+        X: _Input | Path | str,
+        /,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+        max_fps: int | None = None,
+        sorted_subclusters_order: bool = True,
+    ) -> tp.Any:
+        r"""Assign a set of fingerprints according to the current BFTree
+
+        Parameters
+        ----------
+
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Input data.
+
+        input_is_packed: bool
+            Whether the input fingerprints are packed
+
+        n_features: int
+            Number of featurs of input fingerprints. Only required for packed inputs if
+            it is not a multiple of 8, otherwise it is redundant.
+
+        Returns
+        -------
+            Pandas DataFrame: with cluster_idx, similarity, is_mergeable columns. The
+                cluster index corresponds to sorted subclusters by default.
+        """
+        # Returns a pandas dataframe, but pandas import is triggered by this function
+        # to avoid memory usage if this function is unused, so the return value is
+        # untyped
+        import pandas as pd
+        r""":meta private:"""
+        if isinstance(X, (Path, str)):
+            X = _mmap_file_and_madvise_sequential(Path(X), max_fps=max_fps)
+            mmanager = _ArrayMemPagesManager.from_bb_input(X)
+        else:
+            X = X[:max_fps]
+            mmanager = _ArrayMemPagesManager.from_bb_input(X, can_release=False)
+
+        n_features = _validate_n_features(X, input_is_packed, n_features)
+        # Start a new tree the first time this function is called
+        if self._only_has_leaves:
+            raise ValueError("Internal nodes were released, call reset() before fit()")
+        if not self.is_init:
+            raise ValueError("Create a tree before attempting assignments")
+        self._root = cast("_BFNode", self._root)  # After init, this is not None
+
+        # The array iterator either copies, un-sparsifies, or does nothing
+        # with the array rows, depending on the kind of X passed
+        arr_iterable = _get_array_iterable(X, input_is_packed, n_features)
+        arr_iterable = cast(tp.Iterable[NDArray[np.uint8]], arr_iterable)
+
+        threshold = self.threshold
+        merge_accept_fn = self._merge_accept_fn
+
+        assignments = []
+        arr_idx = 0
+        # Assign the leaf bf indices
+        bfs = self._get_leaf_bfs(sorted_subclusters_order)
+        for i, bf in enumerate(bfs):
+            bf._index = i
+
+        for fp in arr_iterable:
+            # In this case we never need to split the root
+            assignment = self._root.find_highest_similarity_subcluster(
+                fp, merge_accept_fn, threshold
+            )
+            assignments.append(assignment)
+            arr_idx += 1
+            if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
+                mmanager.release_curr_page_and_update_addr()
+
+        # Reset the leaf bf indices
+        for bf in bfs:
+            bf._index = -1
+        return pd.DataFrame(assignments)
 
     def fit(
         self,
