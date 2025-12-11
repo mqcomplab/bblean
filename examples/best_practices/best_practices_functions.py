@@ -5,13 +5,14 @@ import pandas as pd
 import bblean.similarity as iSIM
 
 
-def recluster_iteration_metrics(fps: np.ndarray,
-                                threshold: float = None,
-                                sigmas: float = 3.5,
-                                extra: float = 0,
-                                branching_factor: int = 1024,
-                                iterations: int = 11,
-                                ) -> pd.DataFrame:
+def recluster_iteration_metrics(
+    fps: np.ndarray,
+    threshold: float = None,
+    sigmas: float = 3.5,
+    extra: float = 0,
+    branching_factor: int = 1024,
+    iterations: int = 11,
+) -> pd.DataFrame:
 
     if threshold is None:
         # Obtain the iSIM and iSIM-sigma
@@ -22,9 +23,11 @@ def recluster_iteration_metrics(fps: np.ndarray,
         isim_sigma = iSIM.estimate_jt_std(fps, n_samples=50)
 
     # Do the initial clustering
-    bbc = bblean.BitBirch(threshold=threshold,
-                          branching_factor=branching_factor,
-                          merge_criterion='diameter')
+    bbc = bblean.BitBirch(
+        threshold=threshold,
+        branching_factor=branching_factor,
+        merge_criterion="diameter",
+    )
     bbc.fit(fps)
     clusters = bbc.get_cluster_mol_ids()
 
@@ -33,7 +36,9 @@ def recluster_iteration_metrics(fps: np.ndarray,
     n_singletons = [len([c for c in clusters if len(c) == 1])]
     medoids = bbc.get_medoids(fps=fps)
     dispersion = [iSIM.jt_isim(medoids)]
-    dispersion_no_singletons = [iSIM.jt_isim(medoids[:n_clusters[0] - n_singletons[0]])]
+    dispersion_no_singletons = [
+        iSIM.jt_isim(medoids[: n_clusters[0] - n_singletons[0]])
+    ]
     top_sizes = [[len(c) for c in clusters[:10]]]
 
     # Do refinement steps
@@ -47,9 +52,7 @@ def recluster_iteration_metrics(fps: np.ndarray,
         medoids = bbc.get_medoids(fps=fps)
         dispersion.append(iSIM.jt_isim(medoids))
         end_idx = n_clusters[-1] - n_singletons[-1]
-        dispersion_no_singletons.append(
-            iSIM.jt_isim(medoids[:end_idx])
-        )
+        dispersion_no_singletons.append(iSIM.jt_isim(medoids[:end_idx]))
         top_sizes.append([len(c) for c in clusters[:10]])
 
         if bbc.threshold >= 1.0:
@@ -57,12 +60,12 @@ def recluster_iteration_metrics(fps: np.ndarray,
 
     # Save the results
     results = {
-        'iteration': list(range(len(n_clusters))),
-        'n_clusters': n_clusters,
-        'n_singletons': n_singletons,
-        'dispersions': dispersion,
-        'dispersions_no_singletons': dispersion_no_singletons,
-        'top_sizes': top_sizes
+        "iteration": list(range(len(n_clusters))),
+        "n_clusters": n_clusters,
+        "n_singletons": n_singletons,
+        "dispersions": dispersion,
+        "dispersions_no_singletons": dispersion_no_singletons,
+        "top_sizes": top_sizes,
     }
 
     df = pd.DataFrame(results)
@@ -70,9 +73,11 @@ def recluster_iteration_metrics(fps: np.ndarray,
     return df
 
 
-def threshold_scan(fps: np.ndarray,
-                   max_sigmas: float = 10,
-                   branching_factor: int = 1024,):
+def threshold_scan(
+    fps: np.ndarray,
+    max_sigmas: float = 10,
+    branching_factor: int = 1024,
+):
 
     # Obtain the iSIM and iSIM-sigma
     isim = iSIM.jt_isim_packed(fps)
@@ -87,9 +92,11 @@ def threshold_scan(fps: np.ndarray,
     top_sizes = []
     top_range = min(isim + max_sigmas * isim_sigma, 1.0)
     for threshold in np.arange(isim, top_range, isim_sigma):
-        bbc = bblean.BitBirch(threshold=threshold,
-                              branching_factor=branching_factor,
-                              merge_criterion='diameter')
+        bbc = bblean.BitBirch(
+            threshold=threshold,
+            branching_factor=branching_factor,
+            merge_criterion="diameter",
+        )
         bbc.fit(fps)
         clusters = bbc.get_cluster_mol_ids()
 
@@ -106,12 +113,12 @@ def threshold_scan(fps: np.ndarray,
 
         # Save the results
         results = {
-            'thresholds': thresholds,
-            'n_clusters': n_clusters,
-            'n_singletons': n_singletons,
-            'dispersions': dispersions,
-            'dispersions_non_singleton': dispersions_non_singleton,
-            'top_sizes': top_sizes
+            "thresholds": thresholds,
+            "n_clusters": n_clusters,
+            "n_singletons": n_singletons,
+            "dispersions": dispersions,
+            "dispersions_non_singleton": dispersions_non_singleton,
+            "top_sizes": top_sizes,
         }
 
         df = pd.DataFrame(results)
@@ -119,11 +126,12 @@ def threshold_scan(fps: np.ndarray,
     return df
 
 
-def branching_factor_scan(fps: np.ndarray,
-                          sigmas_list: list[float],
-                          branching_factor_list: list[int] = [64, 128, 256, 512, 1024],
-                          save_path: str = None,
-                          ) -> pd.DataFrame:
+def branching_factor_scan(
+    fps: np.ndarray,
+    sigmas_list: list[float],
+    branching_factor_list: list[int] = [64, 128, 256, 512, 1024],
+    save_path: str = None,
+) -> pd.DataFrame:
     # Obtain the iSIM and iSIM-sigma
     isim = iSIM.jt_isim_packed(fps)
     isim_sigma = iSIM.estimate_jt_std(fps, n_samples=50)
@@ -141,9 +149,9 @@ def branching_factor_scan(fps: np.ndarray,
     memory = []
     for threshold in thresholds_list:
         for bf in branching_factor_list:
-            bbc = bblean.BitBirch(threshold=threshold,
-                                  branching_factor=bf,
-                                  merge_criterion='diameter')
+            bbc = bblean.BitBirch(
+                threshold=threshold, branching_factor=bf, merge_criterion="diameter"
+            )
             bbc.fit(fps)
 
             clusters = bbc.get_cluster_mol_ids()
@@ -162,15 +170,15 @@ def branching_factor_scan(fps: np.ndarray,
 
             # Save the results
             results = {
-                'thresholds': thresholds,
-                'n_clusters': n_clusters,
-                'n_singletons': n_singletons,
-                'dispersions': dispersions,
-                'dispersions_non_singleton': dispersions_non_singleton,
-                'top_sizes': top_sizes,
-                'branching_factor': branching_factors,
-                'time': times,
-                'memory_gb': memory
+                "thresholds": thresholds,
+                "n_clusters": n_clusters,
+                "n_singletons": n_singletons,
+                "dispersions": dispersions,
+                "dispersions_non_singleton": dispersions_non_singleton,
+                "top_sizes": top_sizes,
+                "branching_factor": branching_factors,
+                "time": times,
+                "memory_gb": memory,
             }
 
     df = pd.DataFrame(results)
