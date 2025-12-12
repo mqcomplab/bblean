@@ -76,16 +76,8 @@ def jt_compl_isim(
         warnings.warn(msg, RuntimeWarning, stacklevel=2)
         return np.full(len(fps), fill_value=np.nan, dtype=np.float64)
     linear_sum = np.sum(fps, axis=0)
-    n_objects = len(fps) - 1
     comp_sims = [jt_isim_from_sum(linear_sum - fp, n_objects) for fp in fps]
-
     return np.array(comp_sims, dtype=np.float64)
-
-
-def _jt_isim_medoid_index(
-    fps: NDArray[np.uint8], input_is_packed: bool = True, n_features: int | None = None
-) -> int:
-    return np.argmin(jt_compl_isim(fps, input_is_packed, n_features)).item()
 
 
 def jt_isim_medoid(
@@ -110,7 +102,7 @@ def jt_isim_medoid(
     if len(fps) < 3:
         idx = 0  # Medoid undefined for sets of 3 or more fingerprints
     else:
-        idx = _jt_isim_medoid_index(fps, input_is_packed=False)
+        idx = np.argmin(jt_compl_isim(fps, input_is_packed, n_features)).item()
     m = fps[idx]
     if pack:
         return idx, pack_fingerprints(m)

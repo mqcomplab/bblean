@@ -300,6 +300,75 @@ double jt_isim_from_sum(const CArrayForcecast<uint64_t>& linear_sum,
     return a / ((a + (n_objects * sum_kq)) - sum_kqsq);
 }
 
+// NOTE: This is only *slightly* faster for C++ than numpy, **only if the
+// array is uint8_t** if the array is uint64 already, it is slower
+template <typename T>
+py::array_t<uint64_t> add_rows(const CArrayForcecast<T>& arr) {
+    if (arr.ndim() != 2) {
+        throw std::runtime_error("Input array must be 2-dimensional");
+    }
+    auto arr_ptr = arr.data();
+    auto out = py::array_t<uint64_t>(arr.shape(1));
+    auto out_ptr = out.mutable_data();
+    std::memset(out_ptr, 0, out.nbytes());
+    py::ssize_t n_samples = arr.shape(0);
+    py::ssize_t n_features = arr.shape(1);
+    // Check GCC / CLang vectorize this
+    for (py::ssize_t i = 0; i < n_samples; ++i) {
+        const uint8_t* arr_row_ptr = arr_ptr + i * n_features;
+        for (py::ssize_t j = 0; j < n_features; ++j) {
+            out_ptr[j] += static_cast<uint64_t>(arr_row_ptr[j]);
+        }
+    }
+    return out;
+}
+py::array_t<double> _nochecks_jt_compl_isim_unpacked_u8(
+    const py::array_t<uint8_t, py::array::c_style>& fps) {
+    py::ssize_t n_objects = fps.shape(0);
+    py::ssize_t n_features = fps.shape(1);
+    auto out = py::array_t<double>(n_objects);
+    auto out_ptr = out.mutable_data();
+
+    if (n_objects < 3) {
+        PyErr_WarnEx(PyExc_RuntimeWarning,
+                     "Invalid num fps in compl_isim. Expected n_objects >= 3",
+                     1);
+        for (py::ssize_t i{0}; i != n_objects; ++i) {
+            out_ptr[i] = std::numeric_limits<double>::quiet_NaN();
+        }
+        return out;
+    }
+
+    auto linear_sum = add_rows<uint8_t>(fps);
+    auto ls_cptr = linear_sum.data();
+
+    py::array_t<uint64_t> shifted_linear_sum(n_features);
+    auto shifted_ls_ptr = shifted_linear_sum.mutable_data();
+
+    auto in_cptr = fps.data();
+    for (py::ssize_t i{0}; i != n_objects; ++i) {
+        for (py::ssize_t j{0}; j != n_features; ++j) {
+            shifted_ls_ptr[j] = ls_cptr[j] - in_cptr[i * n_features + j];
+        }
+        // For all compl isim N is n_objects - 1
+        out_ptr[i] = jt_isim_from_sum(shifted_linear_sum, n_objects - 1);
+    }
+    return out;
+}
+
+py::array_t<double> jt_compl_isim(
+    const CArrayForcecast<uint8_t>& fps, bool input_is_packed = true,
+    std::optional<py::ssize_t> n_features_opt = std::nullopt) {
+    if (fps.ndim() != 2) {
+        throw std::runtime_error("fps arr must be 2D");
+    }
+    if (input_is_packed) {
+        return _nochecks_jt_compl_isim_unpacked_u8(
+            _nochecks_unpack_fingerprints_2d(fps, n_features_opt));
+    }
+    return _nochecks_jt_compl_isim_unpacked_u8(fps);
+}
+
 // Contraint: T must be uint64_t or uint8_t
 template <typename T>
 void _calc_arr_vec_jt(const py::array_t<uint8_t>& arr,
@@ -372,31 +441,8 @@ py::array_t<double> jt_sim_packed_precalc_cardinalities(
 }
 
 py::array_t<double> _jt_sim_arr_vec_packed(const py::array_t<uint8_t>& arr,
-                                  const py::array_t<uint8_t>& vec) {
+                                           const py::array_t<uint8_t>& vec) {
     return jt_sim_packed_precalc_cardinalities(arr, vec, _popcount_2d(arr));
-}
-
-// NOTE: This is only *slightly* faster for C++ than numpy, **only if the
-// array is uint8_t** if the array is uint64 already, it is slower
-template <typename T>
-py::array_t<uint64_t> add_rows(const CArrayForcecast<T>& arr) {
-    if (arr.ndim() != 2) {
-        throw std::runtime_error("Input array must be 2-dimensional");
-    }
-    auto arr_ptr = arr.data();
-    auto out = py::array_t<uint64_t>(arr.shape(1));
-    auto out_ptr = out.mutable_data();
-    std::memset(out_ptr, 0, out.nbytes());
-    py::ssize_t n_samples = arr.shape(0);
-    py::ssize_t n_features = arr.shape(1);
-    // Check GCC / CLang vectorize this
-    for (py::ssize_t i = 0; i < n_samples; ++i) {
-        const uint8_t* arr_row_ptr = arr_ptr + i * n_features;
-        for (py::ssize_t j = 0; j < n_features; ++j) {
-            out_ptr[j] += static_cast<uint64_t>(arr_row_ptr[j]);
-        }
-    }
-    return out;
 }
 
 double jt_isim_unpacked_u8(const CArrayForcecast<uint8_t>& arr) {
@@ -406,8 +452,9 @@ double jt_isim_unpacked_u8(const CArrayForcecast<uint8_t>& arr) {
 double jt_isim_packed_u8(
     const CArrayForcecast<uint8_t>& arr,
     std::optional<py::ssize_t> n_features_opt = std::nullopt) {
-    return jt_isim_from_sum(add_rows<uint8_t>(unpack_fingerprints(arr, n_features_opt)),
-                            arr.shape(0));
+    return jt_isim_from_sum(
+        add_rows<uint8_t>(unpack_fingerprints(arr, n_features_opt)),
+        arr.shape(0));
 }
 
 py::tuple jt_most_dissimilar_packed(
@@ -509,6 +556,10 @@ PYBIND11_MODULE(_cpp_similarity, m) {
           py::arg("arr"), py::arg("n_features") = std::nullopt);
     m.def("jt_isim_unpacked_u8", &jt_isim_unpacked_u8,
           "iSIM Tanimoto calculation", py::arg("arr"));
+
+    m.def("jt_compl_isim", &jt_compl_isim, "Complementary iSIM tanimoto",
+          py::arg("fps"), py::arg("input_is_packed") = true,
+          py::arg("n_features") = std::nullopt);
 
     m.def("_jt_sim_arr_vec_packed", &_jt_sim_arr_vec_packed,
           "Tanimoto similarity between a matrix of packed fps and a single "

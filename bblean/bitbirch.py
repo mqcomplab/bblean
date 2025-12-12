@@ -212,7 +212,7 @@ def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
 
 
 class _Assignment(tp.NamedTuple):
-    cluster_idx: int
+    cluster_label: int
     similarity: float
     is_mergeable: bool
 
@@ -368,6 +368,10 @@ class _BFNode:
         merge_accept_fn: MergeAcceptFunction,
         threshold: float,
         packed_fp: tp.Optional[NDArray[np.uint8]] = None,
+        use_medoids: bool = False,
+        unpacked_fitted_fps: tp.Optional[NDArray[np.uint8]] = None,
+        k_search_idx: int = 0,
+        k_search: int = 1,
     ) -> _Assignment:
         """Find the highest similarity subcluster to a given fingerprint.
         Return a 3-tuple [subcluster index, similarity, is_mergeable]"""
@@ -376,8 +380,29 @@ class _BFNode:
         if packed_fp is None:
             packed_fp = pack_fingerprints(fp)
 
-        sim_matrix = _jt_sim_arr_vec_packed(self.packed_centroids, packed_fp)
-        closest_idx = np.argmax(sim_matrix)
+        is_leaf_node = next(iter(self._subclusters)).child
+
+        if use_medoids and is_leaf_node:
+            # Only use medoids for the leafs
+            if unpacked_fitted_fps is None:
+                raise ValueError("Unpacked fitted fps required if using medoids")
+            members = [s.mol_indices for s in self._subclusters]
+            unpacked_medoids = _unpacked_medoids_from_cluster_members(
+                unpacked_fitted_fps, members
+            )
+            packed_centrals = pack_fingerprints(unpacked_medoids)
+        else:
+            packed_centrals = self.packed_centroids
+
+        sim_matrix = _jt_sim_arr_vec_packed(packed_centrals, packed_fp)
+
+        # Previous method (recall ~30%)
+        if k_search_idx == 0:
+            closest_idx = np.argmax(sim_matrix)
+        else:
+            # Get the kth-closer
+            closest_idx = np.argsort(sim_matrix)[::-1][k_search_idx]
+
         closest_subclust = self._subclusters[closest_idx]
         closest_node = closest_subclust.child
         # Return a 3-tuple <closest subcluster index>, <similarity>, <can be inserted>
@@ -387,10 +412,25 @@ class _BFNode:
                 sim_matrix[closest_idx],
                 closest_subclust.fp_is_mergeable(fp, threshold, merge_accept_fn),
             )
-        # Recurse
-        return closest_node.find_highest_similarity_subcluster(
-            fp, merge_accept_fn, threshold, packed_fp
-        )
+        # Recurse the naive version is bounded by an exponential increase, with tree
+        # depth k^D. If using k_search - 1 it is bounded by a factorial, which is a bit
+        # better, since the max number of searches decreases with tree depth
+        assignment = _Assignment(-1, 0.0, False)
+        k_search = max(1, k_search - 1)
+        _range = min(len(closest_node._subclusters), k_search)
+        for k_search_idx in range(_range):
+            _assignment = closest_node.find_highest_similarity_subcluster(
+                fp,
+                merge_accept_fn,
+                threshold,
+                use_medoids=use_medoids,
+                unpacked_fitted_fps=unpacked_fitted_fps,
+                k_search_idx=k_search_idx,
+                k_search=k_search,
+            )
+            if _assignment.similarity >= assignment.similarity:
+                assignment = _assignment
+        return assignment
 
 
 class _BFSubcluster:
@@ -762,7 +802,13 @@ class BitBirch:
         n_features: int | None = None,
         max_fps: int | None = None,
         sorted_subclusters_order: bool = True,
+        kind: str = "tree",
+        unpacked_fitted_fps: tp.Optional[NDArray[np.uint8]] = None,
+        use_medoids: bool = False,
+        k_search: int = 1,
     ) -> tp.Any:
+        # TODO: Do this with medoids instead of centroids
+
         r"""Assign a set of fingerprints according to the current BFTree
 
         Parameters
@@ -780,7 +826,7 @@ class BitBirch:
 
         Returns
         -------
-            Pandas DataFrame: with cluster_idx, similarity, is_mergeable columns. The
+            Pandas DataFrame: with cluster_label, similarity, is_mergeable columns. The
                 cluster index corresponds to sorted subclusters by default.
         """
         # Returns a pandas dataframe, but pandas import is triggered by this function
@@ -788,7 +834,9 @@ class BitBirch:
         # untyped
         import pandas as pd
 
-        r""":meta private:"""
+        if kind not in ("tree", "flat"):
+            raise ValueError("Assignment must be one of tree|flat")
+
         if isinstance(X, (Path, str)):
             X = _mmap_file_and_madvise_sequential(Path(X), max_fps=max_fps)
             mmanager = _ArrayMemPagesManager.from_bb_input(X)
@@ -798,8 +846,6 @@ class BitBirch:
 
         n_features = _validate_n_features(X, input_is_packed, n_features)
         # Start a new tree the first time this function is called
-        if self._only_has_leaves:
-            raise ValueError("Internal nodes were released, call reset() before fit()")
         if not self.is_init:
             raise ValueError("Create a tree before attempting assignments")
         self._root = cast("_BFNode", self._root)  # After init, this is not None
@@ -814,16 +860,66 @@ class BitBirch:
 
         assignments = []
         arr_idx = 0
-        # Assign the leaf bf indices
+
         bfs = self._get_leaf_bfs(sorted_subclusters_order)
-        for i, bf in enumerate(bfs):
+
+        if kind == "flat":
+            if use_medoids:
+                if unpacked_fitted_fps is None:
+                    raise ValueError("Unpacked fitted fps required if using medoids")
+
+                all_packed_centrals = self.get_medoids(
+                    fps=unpacked_fitted_fps,
+                    input_is_packed=False,
+                    sort=sorted_subclusters_order,
+                    pack=True,
+                )
+            else:
+                all_packed_centrals = np.stack([bf.packed_centroid for bf in bfs])
+            for fp in arr_iterable:
+                packed_fp = pack_fingerprints(fp)
+                sim_matrix = _jt_sim_arr_vec_packed(all_packed_centrals, packed_fp)
+                closest_idx = np.argmax(sim_matrix)
+                sim = sim_matrix[closest_idx]
+                is_mergeable = bfs[closest_idx].fp_is_mergeable(
+                    fp, threshold, merge_accept_fn
+                )
+                assignments.append(
+                    _Assignment(closest_idx.item() + 1, sim, is_mergeable)
+                )
+                arr_idx += 1
+                if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
+                    mmanager.release_curr_page_and_update_addr()
+            return pd.DataFrame(assignments)
+
+        if self._only_has_leaves:
+            raise ValueError(
+                "Internal nodes were released, assignments can't use 'tree' method"
+            )
+
+        # 'tree' branch
+        # Assign the leaf bf indices
+        for i, bf in enumerate(bfs, 1):
             bf._index = i
 
         for fp in arr_iterable:
-            # In this case we never need to split the root
-            assignment = self._root.find_highest_similarity_subcluster(
-                fp, merge_accept_fn, threshold
-            )
+            # NOTE: In this case we never need to split the root
+            assignment = _Assignment(-1, 0.0, False)
+            # TODO: Parallelizing this is pretty hard since it requires pickling the
+            # whole tree
+            _range = min(len(self._root._subclusters), k_search)
+            for k_search_idx in range(_range):
+                _assignment = self._root.find_highest_similarity_subcluster(
+                    fp,
+                    merge_accept_fn,
+                    threshold,
+                    use_medoids=use_medoids,
+                    unpacked_fitted_fps=unpacked_fitted_fps,
+                    k_search_idx=k_search_idx,
+                    k_search=k_search,
+                )
+                if _assignment.similarity >= assignment.similarity:
+                    assignment = _assignment
             assignments.append(assignment)
             arr_idx += 1
             if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
@@ -1065,25 +1161,10 @@ class BitBirch:
 
         if input_is_packed:
             fps = _unpack_fingerprints(fps, n_features=n_features)
-        cluster_medoids = self._unpacked_medoids_from_members(fps, cluster_members)
+        cluster_medoids = _unpacked_medoids_from_cluster_members(fps, cluster_members)
         if pack:
             cluster_medoids = pack_fingerprints(cluster_medoids)
         return {"medoids": cluster_medoids, "mol_ids": cluster_members}
-
-    @staticmethod
-    def _unpacked_medoids_from_members(
-        unpacked_fps: NDArray[np.uint8], cluster_members: tp.Sequence[list[int]]
-    ) -> NDArray[np.uint8]:
-        cluster_medoids = np.zeros(
-            (len(cluster_members), unpacked_fps.shape[1]), dtype=np.uint8
-        )
-        for idx, members in enumerate(cluster_members):
-            cluster_medoids[idx, :] = jt_isim_medoid(
-                unpacked_fps[members],
-                input_is_packed=False,
-                pack=False,
-            )[1]
-        return cluster_medoids
 
     def get_medoids(
         self,
@@ -1555,6 +1636,21 @@ class BitBirch:
         # This is the bottleneck for building this index
         # K-means is feasible, agglomerative is extremely expensive
         return predictor.fit_predict(centrals) + 1
+
+
+def _unpacked_medoids_from_cluster_members(
+    unpacked_fps: NDArray[np.uint8], cluster_members: tp.Sequence[list[int]]
+) -> NDArray[np.uint8]:
+    cluster_medoids = np.zeros(
+        (len(cluster_members), unpacked_fps.shape[1]), dtype=np.uint8
+    )
+    for idx, members in enumerate(cluster_members):
+        cluster_medoids[idx, :] = jt_isim_medoid(
+            unpacked_fps[members],
+            input_is_packed=False,
+            pack=False,
+        )[1]
+    return cluster_medoids
 
 
 # There are 4 cases here:

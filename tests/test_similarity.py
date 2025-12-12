@@ -254,8 +254,12 @@ def test_jt_compl_isim() -> None:
     with pytest.warns(RuntimeWarning):
         _ = pysim.jt_compl_isim(fps)
 
+    with pytest.warns(RuntimeWarning):
+        _ = csim.jt_compl_isim(fps)
+
     fps = make_fake_fingerprints(10, seed=17408390758220920002, pack=False)
-    assert pysim.jt_compl_isim(fps).tolist() == snapshot(
+    output = pysim.jt_compl_isim(fps).tolist()
+    assert output == snapshot(
         [
             0.20256457907452147,
             0.24748926949201983,
@@ -269,8 +273,13 @@ def test_jt_compl_isim() -> None:
             0.2225069540267648,
         ]
     )
+    assert csim.jt_compl_isim(fps).tolist() == output
     assert (
         pysim.jt_compl_isim(np.zeros((10, 512), dtype=np.uint8))
+        == np.ones(10, dtype=np.float64)
+    ).all()
+    assert (
+        csim.jt_compl_isim(np.zeros((10, 512), dtype=np.uint8))
         == np.ones(10, dtype=np.float64)
     ).all()
 
