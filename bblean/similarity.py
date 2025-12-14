@@ -34,12 +34,8 @@ __all__ = [
     "jt_sim_matrix_packed",
 ]
 
-from bblean._py_similarity import (
-    centroid_from_sum,
-    centroid,
-    jt_compl_isim,
-    jt_isim_medoid,
-)
+from bblean._py_similarity import centroid_from_sum, centroid
+from bblean.fingerprints import pack_fingerprints, unpack_fingerprints
 
 # jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for
 # speed
@@ -49,6 +45,7 @@ if os.getenv("BITBIRCH_NO_EXTENSIONS"):
         jt_isim_from_sum,
         jt_isim_unpacked,
         jt_isim_packed,
+        jt_compl_isim,
         _jt_sim_arr_vec_packed,
         jt_most_dissimilar_packed,
     )
@@ -56,11 +53,13 @@ else:
     try:
         from bblean._cpp_similarity import (  # type: ignore
             jt_isim_from_sum,
-            _jt_sim_arr_vec_packed,
             jt_isim_unpacked_u8,
             jt_isim_packed_u8,
+            jt_compl_isim,  # TODO: Does it need wrappers for non-uint8?
+            _jt_sim_arr_vec_packed,
             jt_most_dissimilar_packed,
-            unpack_fingerprints,
+            # Needed for wrappers
+            unpack_fingerprints as _unpack_fingerprints,
         )
 
         # Wrap these two since doing
@@ -80,7 +79,7 @@ else:
             if arr.dtype == np.uint64:
                 return jt_isim_from_sum(
                     np.sum(
-                        unpack_fingerprints(arr, n_features),  # type: ignore
+                        _unpack_fingerprints(arr, n_features),  # type: ignore
                         axis=0,
                         dtype=np.uint64,
                     ),
@@ -93,6 +92,7 @@ else:
             jt_isim_from_sum,
             jt_isim_unpacked,
             jt_isim_packed,
+            jt_compl_isim,
             _jt_sim_arr_vec_packed,
             jt_most_dissimilar_packed,
         )
@@ -101,6 +101,35 @@ else:
             "C++ optimized similarity calculations not available,"
             " falling back to python implementation"
         )
+
+
+def jt_isim_medoid(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    pack: bool = True,
+) -> tuple[int, NDArray[np.uint8]]:
+    r"""Calculate the (Tanimoto) medoid of a set of fingerprints, using iSIM
+
+    Returns both the index of the medoid in the input array and the medoid itself
+
+    .. note::
+        Returns the first (or only) fingerprint for array of size 2 and 1 respectively.
+        Raises ValueError for arrays of size 0
+
+    """
+    if not fps.size:
+        raise ValueError("Size of fingerprints set must be > 0")
+    if input_is_packed:
+        fps = unpack_fingerprints(fps, n_features)
+    if len(fps) < 3:
+        idx = 0  # Medoid undefined for sets of 3 or more fingerprints
+    else:
+        idx = np.argmin(jt_compl_isim(fps, input_is_packed, n_features)).item()
+    m = fps[idx]
+    if pack:
+        return idx, pack_fingerprints(m)
+    return idx, m
 
 
 def jt_isim(
@@ -149,7 +178,11 @@ def jt_isim_diameter(
     r"""Calculate the Tanimoto diameter of a set of fingerprints"""
     return jt_isim_diameter_from_sum(
         np.sum(
-            unpack_fingerprints(arr, n_features) if input_is_packed else arr,
+            (
+                unpack_fingerprints(arr.astype(np.uint8, copy=False), n_features)
+                if input_is_packed
+                else arr
+            ),
             axis=0,
             dtype=np.uint64,
         ),  # type: ignore
@@ -165,7 +198,11 @@ def jt_isim_radius(
     r"""Calculate the Tanimoto radius of a set of fingerprints"""
     return jt_isim_radius_from_sum(
         np.sum(
-            unpack_fingerprints(arr, n_features) if input_is_packed else arr,
+            (
+                unpack_fingerprints(arr.astype(np.uint8, copy=False), n_features)
+                if input_is_packed
+                else arr
+            ),
             axis=0,
             dtype=np.uint64,
         ),  # type: ignore
@@ -181,7 +218,11 @@ def jt_isim_radius_compl(
     r"""Calculate the complement of the Tanimoto radius of a set of fingerprints"""
     return jt_isim_radius_compl_from_sum(
         np.sum(
-            unpack_fingerprints(arr, n_features) if input_is_packed else arr,
+            (
+                unpack_fingerprints(arr.astype(np.uint8, copy=False), n_features)
+                if input_is_packed
+                else arr
+            ),
             axis=0,
             dtype=np.uint64,
         ),  # type: ignore
