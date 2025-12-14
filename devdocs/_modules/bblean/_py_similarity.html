@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=eabb7f77"></script>
+    <script src="../../_static/documentation_options.js?v=2ea2359e"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -445,21 +445,11 @@
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">),</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="n">linear_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">n_objects</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
     <span class="n">comp_sims</span> <span class="o">=</span> <span class="p">[</span><span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">linear_sum</span> <span class="o">-</span> <span class="n">fp</span><span class="p">,</span> <span class="n">n_objects</span><span class="p">)</span> <span class="k">for</span> <span class="n">fp</span> <span class="ow">in</span> <span class="n">fps</span><span class="p">]</span>
-
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">comp_sims</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_jt_isim_medoid_index</span><span class="p">(</span>
-    <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">jt_compl_isim</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-
-
-<div class="viewcode-block" id="jt_isim_medoid">
-<a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.jt_isim_medoid">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">jt_isim_medoid</span><span class="p">(</span>
     <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -482,12 +472,11 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Medoid undefined for sets of 3 or more fingerprints</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">_jt_isim_medoid_index</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">jt_compl_isim</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">fps</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">pack</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pack_fingerprints</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">idx</span><span class="p">,</span> <span class="n">m</span></div>
-
+    <span class="k">return</span> <span class="n">idx</span><span class="p">,</span> <span class="n">m</span>
 
 
 <span class="c1"># Requires numpy &gt;= 2.0</span>
