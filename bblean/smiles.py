@@ -44,7 +44,11 @@ def iter_smiles_from_paths(
     for smi_path in smiles_paths:
         with open(smi_path, mode="rt", encoding="utf-8") as f:
             for smi in f:
-                yield (smi if tab_separated else smi.split("\t")[0])
+                smi = smi if tab_separated else smi.split("\t")[0]
+                # Skip headers
+                if smi.lower().strip() == "smiles":
+                    continue
+                yield smi
 
 
 def _iter_ranges_and_smiles_batches(
