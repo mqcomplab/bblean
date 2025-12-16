@@ -807,28 +807,7 @@ class BitBirch:
         use_medoids: bool = False,
         k_search: int = 1,
     ) -> tp.Any:
-        # TODO: Do this with medoids instead of centroids
-
-        r"""Assign a set of fingerprints according to the current BFTree
-
-        Parameters
-        ----------
-
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            Input data.
-
-        input_is_packed: bool
-            Whether the input fingerprints are packed
-
-        n_features: int
-            Number of featurs of input fingerprints. Only required for packed inputs if
-            it is not a multiple of 8, otherwise it is redundant.
-
-        Returns
-        -------
-            Pandas DataFrame: with cluster_label, similarity, is_mergeable columns. The
-                cluster index corresponds to sorted subclusters by default.
-        """
+        r""":meta private:"""
         # Returns a pandas dataframe, but pandas import is triggered by this function
         # to avoid memory usage if this function is unused, so the return value is
         # untyped
