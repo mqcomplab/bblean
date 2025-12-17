@@ -856,7 +856,7 @@ def _run(
     ctx: Context,
     input_: Annotated[
         Path | None,
-        Argument(help="`*.npy` file with packed fingerprints, or dir `*.npy` files"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ] = None,
     out_dir: Annotated[
         Path | None,
@@ -1808,9 +1808,9 @@ def _split_fps(
 
 @app.command("fps-shuffle", rich_help_panel="Fingerprints")
 def _shuffle_fps(
-    in_file: Annotated[
+    in_path: Annotated[
         Path,
-        Argument(help="`*.npy` file with packed fingerprints"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ],
     out_dir: Annotated[
         Path | None,
@@ -1834,26 +1834,36 @@ def _shuffle_fps(
 
     console = get_console()
 
-    with console.status("[italic]Shuffling fingerprints...[/italic]", spinner="dots"):
-        fps = np.load(in_file)
-        stem = in_file.stem
-        rng = np.random.default_rng(seed)
-        shuffle_idxs = rng.permutation(fps.shape[0])
-        fps = fps[shuffle_idxs]
-        if out_dir is None:
-            out_dir = Path.cwd()
-        out_dir.mkdir(exist_ok=True)
-        out_dir = out_dir.resolve()
-        stem = f"shuffled-{stem}"
-        np.save(out_dir / f"{stem}.npy", fps)
-        if save_shuffle_idxs:
-            np.save(out_dir / f"{stem}.indices.npy", shuffle_idxs)
-    if save_shuffle_idxs:
-        console.print(
-            f"Finished. Outputs written to {str(out_dir / stem)}.npy and {str(out_dir / stem)}.indices.npy"  # noqa
+    console = get_console()
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
         )
     else:
-        console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
+        files = [in_path]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    for f in files:
+        with console.status(
+            "[italic]Shuffling fingerprints...[/italic]", spinner="dots"
+        ):
+            fps = np.load(f)
+            stem = f.stem
+            rng = np.random.default_rng(seed)
+            shuffle_idxs = rng.permutation(fps.shape[0])
+            fps = fps[shuffle_idxs]
+            stem = f"shuffled-{stem}"
+            np.save(out_dir / f"{stem}.npy", fps)
+            if save_shuffle_idxs:
+                np.save(out_dir / f"{stem}.indices.npy", shuffle_idxs)
+        if save_shuffle_idxs:
+            console.print(
+                f"Finished. Outputs written to {str(out_dir / stem)}.npy and {str(out_dir / stem)}.indices.npy"  # noqa
+            )
+        else:
+            console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
 
 
 @app.command("fps-merge", rich_help_panel="Fingerprints")
@@ -1900,9 +1910,9 @@ def _merge_fps(
 
 @app.command("fps-sort", rich_help_panel="Fingerprints")
 def _sort_fps(
-    in_file: Annotated[
+    in_path: Annotated[
         Path,
-        Argument(help="`*.npy` file with packed fingerprints"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ],
     out_dir: Annotated[
         Path | None,
@@ -1941,41 +1951,47 @@ def _sort_fps(
     # it is added for API homogeneity
 
     console = get_console()
-
-    with console.status(
-        "[italic]Sorting fingerprints by popcount...[/italic]", spinner="dots"
-    ):
-        fps = np.load(in_file)
-        stem = in_file.stem
-        if not input_is_packed:
-            packed_fps = pack_fingerprints(fps)
-        else:
-            packed_fps = fps
-        counts = _popcount(packed_fps)
-        sort_idxs = np.argsort(counts)
-        fps = fps[sort_idxs]
-        if out_dir is None:
-            out_dir = Path.cwd()
-        out_dir.mkdir(exist_ok=True)
-        out_dir = out_dir.resolve()
-        stem = f"sorted-{stem}"
-        np.save(out_dir / f"{stem}.npy", fps)
-        if save_sort_idxs:
-            np.save(out_dir / f"{stem}.indices.npy", sort_idxs)
-
-    if save_sort_idxs:
-        console.print(
-            f"Finished. Outputs written to {str(out_dir / stem)}.npy and {str(out_dir / stem)}.indices.npy"  # noqa
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
         )
     else:
-        console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
+        files = [in_path]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    for f in files:
+        with console.status(
+            "[italic]Sorting fingerprints by popcount...[/italic]", spinner="dots"
+        ):
+            fps = np.load(f)
+            stem = f.stem
+            if not input_is_packed:
+                packed_fps = pack_fingerprints(fps)
+            else:
+                packed_fps = fps
+            counts = _popcount(packed_fps)
+            sort_idxs = np.argsort(counts)
+            fps = fps[sort_idxs]
+            stem = f"sorted-{stem}"
+            np.save(out_dir / f"{stem}.npy", fps)
+            if save_sort_idxs:
+                np.save(out_dir / f"{stem}.indices.npy", sort_idxs)
+
+        if save_sort_idxs:
+            console.print(
+                f"Finished. Outputs written to {str(out_dir / stem)}.npy and {str(out_dir / stem)}.indices.npy"  # noqa
+            )
+        else:
+            console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
 
 
 @app.command("fps-unpack", rich_help_panel="Fingerprints")
 def _unpack_fps(
-    in_file: Annotated[
+    in_path: Annotated[
         Path,
-        Argument(help="`*.npy` file with packed fingerprints"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ],
     out_dir: Annotated[
         Path | None,
@@ -1999,33 +2015,42 @@ def _unpack_fps(
 
     console = get_console()
 
-    with console.status("[italic]Unpacking fingerprints...[/italic]", spinner="dots"):
-        fps = np.load(in_file)
-        stem = in_file.stem
-        if "unpacked" in stem:
-            warnings.warn(
-                "The fingerprints file name containes 'unpacked',"
-                " make sure the file contains packed fps"
-            )
-            stem = f"unpacked-{stem}"
-        elif "packed" in stem:
-            stem = stem.replace("packed", "unpacked")
-        else:
-            stem = f"unpacked-{stem}"
-        unpacked_fps = unpack_fingerprints(fps, n_features)
-        if out_dir is None:
-            out_dir = Path.cwd()
-        out_dir.mkdir(exist_ok=True)
-        out_dir = out_dir.resolve()
-        np.save(out_dir / f"{stem}.npy", unpacked_fps)
-    console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
+    else:
+        files = [in_path]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    for f in files:
+        with console.status(
+            "[italic]Unpacking fingerprints...[/italic]", spinner="dots"
+        ):
+            fps = np.load(f)
+            stem = f.stem
+            if "unpacked" in stem:
+                warnings.warn(
+                    "The fingerprints file name containes 'unpacked',"
+                    " make sure the file contains packed fps"
+                )
+                stem = f"unpacked-{stem}"
+            elif "packed" in stem:
+                stem = stem.replace("packed", "unpacked")
+            else:
+                stem = f"unpacked-{stem}"
+            unpacked_fps = unpack_fingerprints(fps, n_features)
+            np.save(out_dir / f"{stem}.npy", unpacked_fps)
+        console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
 
 
 @app.command("fps-pack", rich_help_panel="Fingerprints")
 def _pack_fps(
-    in_file: Annotated[
+    in_path: Annotated[
         Path,
-        Argument(help="`*.npy` file with packed fingerprints"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ],
     out_dir: Annotated[
         Path | None,
@@ -2039,24 +2064,31 @@ def _pack_fps(
 
     console = get_console()
 
-    with console.status("[italic]Packing fingerprints...[/italic]", spinner="dots"):
-        fps = np.load(in_file)
-        stem = in_file.stem
-        if "packed" in stem and "unpacked" not in "stem":
-            msg = (
-                "The fingerprints file name containes 'packed',"
-                " make sure the file contains packed fps"
-            )
-            warnings.warn(msg)
-            stem = f"packed-{stem}"
-        elif "unpacked" in stem:
-            stem = stem.replace("unpacked", "packed")
-        else:
-            stem = f"packed-{stem}"
-        unpacked_fps = pack_fingerprints(fps)
-        if out_dir is None:
-            out_dir = Path.cwd()
-        out_dir.mkdir(exist_ok=True)
-        out_dir = out_dir.resolve()
-        np.save(out_dir / f"{stem}.npy", unpacked_fps)
-    console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
+    else:
+        files = [in_path]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    for f in files:
+        with console.status("[italic]Packing fingerprints...[/italic]", spinner="dots"):
+            fps = np.load(f)
+            stem = f.stem
+            if "packed" in stem and "unpacked" not in "stem":
+                msg = (
+                    "The fingerprints file name containes 'packed',"
+                    " make sure the file contains packed fps"
+                )
+                warnings.warn(msg)
+                stem = f"packed-{stem}"
+            elif "unpacked" in stem:
+                stem = stem.replace("unpacked", "packed")
+            else:
+                stem = f"packed-{stem}"
+            unpacked_fps = pack_fingerprints(fps)
+            np.save(out_dir / f"{stem}.npy", unpacked_fps)
+        console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
