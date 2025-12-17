@@ -244,6 +244,15 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
     console.print(f"File: {path.resolve()}")
     if shape_is_valid and dtype_is_valid:
         console.print("    - [green]Valid fingerprint file[/green]")
+        if shape[0] > 0:
+            first_fp = np.load(path, mmap_mode="r")[0]
+            has_nonzero = (first_fp > 1).any()
+            if has_nonzero:
+                console.print("    - Guessed format: [cyan]Packed[/cyan]")
+            else:
+                console.print("    - Guessed format: [magenta]Unpacked[/magenta]")
+        else:
+            console.print("    - Guessed format: [red]Unknown[/red]")
     else:
         console.print("    - [red]Invalid fingerprint file[/red]")
     if shape_is_valid:
