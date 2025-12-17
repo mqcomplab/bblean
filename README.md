@@ -193,7 +193,7 @@ tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion="dia
 tree.fit(fps)
 
 # Refine the tree (if needed)
-tree.set_merge(merge_criterion="tolerance-diameter", tolerance=0.0)
+tree.set_merge("tolerance-diameter", tolerance=0.0)
 tree.refine_inplace(fps)
 
 # Visualize the results

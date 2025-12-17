@@ -212,7 +212,7 @@ class _InitialRound:
                 # Finish the first refinement step internally in this round
                 tree.reset()
                 tree.set_merge(
-                    self.refine_merge_criterion,
+                    merge_criterion=self.refine_merge_criterion,
                     tolerance=self.tolerance,
                     threshold=self.threshold + self.refine_threshold_change,
                 )
@@ -236,7 +236,7 @@ class _TreeMergingRound:
         round_idx: int,
         out_dir: Path | str,
         split_largest_cluster: bool,
-        criterion: str,
+        merge_criterion: str,
         all_fp_paths: tp.Sequence[Path] = (),
     ) -> None:
         self.all_fp_paths = list(all_fp_paths)
@@ -246,14 +246,14 @@ class _TreeMergingRound:
         self.round_idx = round_idx
         self.out_dir = Path(out_dir)
         self.split_largest_cluster = split_largest_cluster
-        self.criterion = criterion
+        self.merge_criterion = merge_criterion
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_label, batch_path_pairs = batch_info
         tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
-            merge_criterion=self.criterion,
+            merge_criterion=self.merge_criterion,
             tolerance=self.tolerance,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
@@ -281,13 +281,20 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         branching_factor: int,
         threshold: float,
         tolerance: float,
-        criterion: str,
+        merge_criterion: str,
         out_dir: Path | str,
         save_tree: bool,
         save_centroids: bool,
     ) -> None:
         super().__init__(
-            branching_factor, threshold, tolerance, -1, out_dir, False, criterion, ()
+            branching_factor,
+            threshold,
+            tolerance,
+            -1,
+            out_dir,
+            False,
+            merge_criterion,
+            (),
         )
         self.save_tree = save_tree
         self.save_centroids = save_centroids
@@ -297,7 +304,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
-            merge_criterion=self.criterion,
+            merge_criterion=self.merge_criterion,
             tolerance=self.tolerance,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
@@ -449,7 +456,7 @@ def run_multiround_bitbirch(
             round_idx=round_idx,
             all_fp_paths=input_files,
             split_largest_cluster=split_largest_after_each_midsection_round,
-            criterion=midsection_merge_criterion,
+            merge_criterion=midsection_merge_criterion,
             threshold=threshold + midsection_threshold_change,
             **common_kwargs,
         )
@@ -477,7 +484,7 @@ def run_multiround_bitbirch(
     final_fn = _FinalTreeMergingRound(
         save_tree=save_tree,
         save_centroids=save_centroids,
-        criterion=final_merge_criterion,
+        merge_criterion=final_merge_criterion,
         threshold=threshold + midsection_threshold_change,
         **common_kwargs,
     )

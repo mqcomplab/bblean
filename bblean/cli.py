@@ -1538,6 +1538,13 @@ def _fps_from_smiles(
             ),
         ),
     ] = False,
+    tab_separated: Annotated[
+        bool,
+        Option(
+            "--tab-sep/--no-tab-sep",
+            help="Whether the smiles file has the format <smiles><tab><field><tab>...",
+        ),
+    ] = False,
 ) -> None:
     r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
@@ -1643,7 +1650,9 @@ def _fps_from_smiles(
             with mp_context.Pool(processes=num_ps) as pool:
                 pool.map(
                     create_fp_file,
-                    _iter_idxs_and_smiles_batches(smiles_paths, num_per_batch),
+                    _iter_idxs_and_smiles_batches(
+                        smiles_paths, num_per_batch, tab_separated
+                    ),
                 )
         timer.end_timing("total", console, indent=False)
         stem = out_name.split(".")[0]
@@ -1683,7 +1692,9 @@ def _fps_from_smiles(
         with mp_context.Pool(processes=num_ps) as pool:
             pool.starmap(
                 fps_array_filler,
-                _iter_ranges_and_smiles_batches(smiles_paths, num_per_batch),
+                _iter_ranges_and_smiles_batches(
+                    smiles_paths, num_per_batch, tab_separated
+                ),
             )
         fps = np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf)
         mask = np.ndarray((smiles_num,), dtype=np.bool, buffer=invalid_mask_shmem.buf)
