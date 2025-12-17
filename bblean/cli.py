@@ -1196,6 +1196,14 @@ def _multiround(
         bool,
         Option("--save-centroids/--no-save-centroids", rich_help_panel="Advanced"),
     ] = True,
+    sort_fps: Annotated[
+        bool,
+        Option(
+            "--sort-fps/--no-sort-fps",
+            help="Sort the fingerprints by popcount before launching the initial round",
+            rich_help_panel="Advanced",
+        ),
+    ] = False,
     mid_merge_criterion: Annotated[
         str,
         Option(
@@ -1389,6 +1397,7 @@ def _multiround(
         midsection_threshold_change=mid_threshold_change,
         tolerance=tolerance,
         # Advanced
+        sort_fps=sort_fps,
         save_tree=save_tree,
         save_centroids=save_centroids,
         bin_size=bin_size,
@@ -1529,6 +1538,13 @@ def _fps_from_smiles(
             ),
         ),
     ] = False,
+    tab_separated: Annotated[
+        bool,
+        Option(
+            "--tab-sep/--no-tab-sep",
+            help="Whether the smiles file has the format <smiles><tab><field><tab>...",
+        ),
+    ] = False,
 ) -> None:
     r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
@@ -1634,7 +1650,9 @@ def _fps_from_smiles(
             with mp_context.Pool(processes=num_ps) as pool:
                 pool.map(
                     create_fp_file,
-                    _iter_idxs_and_smiles_batches(smiles_paths, num_per_batch),
+                    _iter_idxs_and_smiles_batches(
+                        smiles_paths, num_per_batch, tab_separated
+                    ),
                 )
         timer.end_timing("total", console, indent=False)
         stem = out_name.split(".")[0]
@@ -1674,7 +1692,9 @@ def _fps_from_smiles(
         with mp_context.Pool(processes=num_ps) as pool:
             pool.starmap(
                 fps_array_filler,
-                _iter_ranges_and_smiles_batches(smiles_paths, num_per_batch),
+                _iter_ranges_and_smiles_batches(
+                    smiles_paths, num_per_batch, tab_separated
+                ),
             )
         fps = np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf)
         mask = np.ndarray((smiles_num,), dtype=np.bool, buffer=invalid_mask_shmem.buf)
@@ -1851,3 +1871,33 @@ def _merge_fps(
             return
         np.save(out_dir / stem, np.concatenate(arrays))
     console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
+
+
+@app.command("fps-sort", rich_help_panel="Fingerprints")
+def _sort_fps(
+    in_file: Annotated[
+        Path,
+        Argument(help="`*.npy` file with packed fingerprints"),
+    ],
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+    seed: Annotated[
+        int | None,
+        Option("--seed", hidden=True, rich_help_panel="Debug"),
+    ] = None,
+) -> None:
+    import numpy as np
+    from bblean._py_similarity import _popcount
+
+    fps = np.load(in_file)
+    stem = in_file.stem
+    counts = _popcount(fps)
+    sort_idxs = np.argsort(counts)
+    fps = fps[sort_idxs]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    np.save(out_dir / f"sorted-{stem}.npy", fps)

@@ -65,6 +65,7 @@ from bblean._config import DEFAULTS
 from bblean.utils import batched
 from bblean.bitbirch import BitBirch
 from bblean.fingerprints import _get_fps_file_num
+from bblean._py_similarity import _popcount
 
 __all__ = ["run_multiround_bitbirch"]
 
@@ -157,6 +158,7 @@ class _InitialRound:
         max_fps: int | None = None,
         merge_criterion: str = DEFAULTS.merge_criterion,
         input_is_packed: bool = True,
+        sort_fps: bool = False,
     ) -> None:
         self.n_features = n_features
         self.refinement_before_midsection = refinement_before_midsection
@@ -171,6 +173,7 @@ class _InitialRound:
         self.refine_merge_criterion = refine_merge_criterion
         self.input_is_packed = input_is_packed
         self.refine_threshold_change = refine_threshold_change
+        self._sort_fps = sort_fps
 
     def __call__(self, file_info: tuple[str, Path, int, int]) -> None:
         file_label, fp_file, start_idx, end_idx = file_info
@@ -182,6 +185,14 @@ class _InitialRound:
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
         )
+        if self._sort_fps:
+            fp_input = np.load(fp_file)
+            counts = _popcount(fp_input)
+            sort_idxs = np.argsort(counts)
+            fp_input = fp_input[sort_idxs]
+        else:
+            fp_input = fp_file
+
         range_ = range(start_idx, end_idx)
         tree.fit(
             fp_file,
@@ -201,7 +212,7 @@ class _InitialRound:
                 # Finish the first refinement step internally in this round
                 tree.reset()
                 tree.set_merge(
-                    self.refine_merge_criterion,
+                    merge_criterion=self.refine_merge_criterion,
                     tolerance=self.tolerance,
                     threshold=self.threshold + self.refine_threshold_change,
                 )
@@ -225,7 +236,7 @@ class _TreeMergingRound:
         round_idx: int,
         out_dir: Path | str,
         split_largest_cluster: bool,
-        criterion: str,
+        merge_criterion: str,
         all_fp_paths: tp.Sequence[Path] = (),
     ) -> None:
         self.all_fp_paths = list(all_fp_paths)
@@ -235,14 +246,14 @@ class _TreeMergingRound:
         self.round_idx = round_idx
         self.out_dir = Path(out_dir)
         self.split_largest_cluster = split_largest_cluster
-        self.criterion = criterion
+        self.merge_criterion = merge_criterion
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_label, batch_path_pairs = batch_info
         tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
-            merge_criterion=self.criterion,
+            merge_criterion=self.merge_criterion,
             tolerance=self.tolerance,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
@@ -270,13 +281,20 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         branching_factor: int,
         threshold: float,
         tolerance: float,
-        criterion: str,
+        merge_criterion: str,
         out_dir: Path | str,
         save_tree: bool,
         save_centroids: bool,
     ) -> None:
         super().__init__(
-            branching_factor, threshold, tolerance, -1, out_dir, False, criterion, ()
+            branching_factor,
+            threshold,
+            tolerance,
+            -1,
+            out_dir,
+            False,
+            merge_criterion,
+            (),
         )
         self.save_tree = save_tree
         self.save_centroids = save_centroids
@@ -286,7 +304,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
-            merge_criterion=self.criterion,
+            merge_criterion=self.merge_criterion,
             tolerance=self.tolerance,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
@@ -353,6 +371,7 @@ def run_multiround_bitbirch(
     mp_context: tp.Any = None,
     save_tree: bool = False,
     save_centroids: bool = True,
+    sort_fps: bool = False,
     # Debug
     max_fps: int | None = None,
     verbose: bool = False,
@@ -399,6 +418,7 @@ def run_multiround_bitbirch(
     console.print(f"(Initial) Round {round_idx}: Cluster initial batch of fingerprints")
 
     initial_fn = _InitialRound(
+        sort_fps=sort_fps,
         n_features=n_features,
         refinement_before_midsection=refinement_before_midsection,
         max_fps=max_fps,
@@ -436,7 +456,7 @@ def run_multiround_bitbirch(
             round_idx=round_idx,
             all_fp_paths=input_files,
             split_largest_cluster=split_largest_after_each_midsection_round,
-            criterion=midsection_merge_criterion,
+            merge_criterion=midsection_merge_criterion,
             threshold=threshold + midsection_threshold_change,
             **common_kwargs,
         )
@@ -464,7 +484,7 @@ def run_multiround_bitbirch(
     final_fn = _FinalTreeMergingRound(
         save_tree=save_tree,
         save_centroids=save_centroids,
-        criterion=final_merge_criterion,
+        merge_criterion=final_merge_criterion,
         threshold=threshold + midsection_threshold_change,
         **common_kwargs,
     )

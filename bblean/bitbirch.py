@@ -740,7 +740,7 @@ class BitBirch:
 
     @merge_criterion.setter
     def merge_criterion(self, value: str) -> None:
-        self.set_merge(criterion=value)
+        self.set_merge(merge_criterion=value)
 
     @property
     def tolerance(self) -> float | None:
@@ -765,7 +765,7 @@ class BitBirch:
 
     def set_merge(
         self,
-        criterion: str | MergeAcceptFunction | None = None,
+        merge_criterion: str | MergeAcceptFunction | None = None,
         *,
         tolerance: float | None = None,
         threshold: float | None = None,
@@ -781,10 +781,10 @@ class BitBirch:
                 "the global set_merge() function has *not* been used"
             )
         _tolerance = 0.05 if tolerance is None else tolerance
-        if isinstance(criterion, MergeAcceptFunction):
-            self._merge_accept_fn = criterion
-        elif isinstance(criterion, str):
-            self._merge_accept_fn = get_merge_accept_fn(criterion, _tolerance)
+        if isinstance(merge_criterion, MergeAcceptFunction):
+            self._merge_accept_fn = merge_criterion
+        elif isinstance(merge_criterion, str):
+            self._merge_accept_fn = get_merge_accept_fn(merge_criterion, _tolerance)
         if hasattr(self._merge_accept_fn, "tolerance"):
             self._merge_accept_fn.tolerance = _tolerance
         elif tolerance is not None:
