@@ -1207,14 +1207,6 @@ def _multiround(
             rich_help_panel="Advanced",
         ),
     ] = DEFAULTS.refine_threshold_change,
-    sort_fps: Annotated[
-        bool,
-        Option(
-            "--sort-fps/--no-sort-fps",
-            help="Sort the fingerprints by popcount before launching the initial round",
-            rich_help_panel="Advanced",
-        ),
-    ] = False,
     mid_merge_criterion: Annotated[
         str,
         Option(
@@ -1409,7 +1401,6 @@ def _multiround(
         midsection_threshold_change=mid_threshold_change,
         tolerance=tolerance,
         # Advanced
-        sort_fps=sort_fps,
         save_tree=save_tree,
         save_centroids=save_centroids,
         bin_size=bin_size,
