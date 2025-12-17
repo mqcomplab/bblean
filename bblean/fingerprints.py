@@ -242,6 +242,7 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
     shape, dtype, shape_is_valid, dtype_is_valid = _get_fps_file_shape_and_dtype(path)
 
     console.print(f"File: {path.resolve()}")
+    has_nonzero = None
     if shape_is_valid and dtype_is_valid:
         console.print("    - [green]Valid fingerprint file[/green]")
         if shape[0] > 0:
@@ -257,7 +258,10 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
         console.print("    - [red]Invalid fingerprint file[/red]")
     if shape_is_valid:
         console.print(f"    - Num. fingerprints: {shape[0]:,}")
-        console.print(f"    - Num. features: {shape[1]:,}")
+        if has_nonzero:
+            console.print(f"    - Num. features: {shape[1]:,} (guessed unpacked: {shape[1] * 8:,})")  # noqa
+        else:
+            console.print(f"    - Num. features: {shape[1]:,}")
     else:
         console.print(f"    - Shape: {shape}")
     console.print(f"    - DType: [yellow]{dtype.name}[/yellow]")
