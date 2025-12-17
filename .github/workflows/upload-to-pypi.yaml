@@ -31,7 +31,7 @@ env:
   # Build wheels that support both aarch64 and x86_64 on macOS
   CIBW_ARCHS_MACOS: "universal2"
   CIBW_BUILD_VERBOSITY: 3
-  PIP_ONLY_BINARY: "llvmlite"
+  PIP_ONLY_BINARY: "llvmlite,numba"
 jobs:
   make_sdist:
     name: make-source-distribution
