@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Simple BitBIRCH workflow &#8212; BitBIRCH-Lean v0.0 (dev) Manual</title>
+    <title>BitBIRCH best practices &#8212; BitBIRCH-Lean v0.0 (dev) Manual</title>
   
   
   
@@ -48,11 +48,11 @@
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'user-guide/notebooks/bitbirch_quickstart';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user-guide/notebooks/bitbirch_best_practices';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Tuning BitBIRCH parameters" href="../parameters.html" />
-    <link rel="prev" title="User guide" href="../../user-guide.html" />
+    <link rel="next" title="Linux Memory Setup" href="../linux_memory_setup.html" />
+    <link rel="prev" title="Tuning BitBIRCH parameters" href="../parameters.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0 (dev)" />
@@ -320,9 +320,9 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Simple BitBIRCH workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bitbirch_quickstart.html">Simple BitBIRCH workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../parameters.html">Tuning BitBIRCH parameters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bitbirch_best_practices.html">BitBIRCH best practices</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">BitBIRCH best practices</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../linux_memory_setup.html">Linux Memory Setup</a></li>
 </ul>
 </div>
@@ -360,7 +360,7 @@
     
     <li class="breadcrumb-item"><a href="../../user-guide.html" class="nav-link">User guide</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Simple BitBIRCH workflow</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">BitBIRCH best practices</span></li>
   </ul>
 </nav>
 </div>
@@ -377,9 +377,9 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="Simple-BitBIRCH-workflow">
-<h1>Simple BitBIRCH workflow<a class="headerlink" href="#Simple-BitBIRCH-workflow" title="Link to this heading">#</a></h1>
-<p>This is a tutorial notebook that showcases a simple workflow of BitBIRCH clustering, including a refinement step. If you find this software useful please cite the following articles:</p>
+  <section id="BitBIRCH-best-practices">
+<h1>BitBIRCH best practices<a class="headerlink" href="#BitBIRCH-best-practices" title="Link to this heading">#</a></h1>
+<p>This is a tutorial notebook that showcases a simple workflow of BitBIRCH clustering, incluiding threshold selection, and the refinement of singletons.</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://doi.org/10.1039/D5DD00030K">BitBIRCH: efficient clustering of large molecular libraries</a></p></li>
 <li><p><a class="reference external" href="https://doi.org/10.1021/acs.jcim.5c00627">BitBIRCH Clustering Refinement Strategies</a></p></li>
@@ -403,24 +403,27 @@ pip install -v .
 </div>
 <p>Lets import the <code class="docutils literal notranslate"><span class="pre">bblean</span></code> package and some bblean modules, which we will use throughout this example.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import bblean
 import bblean.plotting as plotting
 import bblean.analysis as analysis
+import bblean.similarity as iSIM
+import numpy as np
+import matplotlib.pyplot as plt
 </pre></div>
 </div>
 </div>
 <p>Now let’s take some SMILES strings and compute molecular fingerprints:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[49]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>smiles = bblean.load_smiles(&quot;./chembl-33-natural-products-subset.smi&quot;)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>smiles = bblean.load_smiles(&quot;./chembl-33-natural-products-subset.smi&quot;, max_num=10000)
 
 # By default the fps created are of the &quot;ecfp4&quot; kind. Here we use &quot;rdkit&quot;
-fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind=&quot;rdkit&quot;)
+fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind=&quot;ecfp4&quot;)
 print(f&quot;Shape: {fps.shape}, DType: {fps.dtype}&quot;)
 </pre></div>
 </div>
@@ -429,19 +432,20 @@ print(f&quot;Shape: {fps.shape}, DType: {fps.dtype}&quot;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">64086</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">256</span><span style="font-weight: bold">)</span>, DType: uint8
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">256</span><span style="font-weight: bold">)</span>, DType: uint8
 </pre></div>
 </div>
 <p>The most efficient way to store and manipulate fingerprints is using <em>packed</em> fingerprint arrays. Packed arrays save the features in a compressed representation. To convert between packed and unpacked fingerprints you can use <code class="docutils literal notranslate"><span class="pre">bblean.pack_fingerprints(fps)</span></code> and <code class="docutils literal notranslate"><span class="pre">bblean.unpack_fingerprints(fps)</span></code>.</p>
+</section>
+<section id="Clustering-fingerprints">
+<h2>Clustering fingerprints<a class="headerlink" href="#Clustering-fingerprints" title="Link to this heading">#</a></h2>
+<p>First to define an optimal threshold we will take a look into the average similarity of the fingerprints we want to cluster. For this we will use the iSIM formalism which can calculate the average similarity with linear complexity.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[50]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fps_unpacked = bblean.unpack_fingerprints(fps)
-print(f&quot;Shape unpacked: {fps_unpacked.shape}, DType unpacked: {fps_unpacked.dtype}&quot;)
-
-fps = bblean.pack_fingerprints(fps_unpacked)
-print(f&quot;Shape re-packed: {fps.shape}, DType re-packed: {fps.dtype}&quot;)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>average_sim = iSIM.jt_isim(fps)
+print(f&quot;Average similarity: {average_sim:.4f}&quot;)
 </pre></div>
 </div>
 </div>
@@ -449,28 +453,41 @@ print(f&quot;Shape re-packed: {fps.shape}, DType re-packed: {fps.dtype}&quot;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape unpacked: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">64086</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2048</span><span style="font-weight: bold">)</span>, DType unpacked: uint8
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape unpacked: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2048</span><span style="font-weight: bold">)</span>, DType unpacked: uint8
 </pre></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape re-packed: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">64086</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">256</span><span style="font-weight: bold">)</span>, DType re-packed: uint8
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Shape re-packed: <span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">256</span><span style="font-weight: bold">)</span>, DType re-packed: uint8
 </pre></div>
 </div>
-</section>
-<section id="Clustering-fingerprints">
-<h2>Clustering fingerprints<a class="headerlink" href="#Clustering-fingerprints" title="Link to this heading">#</a></h2>
-<p>Now lets create a <code class="docutils literal notranslate"><span class="pre">BitBirch</span></code> object, which we can use to cluster the (packed) fingerprints</p>
+<p>Now, we will estimate the standard deviation of the similarities using a stratified sample from our data set.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Initialize the BitBirch tree. In general, diameter is the best merge criterion for
-# initial clustering. For more info consult the *refinement* paper.
-# 0.5-0.65 is a good threshold range for &quot;rdkit&quot; fingerprints, for ecfp4 use 0.3-0.4 instead
-bb_tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion=&quot;diameter&quot;)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>isim_sigma = iSIM.estimate_jt_std(fps)
+print(f&quot;Estimated similarity mean and std: {average_sim:.4f}, std: {std:.4f}&quot;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Estimated similarity mean: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.1312</span>, std: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.0580</span>
+</pre></div>
+</div>
+<p>Now, we will do the initial clustering. We recommend using a threshold of the average plus 4 standard deviations.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Initialize the BitBirch tree
+optimal_threshold = average_sim + 4 * std
+bb_tree = bblean.BitBirch(branching_factor=50, threshold=optimal_threshold, merge_criterion=&quot;diameter&quot;)
 
 # Cluster the packed fingerprints (By default all bblean functions take packed
 # fingerprints)
@@ -479,17 +496,76 @@ bb_tree.fit(fps)
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-BitBirch(threshold=0.65, branching_factor=50, merge_criterion=&#39;diameter&#39;)
+BitBirch(threshold=0.3631015470344815, branching_factor=50, merge_criterion=&#39;diameter&#39;)
 </pre></div></div>
 </div>
-<p>Finally, lets visualize the clustering results:</p>
+<p>Lets analyze the results to check the number of singletons</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusters = bb_tree.get_cluster_mol_ids()
+print(&quot;Number of singletons&quot;, sum(1 for c in clusters if len(c) == 1))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of singletons <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">944</span>
+</pre></div>
+</div>
+<p>As we see, the number of singletons is quite high. To solve this we will recluster the tree. We will do this increasing the threshold by one standard deviation each iteration. Usually 5 iterations is enough to get rid of spurious singletons that are not really outliers.</p>
+<p>For this example we see a reduction of almost one third of the singletons, depending on your application, you may want to change the <code class="docutils literal notranslate"><span class="pre">extra_threshold</span></code> parameter, and the number of iterations.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.recluster_inplace(iterations=5, extra_threshold=std, shuffle=False, verbose=True)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Current number of clusters: 1971
+Current number of singletons: 944
+Current number of clusters: 1746
+Current number of singletons: 785
+Current number of clusters: 1679
+Current number of singletons: 729
+Current number of clusters: 1658
+Current number of singletons: 704
+Current number of clusters: 1656
+Current number of singletons: 702
+Final number of clusters: 1652
+Final number of singletons: 697
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+BitBirch(threshold=0.6530114120345158, branching_factor=50, merge_criterion=&#39;diameter&#39;)
+</pre></div></div>
+</div>
+<p>We see that the number of singletons significantly decreased</p>
+</section>
+<section id="Further-analysis-and-Visualization">
+<h2>Further analysis and Visualization<a class="headerlink" href="#Further-analysis-and-Visualization" title="Link to this heading">#</a></h2>
+<p>Lets inspect some features of the generated clusters:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># First we run a cluster analysis on the resulting ids
@@ -498,9 +574,6 @@ ca = analysis.cluster_analysis(clusters, fps, smiles)
 
 # Afterwards we can use the utility functions on the bblean.plotting module
 plotting.summary_plot(ca, title=&quot;Diameter&quot;)
-
-# Optionally we can save the cluster analysis metrics as a csv file
-ca.dump_metrics(&quot;./diameter-metrics.csv&quot;)
 plt.show()
 </pre></div>
 </div>
@@ -509,22 +582,19 @@ plt.show()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../../_images/user-guide_notebooks_bitbirch_quickstart_9_0.png" src="../../_images/user-guide_notebooks_bitbirch_quickstart_9_0.png" />
+<img alt="../../_images/user-guide_notebooks_bitbirch_best_practices_16_0.png" src="../../_images/user-guide_notebooks_bitbirch_best_practices_16_0.png" />
 </div>
 </div>
-<p>Lets inspect some features of the generated clusters, which we can get directly from the resulting “cluster analaysis”</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[54]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Total clusters
-print(&quot;Number of clusters: &quot;, ca.all_clusters_num)
+print(&quot;Number of clusters: &quot;, len(clusters))
 
 # Clusters with more than 10 molecules
-print(&quot;Number of clusters with more than 10 molecules: &quot;, ca.all_clusters_num_with_size_above(10))
-
-# Singletons (clusters with a single element)
-print(&quot;Number of singletons&quot;, ca.all_singletons_num)
+large_clusters = [c for c in clusters if len(c) &gt; 10]
+print(&quot;Number of clusters with more than 10 molecules: &quot;, len(large_clusters))
 </pre></div>
 </div>
 </div>
@@ -532,126 +602,31 @@ print(&quot;Number of singletons&quot;, ca.all_singletons_num)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">14346</span>
-</pre></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters with more than <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10</span> molecules:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">964</span>
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1652</span>
 </pre></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of singletons <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">8447</span>
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters with more than <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10</span> molecules:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">227</span>
 </pre></div>
 </div>
-</section>
-<section id="Refining-the-clustering-results">
-<h2>Refining the clustering results<a class="headerlink" href="#Refining-the-clustering-results" title="Link to this heading">#</a></h2>
-<p>Sometimes you may get a pretty big cluster with a large number of scaffolds, which is undesirable. If this happens, you may want to refine the tree by breaking appart the largest cluster and re-inserting all the bit features. This step is only required if your results display this problem. If they don’t, you are done, no need to refine.</p>
-<p>For the refinement, we will use the <code class="docutils literal notranslate"><span class="pre">'tolerance-diameter'</span></code> merge criterion, and a tolerance value of 0.0. <code class="docutils literal notranslate"><span class="pre">BitBirch.set_merge(...)</span></code> can be used to specify the new criterion, and <code class="docutils literal notranslate"><span class="pre">BitBirch.refine_inplace(...)</span></code> breaks apart the largest cluster and regenerates the tree with our new criterion.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[55]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Modify the merge criteria for the tree, from now on bb_tree will use this new criteria
-bb_tree.set_merge(merge_criterion=&quot;tolerance-diameter&quot;, tolerance=0.0)
-
-# Refine the tree using the new merge criteria
-bb_tree.refine_inplace(fps)
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[55]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-BitBirch(threshold=0.65, branching_factor=50, merge_criterion=&#39;tolerance-diameter&#39;, tolerance=0.0)
-</pre></div></div>
-</div>
-<p>Lets visualize the refined results:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[56]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusters_refined = bb_tree.get_cluster_mol_ids()
-ca_refined = analysis.cluster_analysis(clusters_refined, fps, smiles)
-plotting.summary_plot(ca_refined, title=&quot;Refined&quot;)
-
-# Again, we can save the cluster analysis metrics as a csv file
-ca.dump_metrics(&quot;./refined-metrics.csv&quot;)
-plt.show()
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../../_images/user-guide_notebooks_bitbirch_quickstart_15_0.png" src="../../_images/user-guide_notebooks_bitbirch_quickstart_15_0.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[57]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Total clusters
-print(&quot;Number of clusters: &quot;, ca_refined.all_clusters_num)
-
-# Clusters with more than 10 molecules
-print(&quot;Number of clusters with more than 10 molecules: &quot;, ca_refined.all_clusters_num_with_size_above(10))
-
-# Singletons (clusters with a single element)
-print(&quot;Number of singletons&quot;, ca_refined.all_singletons_num)
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">14735</span>
-</pre></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of clusters with more than <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10</span> molecules:  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">966</span>
-</pre></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area rendered_html docutils container">
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Number of singletons <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7755</span>
-</pre></div>
-</div>
-</section>
-<section id="Further-analysis-and-Visualization">
-<h2>Further analysis and Visualization<a class="headerlink" href="#Further-analysis-and-Visualization" title="Link to this heading">#</a></h2>
-<p>Lets inspect some features of the generated clusters:</p>
 <p>We can visually inspect an individual cluster by calling <code class="docutils literal notranslate"><span class="pre">plotting.dump_mol_images</span></code>. By default this generates multiple images with 30 molecules each.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[58]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.dump_mol_images(smiles, clusters_refined, cluster_idx=10)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.dump_mol_images(smiles, clusters, cluster_idx=0)
 </pre></div>
 </div>
 </div>
 <p>We can also visualize the clusters using a t-SNE plot with <code class="docutils literal notranslate"><span class="pre">plotting.tsne_plot</span></code>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[59]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.tsne_plot(ca_refined, title=&quot;Refined&quot;)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.tsne_plot(ca, title=&quot;Refined&quot;)
 plt.show()
 </pre></div>
 </div>
@@ -660,12 +635,15 @@ plt.show()
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../../_images/user-guide_notebooks_bitbirch_quickstart_21_0.png" src="../../_images/user-guide_notebooks_bitbirch_quickstart_21_0.png" />
+<img alt="../../_images/user-guide_notebooks_bitbirch_best_practices_21_0.png" src="../../_images/user-guide_notebooks_bitbirch_best_practices_21_0.png" />
 </div>
 </div>
+</section>
+<section id="Final-cluster-assignments">
+<h2>Final cluster assignments<a class="headerlink" href="#Final-cluster-assignments" title="Link to this heading">#</a></h2>
 <p>Once we are happy with the clustering results, we can save the final cluster assignments. to a <code class="docutils literal notranslate"><span class="pre">*.csv</span></code> file.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[60]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.dump_assignments(&quot;smiles-assignments.csv&quot;, smiles)
@@ -686,20 +664,20 @@ plt.show()
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../../user-guide.html"
+       href="../parameters.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">User guide</p>
+        <p class="prev-next-title">Tuning BitBIRCH parameters</p>
       </div>
     </a>
     <a class="right-next"
-       href="../parameters.html"
+       href="../linux_memory_setup.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Tuning BitBIRCH parameters</p>
+        <p class="prev-next-title">Linux Memory Setup</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
