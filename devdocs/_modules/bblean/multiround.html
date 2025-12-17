@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=75f34c2c"></script>
+    <script src="../../_static/documentation_options.js?v=1bd4c21d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -426,6 +426,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">batched</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.bitbirch</span><span class="w"> </span><span class="kn">import</span> <span class="n">BitBirch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">_get_fps_file_num</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">_popcount</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;run_multiround_bitbirch&quot;</span><span class="p">]</span>
 
@@ -518,6 +519,7 @@
         <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">merge_criterion</span><span class="p">,</span>
         <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">sort_fps</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">=</span> <span class="n">refinement_before_midsection</span>
@@ -532,6 +534,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">refine_merge_criterion</span> <span class="o">=</span> <span class="n">refine_merge_criterion</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_is_packed</span> <span class="o">=</span> <span class="n">input_is_packed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">refine_threshold_change</span> <span class="o">=</span> <span class="n">refine_threshold_change</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sort_fps</span> <span class="o">=</span> <span class="n">sort_fps</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">file_label</span><span class="p">,</span> <span class="n">fp_file</span><span class="p">,</span> <span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span> <span class="o">=</span> <span class="n">file_info</span>
@@ -543,6 +546,14 @@
             <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span>
             <span class="n">merge_criterion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sort_fps</span><span class="p">:</span>
+            <span class="n">fp_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp_file</span><span class="p">)</span>
+            <span class="n">counts</span> <span class="o">=</span> <span class="n">_popcount</span><span class="p">(</span><span class="n">fp_input</span><span class="p">)</span>
+            <span class="n">sort_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+            <span class="n">fp_input</span> <span class="o">=</span> <span class="n">fp_input</span><span class="p">[</span><span class="n">sort_idxs</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fp_input</span> <span class="o">=</span> <span class="n">fp_file</span>
+
         <span class="n">range_</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">)</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
             <span class="n">fp_file</span><span class="p">,</span>
@@ -723,6 +734,7 @@
     <span class="n">mp_context</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">save_tree</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">save_centroids</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">sort_fps</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="c1"># Debug</span>
     <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -769,6 +781,7 @@
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(Initial) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Cluster initial batch of fingerprints&quot;</span><span class="p">)</span>
 
     <span class="n">initial_fn</span> <span class="o">=</span> <span class="n">_InitialRound</span><span class="p">(</span>
+        <span class="n">sort_fps</span><span class="o">=</span><span class="n">sort_fps</span><span class="p">,</span>
         <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
         <span class="n">refinement_before_midsection</span><span class="o">=</span><span class="n">refinement_before_midsection</span><span class="p">,</span>
         <span class="n">max_fps</span><span class="o">=</span><span class="n">max_fps</span><span class="p">,</span>
