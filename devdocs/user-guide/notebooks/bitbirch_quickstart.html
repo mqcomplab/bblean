@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=3f6e8a15"></script>
+    <script src="../../_static/documentation_options.js?v=75f34c2c"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -558,7 +558,7 @@ print(&quot;Number of singletons&quot;, ca.all_singletons_num)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Modify the merge criteria for the tree, from now on bb_tree will use this new criteria
-bb_tree.set_merge(criterion=&quot;tolerance-diameter&quot;, tolerance=0.0)
+bb_tree.set_merge(merge_criterion=&quot;tolerance-diameter&quot;, tolerance=0.0)
 
 # Refine the tree using the new merge criteria
 bb_tree.refine_inplace(fps)

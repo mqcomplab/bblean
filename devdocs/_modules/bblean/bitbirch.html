@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=3f6e8a15"></script>
+    <script src="../../_static/documentation_options.js?v=75f34c2c"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -1011,7 +1011,7 @@
 
     <span class="nd">@merge_criterion</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">merge_criterion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span><span class="n">merge_criterion</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -1038,7 +1038,7 @@
 <a class="viewcode-back" href="../../_api_autogen/bblean.bitbirch.html#bblean.bitbirch.BitBirch.set_merge">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_merge</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">MergeAcceptFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">MergeAcceptFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1054,10 +1054,10 @@
                 <span class="s2">&quot;the global set_merge() function has *not* been used&quot;</span>
             <span class="p">)</span>
         <span class="n">_tolerance</span> <span class="o">=</span> <span class="mf">0.05</span> <span class="k">if</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tolerance</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">MergeAcceptFunction</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">criterion</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">criterion</span><span class="p">,</span> <span class="n">_tolerance</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merge_criterion</span><span class="p">,</span> <span class="n">MergeAcceptFunction</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">merge_criterion</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merge_criterion</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span> <span class="o">=</span> <span class="n">get_merge_accept_fn</span><span class="p">(</span><span class="n">merge_criterion</span><span class="p">,</span> <span class="n">_tolerance</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span><span class="p">,</span> <span class="s2">&quot;tolerance&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span><span class="o">.</span><span class="n">tolerance</span> <span class="o">=</span> <span class="n">_tolerance</span>
         <span class="k">elif</span> <span class="n">tolerance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
