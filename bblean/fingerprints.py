@@ -259,7 +259,9 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
     if shape_is_valid:
         console.print(f"    - Num. fingerprints: {shape[0]:,}")
         if has_nonzero:
-            console.print(f"    - Num. features: {shape[1]:,} (guessed unpacked: {shape[1] * 8:,})")  # noqa
+            console.print(
+                f"    - Num. features: {shape[1]:,} (guessed unpacked: {shape[1] * 8:,})"  # noqa
+            )
         else:
             console.print(f"    - Num. features: {shape[1]:,}")
     else:
