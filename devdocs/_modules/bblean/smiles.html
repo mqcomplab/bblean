@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=2ea2359e"></script>
+    <script src="../../_static/documentation_options.js?v=3f6e8a15"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -401,14 +401,22 @@
 <div class="viewcode-block" id="iter_smiles_from_paths">
 <a class="viewcode-back" href="../../_api_autogen/bblean.smiles.html#bblean.smiles.iter_smiles_from_paths">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">iter_smiles_from_paths</span><span class="p">(</span>
-    <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span>
+    <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span> <span class="n">tab_separated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Iterate over smiles in a sequence of smiles paths&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Iterate over smiles in a sequence of smiles paths</span>
+
+<span class="sd">    If tab_separated = True the file is assumed to have the format</span>
+<span class="sd">    &lt;smiles&gt;&lt;tab&gt;&lt;field&gt;&lt;tab&gt;&lt;field&gt;..., and only the smiles is returned</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">,</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
         <span class="n">smiles_paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">smiles_paths</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">smi_path</span> <span class="ow">in</span> <span class="n">smiles_paths</span><span class="p">:</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">smi_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rt&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">smi</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">smi</span> <span class="o">=</span> <span class="n">smi</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">tab_separated</span> <span class="k">else</span> <span class="n">smi</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="c1"># Skip headers</span>
+                <span class="k">if</span> <span class="n">smi</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;smiles&quot;</span><span class="p">:</span>
+                    <span class="k">continue</span>
                 <span class="k">yield</span> <span class="n">smi</span></div>
 
 
@@ -416,9 +424,12 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_iter_ranges_and_smiles_batches</span><span class="p">(</span>
     <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span>
     <span class="n">num_per_batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tab_separated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]:</span>
     <span class="n">start_idx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batched</span><span class="p">(</span><span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">),</span> <span class="n">num_per_batch</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batched</span><span class="p">(</span>
+        <span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">,</span> <span class="n">tab_separated</span><span class="p">),</span> <span class="n">num_per_batch</span>
+    <span class="p">):</span>
         <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
         <span class="n">end_idx</span> <span class="o">=</span> <span class="n">start_idx</span> <span class="o">+</span> <span class="n">size</span>
         <span class="k">yield</span> <span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">),</span> <span class="n">batch</span>
@@ -426,9 +437,13 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_iter_idxs_and_smiles_batches</span><span class="p">(</span>
-    <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span> <span class="n">num_per_batch</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">smiles_paths</span><span class="p">:</span> <span class="n">SmilesPaths</span><span class="p">,</span>
+    <span class="n">num_per_batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tab_separated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]:</span>
-    <span class="k">yield from</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batched</span><span class="p">(</span><span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">),</span> <span class="n">num_per_batch</span><span class="p">))</span>
+    <span class="k">yield from</span> <span class="nb">enumerate</span><span class="p">(</span>
+        <span class="n">batched</span><span class="p">(</span><span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">,</span> <span class="n">tab_separated</span><span class="p">),</span> <span class="n">num_per_batch</span><span class="p">)</span>
+    <span class="p">)</span>
 </pre></div>
 
                 </article>
