@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=5dc0b712"></script>
+    <script src="../../_static/documentation_options.js?v=4f9e9910"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -893,6 +893,7 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_MedoidsMolIds</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">medoid_idxs</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]</span>
     <span class="n">medoids</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]</span>
     <span class="n">mol_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
 
@@ -1303,33 +1304,43 @@
         <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_MedoidsMolIds</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a dict with medoids and mol indices of the leaves&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get a dict with medoid idxs, medoids and mol indices of the leaves</span>
+
+<span class="sd">        The medoid indices are indices into the cluster mol ids, not into the fps array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">cluster_members</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cluster_mol_ids</span><span class="p">(</span>
             <span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">,</span> <span class="n">global_clusters</span><span class="o">=</span><span class="n">global_clusters</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">input_is_packed</span><span class="p">:</span>
             <span class="n">fps</span> <span class="o">=</span> <span class="n">_unpack_fingerprints</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-        <span class="n">cluster_medoids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpacked_medoids_from_members</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">cluster_members</span><span class="p">)</span>
+        <span class="n">cluster_medoid_idxs</span><span class="p">,</span> <span class="n">cluster_medoids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unpacked_medoids_from_members</span><span class="p">(</span>
+            <span class="n">fps</span><span class="p">,</span> <span class="n">cluster_members</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">pack</span><span class="p">:</span>
             <span class="n">cluster_medoids</span> <span class="o">=</span> <span class="n">pack_fingerprints</span><span class="p">(</span><span class="n">cluster_medoids</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;medoids&quot;</span><span class="p">:</span> <span class="n">cluster_medoids</span><span class="p">,</span> <span class="s2">&quot;mol_ids&quot;</span><span class="p">:</span> <span class="n">cluster_members</span><span class="p">}</span></div>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;medoid_idxs&quot;</span><span class="p">:</span> <span class="n">cluster_medoid_idxs</span><span class="p">,</span>
+            <span class="s2">&quot;medoids&quot;</span><span class="p">:</span> <span class="n">cluster_medoids</span><span class="p">,</span>
+            <span class="s2">&quot;mol_ids&quot;</span><span class="p">:</span> <span class="n">cluster_members</span><span class="p">,</span>
+        <span class="p">}</span></div>
 
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_unpacked_medoids_from_members</span><span class="p">(</span>
         <span class="n">unpacked_fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">cluster_members</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]]:</span>
         <span class="n">cluster_medoids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
             <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cluster_members</span><span class="p">),</span> <span class="n">unpacked_fps</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
         <span class="p">)</span>
+        <span class="n">cluster_medoid_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">cluster_members</span><span class="p">),),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">members</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cluster_members</span><span class="p">):</span>
-            <span class="n">cluster_medoids</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">jt_isim_medoid</span><span class="p">(</span>
+            <span class="n">cluster_medoid_idxs</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">cluster_medoids</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">jt_isim_medoid</span><span class="p">(</span>
                 <span class="n">unpacked_fps</span><span class="p">[</span><span class="n">members</span><span class="p">],</span>
                 <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">pack</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">cluster_medoids</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">cluster_medoid_idxs</span><span class="p">,</span> <span class="n">cluster_medoids</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_medoids</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
