@@ -464,7 +464,9 @@ def _dispatch_visualization(
     if fps_path is None:
         fps_paths = None
     elif fps_path.is_dir():
-        fps_paths = sorted(fps_path.glob("*.npy"))
+        fps_paths = sorted(
+            f for f in fps_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
     else:
         fps_paths = [fps_path]
     ca = cluster_analysis(

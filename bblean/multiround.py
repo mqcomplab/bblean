@@ -65,7 +65,6 @@ from bblean._config import DEFAULTS
 from bblean.utils import batched
 from bblean.bitbirch import BitBirch
 from bblean.fingerprints import _get_fps_file_num
-from bblean._py_similarity import _popcount
 
 __all__ = ["run_multiround_bitbirch"]
 
@@ -158,7 +157,6 @@ class _InitialRound:
         max_fps: int | None = None,
         merge_criterion: str = DEFAULTS.merge_criterion,
         input_is_packed: bool = True,
-        sort_fps: bool = False,
     ) -> None:
         self.n_features = n_features
         self.refinement_before_midsection = refinement_before_midsection
@@ -173,7 +171,6 @@ class _InitialRound:
         self.refine_merge_criterion = refine_merge_criterion
         self.input_is_packed = input_is_packed
         self.refine_threshold_change = refine_threshold_change
-        self._sort_fps = sort_fps
 
     def __call__(self, file_info: tuple[str, Path, int, int]) -> None:
         file_label, fp_file, start_idx, end_idx = file_info
@@ -185,13 +182,6 @@ class _InitialRound:
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
         )
-        if self._sort_fps:
-            fp_input = np.load(fp_file)
-            counts = _popcount(fp_input)
-            sort_idxs = np.argsort(counts)
-            fp_input = fp_input[sort_idxs]
-        else:
-            fp_input = fp_file
 
         range_ = range(start_idx, end_idx)
         tree.fit(
@@ -371,7 +361,6 @@ def run_multiround_bitbirch(
     mp_context: tp.Any = None,
     save_tree: bool = False,
     save_centroids: bool = True,
-    sort_fps: bool = False,
     # Debug
     max_fps: int | None = None,
     verbose: bool = False,
@@ -418,7 +407,6 @@ def run_multiround_bitbirch(
     console.print(f"(Initial) Round {round_idx}: Cluster initial batch of fingerprints")
 
     initial_fn = _InitialRound(
-        sort_fps=sort_fps,
         n_features=n_features,
         refinement_before_midsection=refinement_before_midsection,
         max_fps=max_fps,

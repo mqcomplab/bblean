@@ -54,7 +54,8 @@ def _validate_input_dir(in_dir: Path | str) -> None:
     in_dir = Path(in_dir)
     if not in_dir.is_dir():
         raise RuntimeError(f"Input dir {in_dir} should be a dir")
-    if not any(in_dir.glob("*.npy")):
+    fp_files = (f for f in in_dir.glob("*.npy") if not f.stem.endswith(".indices"))
+    if not any(fp_files):
         raise RuntimeError(f"Input dir {in_dir} should have *.npy fingerprint files")
 
 
@@ -73,6 +74,203 @@ def _main(
     ] = False,
 ) -> None:
     pass
+
+
+@app.command("summary", rich_help_panel="Analysis")
+def _table_summary(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    min_size: Annotated[
+        int,
+        Option("--min-size"),
+    ] = 0,
+    smiles_path: Annotated[
+        Path | None,
+        Option(
+            "-s",
+            "--smiles-path",
+            show_default=False,
+            help="Optional smiles path, if passed a scaffold analysis is performed",
+        ),
+    ] = None,
+    top: Annotated[
+        int,
+        Option("--top"),
+    ] = 20,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    scaffold_fp_kind: Annotated[
+        str,
+        Option("--scaffold-fp-kind"),
+    ] = DEFAULTS.fp_kind,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    metrics: Annotated[
+        bool,
+        Option(
+            "--metrics/--no-metrics",
+            help="Calculate clustering indices (Dunn, DBI, CHI)",
+        ),
+    ] = False,
+    chosen_metrics: Annotated[
+        str,
+        Option(
+            "-m",
+            "--metrics-choice",
+            help=(
+                "Chosen metrics. "
+                " Comma-separated list including dunn (slow), dbi or chi"
+            ),
+        ),
+    ] = "dunn,dbi,chi",
+    metrics_top: Annotated[
+        int | None,
+        Option("--metrics-top", rich_help_panel="Advanced"),
+    ] = 100,
+    metrics_min_size: Annotated[
+        int,
+        Option("--metrics-min-size", hidden=True),
+    ] = 1,
+    verbose: Annotated[
+        bool,
+        Option("--verbose/--no-verbose", hidden=True),
+    ] = True,
+) -> None:
+    r"""Summary table of clustering results, together with cluster metrics"""
+    from bblean._console import get_console
+    from bblean.smiles import load_smiles
+    from bblean.analysis import cluster_analysis
+    from bblean.utils import _has_files_or_valid_symlinks
+    from bblean.metrics import jt_dbi, jt_isim_chi, jt_isim_dunn, _calc_centrals
+    from rich.table import Table
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        with open(clusters_path, mode="rb") as f:
+            clusters = pickle.load(f)
+        if fps_path is None:
+            input_fps_path = clusters_path.parent / "input-fps"
+            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+                fps_path = input_fps_path
+            else:
+                msg = (
+                    "Could not find input fingerprints. Please use --fps-path."
+                    " Summary plot without fingerprints doesn't include isim values"
+                )
+                warnings.warn(msg)
+        if fps_path is None:
+            fps_paths = None
+        elif fps_path.is_dir():
+            fps_paths = sorted(
+                f for f in fps_path.glob("*.npy") if not f.stem.endswith(".indices")
+            )
+        else:
+            fps_paths = [fps_path]
+        ca = cluster_analysis(
+            clusters,
+            fps_paths,
+            smiles=load_smiles(smiles_path) if smiles_path is not None else (),
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            min_size=min_size,
+        )
+        table = Table(title=(f"Top {top} clusters" if top is not None else "Clusters"))
+        table.add_column("Size", justify="center")
+        table.add_column("% fps", justify="center")
+        table.add_column("iSIM", justify="center")
+        if smiles_path is not None:
+            table.add_column("Size/Scaff.", justify="center")
+            table.add_column("Num. Scaff.", justify="center")
+            table.add_column("Scaff. iSIM", justify="center")
+        sizes = ca.sizes
+        isims = ca.isims
+        total_fps = ca.total_fps
+        for i in range(ca.clusters_num):
+            size = sizes[i]
+            percent = size / total_fps * 100
+            table.add_row(f"{size:,}", f"{percent:.2f}", f"{isims[i]:.3f}")
+        console.print(table)
+        console.print()
+        console.print(f"Total num. fps: {total_fps:,}")
+        console.print(f"Total num. clusters: {ca.all_clusters_num:,}")
+        singles = ca.all_singletons_num
+        singles_percent = singles * 100 / ca.all_clusters_num
+        console.print(f"Total num. singletons: {singles:,} ({singles_percent:.2f} %)")
+        gt10 = ca.all_clusters_num_with_size_above(10)
+        gt10_percent = gt10 * 100 / ca.all_clusters_num
+        console.print(
+            f"Total num. clusters, size > 10: {gt10:,} ({gt10_percent:.2f} %)"
+        )
+        gt100 = ca.all_clusters_num_with_size_above(100)
+        gt100_percent = gt100 * 100 / ca.all_clusters_num
+        console.print(
+            f"Total num. clusters, size > 100: {gt100:,} ({gt100_percent:.2f} %)"
+        )
+        console.print(
+            f"num-clusters/num-fps ratio: {ca.all_clusters_num / total_fps:.2f}"
+        )
+        console.print(f"Mean size: {ca.all_clusters_mean_size:.2f}")
+        console.print(f"Max. size: {ca.all_clusters_max_size:,}")
+        console.print(f"Q3 (75%) size: {ca.all_clusters_q3:,}")
+        console.print(f"Median size: {ca.all_clusters_median_size:,}")
+        console.print(f"Q1 (25%) size: {ca.all_clusters_q1:,}")
+        console.print(f"Min. size: {ca.all_clusters_min_size:,}")
+    if metrics:
+        chosen = set(s.lower() for s in chosen_metrics.split(","))
+        assert all(s in ["dunn", "chi", "dbi"] for s in chosen)
+        # Redo cluster analysis with more *top* clusters
+        console.print()
+        if metrics_top is None:
+            console.print("Clustering metrics:")
+        else:
+            console.print(f"Clustering metrics considering top {metrics_top} clusters:")
+        with console.status("[italic]Reanalyzing clusters...[/italic]", spinner="dots"):
+            ca = cluster_analysis(
+                clusters,
+                fps_paths,
+                smiles=(),
+                top=metrics_top,
+                n_features=n_features,
+                input_is_packed=input_is_packed,
+                min_size=metrics_min_size,
+            )
+            clusters = ca.get_top_cluster_fps()
+        with console.status("[italic]Calculating centrals...[/italic]", spinner="dots"):
+            centrals = _calc_centrals(clusters, kind="centroid")
+        if "chi" in chosen:
+            chi = jt_isim_chi(clusters, centrals=centrals, verbose=verbose)
+            console.print(f"    - CHI index: {chi:.4f} (Higher is better)")
+        if "dbi" in chosen:
+            dbi = jt_dbi(clusters, centrals=centrals, verbose=verbose)
+            console.print(f"    - DBI index: {dbi:.4e} (Lower is better)")
+        if "dunn" in chosen:
+            dunn = jt_isim_dunn(clusters, verbose=verbose)
+            console.print(f"    - Dunn index: {dunn:.4f} (Higher is better)")
 
 
 @app.command("plot-pops", rich_help_panel="Analysis")
@@ -543,201 +741,6 @@ def _plot_tsne(
         )
 
 
-@app.command("summary", rich_help_panel="Analysis")
-def _table_summary(
-    clusters_path: Annotated[
-        Path,
-        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
-    ],
-    fps_path: Annotated[
-        Path | None,
-        Option(
-            "-f",
-            "--fps-path",
-            help="Path to fingerprint file, or directory with fingerprint files",
-            show_default=False,
-        ),
-    ] = None,
-    min_size: Annotated[
-        int,
-        Option("--min-size"),
-    ] = 0,
-    smiles_path: Annotated[
-        Path | None,
-        Option(
-            "-s",
-            "--smiles-path",
-            show_default=False,
-            help="Optional smiles path, if passed a scaffold analysis is performed",
-        ),
-    ] = None,
-    top: Annotated[
-        int,
-        Option("--top"),
-    ] = 20,
-    input_is_packed: Annotated[
-        bool,
-        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
-    ] = True,
-    scaffold_fp_kind: Annotated[
-        str,
-        Option("--scaffold-fp-kind"),
-    ] = DEFAULTS.fp_kind,
-    n_features: Annotated[
-        int | None,
-        Option(
-            "--n-features",
-            help="Number of features in the fingerprints."
-            " Only for packed inputs *if it is not a multiple of 8*."
-            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
-            rich_help_panel="Advanced",
-        ),
-    ] = None,
-    metrics: Annotated[
-        bool,
-        Option(
-            "--metrics/--no-metrics",
-            help="Calculate clustering indices (Dunn, DBI, CHI)",
-        ),
-    ] = False,
-    chosen_metrics: Annotated[
-        str,
-        Option(
-            "-m",
-            "--metrics-choice",
-            help=(
-                "Chosen metrics. "
-                " Comma-separated list including dunn (slow), dbi or chi"
-            ),
-        ),
-    ] = "dunn,dbi,chi",
-    metrics_top: Annotated[
-        int | None,
-        Option("--metrics-top", rich_help_panel="Advanced"),
-    ] = 100,
-    metrics_min_size: Annotated[
-        int,
-        Option("--metrics-min-size", hidden=True),
-    ] = 1,
-    verbose: Annotated[
-        bool,
-        Option("--verbose/--no-verbose", hidden=True),
-    ] = True,
-) -> None:
-    r"""Summary table of clustering results, together with cluster metrics"""
-    from bblean._console import get_console
-    from bblean.smiles import load_smiles
-    from bblean.analysis import cluster_analysis
-    from bblean.utils import _has_files_or_valid_symlinks
-    from bblean.metrics import jt_dbi, jt_isim_chi, jt_isim_dunn, _calc_centrals
-    from rich.table import Table
-
-    console = get_console(silent=not verbose)
-    # Imports may take a bit of time since sklearn is slow, so start the spinner here
-    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
-        if clusters_path.is_dir():
-            clusters_path = clusters_path / "clusters.pkl"
-        with open(clusters_path, mode="rb") as f:
-            clusters = pickle.load(f)
-        if fps_path is None:
-            input_fps_path = clusters_path.parent / "input-fps"
-            if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
-                fps_path = input_fps_path
-            else:
-                msg = (
-                    "Could not find input fingerprints. Please use --fps-path."
-                    " Summary plot without fingerprints doesn't include isim values"
-                )
-                warnings.warn(msg)
-        if fps_path is None:
-            fps_paths = None
-        elif fps_path.is_dir():
-            fps_paths = sorted(fps_path.glob("*.npy"))
-        else:
-            fps_paths = [fps_path]
-        ca = cluster_analysis(
-            clusters,
-            fps_paths,
-            smiles=load_smiles(smiles_path) if smiles_path is not None else (),
-            top=top,
-            n_features=n_features,
-            input_is_packed=input_is_packed,
-            min_size=min_size,
-        )
-        table = Table(title=(f"Top {top} clusters" if top is not None else "Clusters"))
-        table.add_column("Size", justify="center")
-        table.add_column("% fps", justify="center")
-        table.add_column("iSIM", justify="center")
-        if smiles_path is not None:
-            table.add_column("Size/Scaff.", justify="center")
-            table.add_column("Num. Scaff.", justify="center")
-            table.add_column("Scaff. iSIM", justify="center")
-        sizes = ca.sizes
-        isims = ca.isims
-        total_fps = ca.total_fps
-        for i in range(ca.clusters_num):
-            size = sizes[i]
-            percent = size / total_fps * 100
-            table.add_row(f"{size:,}", f"{percent:.2f}", f"{isims[i]:.3f}")
-        console.print(table)
-        console.print()
-        console.print(f"Total num. fps: {total_fps:,}")
-        console.print(f"Total num. clusters: {ca.all_clusters_num:,}")
-        singles = ca.all_singletons_num
-        singles_percent = singles * 100 / ca.all_clusters_num
-        console.print(f"Total num. singletons: {singles:,} ({singles_percent:.2f} %)")
-        gt10 = ca.all_clusters_num_with_size_above(10)
-        gt10_percent = gt10 * 100 / ca.all_clusters_num
-        console.print(
-            f"Total num. clusters, size > 10: {gt10:,} ({gt10_percent:.2f} %)"
-        )
-        gt100 = ca.all_clusters_num_with_size_above(100)
-        gt100_percent = gt100 * 100 / ca.all_clusters_num
-        console.print(
-            f"Total num. clusters, size > 100: {gt100:,} ({gt100_percent:.2f} %)"
-        )
-        console.print(
-            f"num-clusters/num-fps ratio: {ca.all_clusters_num / total_fps:.2f}"
-        )
-        console.print(f"Mean size: {ca.all_clusters_mean_size:.2f}")
-        console.print(f"Max. size: {ca.all_clusters_max_size:,}")
-        console.print(f"Q3 (75%) size: {ca.all_clusters_q3:,}")
-        console.print(f"Median size: {ca.all_clusters_median_size:,}")
-        console.print(f"Q1 (25%) size: {ca.all_clusters_q1:,}")
-        console.print(f"Min. size: {ca.all_clusters_min_size:,}")
-    if metrics:
-        chosen = set(s.lower() for s in chosen_metrics.split(","))
-        assert all(s in ["dunn", "chi", "dbi"] for s in chosen)
-        # Redo cluster analysis with more *top* clusters
-        console.print()
-        if metrics_top is None:
-            console.print("Clustering metrics:")
-        else:
-            console.print(f"Clustering metrics considering top {metrics_top} clusters:")
-        with console.status("[italic]Reanalyzing clusters...[/italic]", spinner="dots"):
-            ca = cluster_analysis(
-                clusters,
-                fps_paths,
-                smiles=(),
-                top=metrics_top,
-                n_features=n_features,
-                input_is_packed=input_is_packed,
-                min_size=metrics_min_size,
-            )
-            clusters = ca.get_top_cluster_fps()
-        with console.status("[italic]Calculating centrals...[/italic]", spinner="dots"):
-            centrals = _calc_centrals(clusters, kind="centroid")
-        if "chi" in chosen:
-            chi = jt_isim_chi(clusters, centrals=centrals, verbose=verbose)
-            console.print(f"    - CHI index: {chi:.4f} (Higher is better)")
-        if "dbi" in chosen:
-            dbi = jt_dbi(clusters, centrals=centrals, verbose=verbose)
-            console.print(f"    - DBI index: {dbi:.4e} (Lower is better)")
-        if "dunn" in chosen:
-            dunn = jt_isim_dunn(clusters, verbose=verbose)
-            console.print(f"    - Dunn index: {dunn:.4f} (Higher is better)")
-
-
 @app.command("plot-summary", rich_help_panel="Analysis")
 def _plot_summary(
     clusters_path: Annotated[
@@ -853,7 +856,7 @@ def _run(
     ctx: Context,
     input_: Annotated[
         Path | None,
-        Argument(help="`*.npy` file with packed fingerprints, or dir `*.npy` files"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ] = None,
     out_dir: Annotated[
         Path | None,
@@ -882,6 +885,7 @@ def _run(
         Option(
             "--refine-threshold-change",
             help="Modify threshold for refinement criterion, can be negative",
+            hidden=True,
         ),
     ] = DEFAULTS.refine_threshold_change,
     save_tree: Annotated[
@@ -912,6 +916,7 @@ def _run(
                 "Num. of largest clusters to refine."
                 " 1 for standard refinement, 0 is the default (no refinement)"
             ),
+            hidden=True,
         ),
     ] = 0,
     refine_rounds: Annotated[
@@ -919,7 +924,6 @@ def _run(
         Option(
             "--refine-rounds",
             help=("Num. of refinement rounds. "),
-            hidden=True,
         ),
     ] = None,
     recluster_rounds: Annotated[
@@ -927,13 +931,12 @@ def _run(
         Option(
             "--recluster-rounds",
             help=("Num. of reclustering rounds. "),
-            hidden=True,
         ),
     ] = 0,
     recluster_shuffle: Annotated[
         bool,
         Option("--recluster-shuffle/--no-recluster-shuffle", hidden=True),
-    ] = True,
+    ] = False,
     n_features: Annotated[
         int | None,
         Option(
@@ -1020,10 +1023,14 @@ def _run(
     if input_ is None:
         input_ = Path.cwd() / "bb_inputs"
         input_.mkdir(exist_ok=True)
-        input_files = sorted(input_.glob("*.npy"))
+        input_files = sorted(
+            f for f in input_.glob("*.npy") if not f.stem.endswith(".indices")
+        )
         _validate_input_dir(input_)
     elif input_.is_dir():
-        input_files = sorted(input_.glob("*.npy"))
+        input_files = sorted(
+            f for f in input_.glob("*.npy") if not f.stem.endswith(".indices")
+        )
         _validate_input_dir(input_)
     else:
         input_files = [input_]
@@ -1158,7 +1165,7 @@ def _multiround(
             "--mid-ps",
             "--mid-processes",
             help="Num. processes for middle section rounds."
-            " These are be memory intensive,"
+            " These are memory intensive,"
             " you may want to use 50%-30% of --ps."
             " Default is same as --ps",
         ),
@@ -1176,10 +1183,6 @@ def _multiround(
         float,
         Option("--threshold", "-t", help="Thresh for merge criterion (initial step)"),
     ] = DEFAULTS.threshold,
-    mid_threshold_change: Annotated[
-        float,
-        Option("--mid-threshold-change", help="Modify threshold for refinement"),
-    ] = DEFAULTS.refine_threshold_change,
     initial_merge_criterion: Annotated[
         str,
         Option(
@@ -1196,19 +1199,19 @@ def _multiround(
         bool,
         Option("--save-centroids/--no-save-centroids", rich_help_panel="Advanced"),
     ] = True,
-    sort_fps: Annotated[
-        bool,
+    mid_threshold_change: Annotated[
+        float,
         Option(
-            "--sort-fps/--no-sort-fps",
-            help="Sort the fingerprints by popcount before launching the initial round",
+            "--mid-threshold-change",
+            help="Modify threshold for refinement",
             rich_help_panel="Advanced",
         ),
-    ] = False,
+    ] = DEFAULTS.refine_threshold_change,
     mid_merge_criterion: Annotated[
         str,
         Option(
             "--set-mid-merge",
-            help="Merge criterion for midsection rounds ('diameter' recommended)",
+            help="Merge criterion for mid rounds ('tolerance-diameter' recommended)",
         ),
     ] = DEFAULTS.refine_merge_criterion,
     tolerance: Annotated[
@@ -1242,7 +1245,6 @@ def _multiround(
         Option(
             "--num-mid-rounds",
             help="Number of midsection rounds to perform",
-            rich_help_panel="Advanced",
         ),
     ] = 1,
     split_largest_after_midsection: Annotated[
@@ -1358,7 +1360,9 @@ def _multiround(
         in_dir = Path.cwd() / "bb_inputs"
     _validate_input_dir(in_dir)
     # All files in the input dir with *.npy suffix are considered input files
-    input_files = sorted(in_dir.glob("*.npy"))[:max_files]
+    input_files = sorted(
+        f for f in in_dir.glob("*.npy") if not f.stem.endswith(".indices")
+    )[:max_files]
     ctx.params["input_files"] = [str(p.resolve()) for p in input_files]
     ctx.params["num_fps"] = [_get_fps_file_num(p) for p in input_files]
     if max_fps is not None:
@@ -1397,7 +1401,6 @@ def _multiround(
         midsection_threshold_change=mid_threshold_change,
         tolerance=tolerance,
         # Advanced
-        sort_fps=sort_fps,
         save_tree=save_tree,
         save_centroids=save_centroids,
         bin_size=bin_size,
@@ -1444,9 +1447,11 @@ def _fps_info(
     for path in fp_paths:
         if path.is_dir():
             for file in path.glob("*.npy"):
+                if file.stem.endswith(".indices"):
+                    continue
                 _print_fps_file_info(file, console)
         elif path.suffix == ".npy":
-            _print_fps_file_info(file, console)
+            _print_fps_file_info(path, console)
 
 
 @app.command("fps-from-smiles", rich_help_panel="Fingerprints")
@@ -1803,9 +1808,9 @@ def _split_fps(
 
 @app.command("fps-shuffle", rich_help_panel="Fingerprints")
 def _shuffle_fps(
-    in_file: Annotated[
+    in_path: Annotated[
         Path,
-        Argument(help="`*.npy` file with packed fingerprints"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ],
     out_dir: Annotated[
         Path | None,
@@ -1815,22 +1820,50 @@ def _shuffle_fps(
         int | None,
         Option("--seed", hidden=True, rich_help_panel="Debug"),
     ] = None,
+    save_shuffle_idxs: Annotated[
+        bool,
+        Option("--save-shuffle-idxs/--no-save-shuffle-idxs"),
+    ] = True,
 ) -> None:
     """Shuffle a fingerprints file
 
     This function is not optimized and as such may have high RAM usage. It is
     meant for testing purposes only"""
     import numpy as np
+    from bblean._console import get_console
 
-    fps = np.load(in_file)
-    stem = in_file.stem
-    rng = np.random.default_rng(seed)
-    rng.shuffle(fps, axis=0)
+    console = get_console()
+
+    console = get_console()
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
+    else:
+        files = [in_path]
     if out_dir is None:
         out_dir = Path.cwd()
     out_dir.mkdir(exist_ok=True)
     out_dir = out_dir.resolve()
-    np.save(out_dir / f"shuffled-{stem}.npy", fps)
+    for f in files:
+        with console.status(
+            "[italic]Shuffling fingerprints...[/italic]", spinner="dots"
+        ):
+            fps = np.load(f)
+            stem = f.stem
+            rng = np.random.default_rng(seed)
+            shuffle_idxs = rng.permutation(fps.shape[0])
+            fps = fps[shuffle_idxs]
+            stem = f"shuffled-{stem}"
+            np.save(out_dir / f"{stem}.npy", fps)
+            if save_shuffle_idxs:
+                np.save(out_dir / f"{stem}.indices.npy", shuffle_idxs)
+        if save_shuffle_idxs:
+            console.print(
+                f"Finished. Outputs written to {str(out_dir / stem)}.npy and {str(out_dir / stem)}.indices.npy"  # noqa
+            )
+        else:
+            console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
 
 
 @app.command("fps-merge", rich_help_panel="Fingerprints")
@@ -1858,6 +1891,8 @@ def _merge_fps(
     with console.status("[italic]Merging fingerprints...[/italic]", spinner="dots"):
         stem = None
         for f in sorted(in_dir.glob("*.npy")):
+            if f.stem.endswith(".indices"):
+                continue
             if stem is None:
                 stem = f.name.split(".")[0]
             elif stem != f.name.split(".")[0]:
@@ -1875,9 +1910,9 @@ def _merge_fps(
 
 @app.command("fps-sort", rich_help_panel="Fingerprints")
 def _sort_fps(
-    in_file: Annotated[
+    in_path: Annotated[
         Path,
-        Argument(help="`*.npy` file with packed fingerprints"),
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
     ],
     out_dir: Annotated[
         Path | None,
@@ -1887,17 +1922,173 @@ def _sort_fps(
         int | None,
         Option("--seed", hidden=True, rich_help_panel="Debug"),
     ] = None,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    save_sort_idxs: Annotated[
+        bool,
+        Option("--save-sort-idxs/--no-save-sort-idxs"),
+    ] = True,
 ) -> None:
+    r"""Sort a fingerprints file by popcount"""
     import numpy as np
     from bblean._py_similarity import _popcount
+    from bblean._console import get_console
+    from bblean.fingerprints import pack_fingerprints
 
-    fps = np.load(in_file)
-    stem = in_file.stem
-    counts = _popcount(fps)
-    sort_idxs = np.argsort(counts)
-    fps = fps[sort_idxs]
+    # Note that n_features is not used here even if input_is_packed is True,
+    # it is added for API homogeneity
+
+    console = get_console()
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
+    else:
+        files = [in_path]
     if out_dir is None:
         out_dir = Path.cwd()
     out_dir.mkdir(exist_ok=True)
     out_dir = out_dir.resolve()
-    np.save(out_dir / f"sorted-{stem}.npy", fps)
+    for f in files:
+        with console.status(
+            "[italic]Sorting fingerprints by popcount...[/italic]", spinner="dots"
+        ):
+            fps = np.load(f)
+            stem = f.stem
+            if not input_is_packed:
+                packed_fps = pack_fingerprints(fps)
+            else:
+                packed_fps = fps
+            counts = _popcount(packed_fps)
+            sort_idxs = np.argsort(counts)
+            fps = fps[sort_idxs]
+            stem = f"sorted-{stem}"
+            np.save(out_dir / f"{stem}.npy", fps)
+            if save_sort_idxs:
+                np.save(out_dir / f"{stem}.indices.npy", sort_idxs)
+
+        if save_sort_idxs:
+            console.print(
+                f"Finished. Outputs written to {str(out_dir / stem)}.npy and {str(out_dir / stem)}.indices.npy"  # noqa
+            )
+        else:
+            console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
+
+
+@app.command("fps-unpack", rich_help_panel="Fingerprints")
+def _unpack_fps(
+    in_path: Annotated[
+        Path,
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
+    ],
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+) -> None:
+    r"""Unpack a fingerprints file"""
+    import numpy as np
+    from bblean.fingerprints import unpack_fingerprints
+    from bblean._console import get_console
+
+    console = get_console()
+
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
+    else:
+        files = [in_path]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    for f in files:
+        with console.status(
+            "[italic]Unpacking fingerprints...[/italic]", spinner="dots"
+        ):
+            fps = np.load(f)
+            stem = f.stem
+            if "unpacked" in stem:
+                warnings.warn(
+                    "The fingerprints file name containes 'unpacked',"
+                    " make sure the file contains packed fps"
+                )
+                stem = f"unpacked-{stem}"
+            elif "packed" in stem:
+                stem = stem.replace("packed", "unpacked")
+            else:
+                stem = f"unpacked-{stem}"
+            unpacked_fps = unpack_fingerprints(fps, n_features)
+            np.save(out_dir / f"{stem}.npy", unpacked_fps)
+        console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
+
+
+@app.command("fps-pack", rich_help_panel="Fingerprints")
+def _pack_fps(
+    in_path: Annotated[
+        Path,
+        Argument(help="`*.npy` file with fingerprints, or dir with `*.npy` files"),
+    ],
+    out_dir: Annotated[
+        Path | None,
+        Option("-o", "--out-dir", show_default=False),
+    ] = None,
+) -> None:
+    r"""Pack a fingerprints file"""
+    import numpy as np
+    from bblean.fingerprints import pack_fingerprints
+    from bblean._console import get_console
+
+    console = get_console()
+
+    if in_path.is_dir():
+        files = sorted(
+            f for f in in_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
+    else:
+        files = [in_path]
+    if out_dir is None:
+        out_dir = Path.cwd()
+    out_dir.mkdir(exist_ok=True)
+    out_dir = out_dir.resolve()
+    for f in files:
+        with console.status("[italic]Packing fingerprints...[/italic]", spinner="dots"):
+            fps = np.load(f)
+            stem = f.stem
+            if "packed" in stem and "unpacked" not in "stem":
+                msg = (
+                    "The fingerprints file name containes 'packed',"
+                    " make sure the file contains packed fps"
+                )
+                warnings.warn(msg)
+                stem = f"packed-{stem}"
+            elif "unpacked" in stem:
+                stem = stem.replace("unpacked", "packed")
+            else:
+                stem = f"packed-{stem}"
+            unpacked_fps = pack_fingerprints(fps)
+            np.save(out_dir / f"{stem}.npy", unpacked_fps)
+        console.print(f"Finished. Outputs written to {str(out_dir / stem)}.npy")
