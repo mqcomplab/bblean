@@ -1550,6 +1550,14 @@ def _fps_from_smiles(
             help="Whether the smiles file has the format <smiles><tab><field><tab>...",
         ),
     ] = False,
+    replace_dummy_atoms: Annotated[
+        bool,
+        Option(
+            "--replace-dummy/--no-replace-dummy",
+            help="Whether to replace dummy atoms such as [U], [Np], etc. used in synthon spaces",  # noqa
+            hidden=True,
+        ),
+    ] = False,
 ) -> None:
     r"""Generate a `*.npy` fingerprints file from one or more `*.smi` smiles files
 
@@ -1656,7 +1664,7 @@ def _fps_from_smiles(
                 pool.map(
                     create_fp_file,
                     _iter_idxs_and_smiles_batches(
-                        smiles_paths, num_per_batch, tab_separated
+                        smiles_paths, num_per_batch, tab_separated, replace_dummy_atoms
                     ),
                 )
         timer.end_timing("total", console, indent=False)
@@ -1698,7 +1706,7 @@ def _fps_from_smiles(
             pool.starmap(
                 fps_array_filler,
                 _iter_ranges_and_smiles_batches(
-                    smiles_paths, num_per_batch, tab_separated
+                    smiles_paths, num_per_batch, tab_separated, replace_dummy_atoms
                 ),
             )
         fps = np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf)

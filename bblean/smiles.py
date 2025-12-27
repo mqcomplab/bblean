@@ -31,8 +31,12 @@ def calc_num_smiles(smiles_paths: SmilesPaths) -> int:
     return sum(1 for _ in iter_smiles_from_paths(smiles_paths))
 
 
+# NOTE: replace_dummy is the procedure used in RDKit as of Dec 2024 for Synthon spaces
+# synthons marked with [U], [Np], [Pu], [Am]. These need to be converted
 def iter_smiles_from_paths(
-    smiles_paths: SmilesPaths, tab_separated: bool = False
+    smiles_paths: SmilesPaths,
+    tab_separated: bool = False,
+    replace_dummy_atoms: bool = False,
 ) -> tp.Iterator[str]:
     r"""Iterate over smiles in a sequence of smiles paths
 
@@ -44,10 +48,21 @@ def iter_smiles_from_paths(
     for smi_path in smiles_paths:
         with open(smi_path, mode="rt", encoding="utf-8") as f:
             for smi in f:
-                smi = smi if not tab_separated else smi.split("\t")[0]
+                if tab_separated:
+                    smi = smi.split("\t")[0]
+
                 # Skip headers
                 if smi.lower().strip() == "smiles":
                     continue
+
+                # Replace 'dummy' atoms from synthon spaces
+                if replace_dummy_atoms:
+                    smi = (
+                        smi.replace("[U]", "[1*]")
+                        .replace("[Np]", "[2*]")
+                        .replace("[Pu]", "[3*]")
+                        .replace("[Am]", "[4*]")
+                    )
                 yield smi
 
 
@@ -55,10 +70,12 @@ def _iter_ranges_and_smiles_batches(
     smiles_paths: SmilesPaths,
     num_per_batch: int,
     tab_separated: bool = False,
+    replace_dummy_atoms: bool = False,
 ) -> tp.Iterable[tuple[tuple[int, int], tuple[str, ...]]]:
     start_idx = 0
     for batch in batched(
-        iter_smiles_from_paths(smiles_paths, tab_separated), num_per_batch
+        iter_smiles_from_paths(smiles_paths, tab_separated, replace_dummy_atoms),
+        num_per_batch,
     ):
         size = len(batch)
         end_idx = start_idx + size
@@ -70,7 +87,11 @@ def _iter_idxs_and_smiles_batches(
     smiles_paths: SmilesPaths,
     num_per_batch: int,
     tab_separated: bool = False,
+    replace_dummy_atoms: bool = False,
 ) -> tp.Iterable[tuple[int, tuple[str, ...]]]:
     yield from enumerate(
-        batched(iter_smiles_from_paths(smiles_paths, tab_separated), num_per_batch)
+        batched(
+            iter_smiles_from_paths(smiles_paths, tab_separated, replace_dummy_atoms),
+            num_per_batch,
+        )
     )
