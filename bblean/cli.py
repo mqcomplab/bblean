@@ -76,6 +76,85 @@ def _main(
     pass
 
 
+@app.command("compare", rich_help_panel="Analysis", hidden=True)
+def _compare(
+    clusters_a_path: Annotated[Path, Argument()],
+    clusters_b_path: Annotated[Path, Argument()],
+    ari: Annotated[
+        bool,
+        Option("--ari/--no-ari", help="Adjusted Rand index"),
+    ] = True,
+    ami: Annotated[
+        bool,
+        Option("--ami/--no-ami", help="Adjusted mutual information (slow)"),
+    ] = True,
+    top: Annotated[
+        int,
+        Option("-t", "--top"),
+    ] = 30,
+    use_first_clustering_indices: Annotated[
+        bool,
+        Option("--use-first-clustering-indices/--no-use-first-clustering-indices"),
+    ] = False,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+) -> None:
+    r"""Compare two clusterings of the same data, using different metrics"""
+    import pickle
+    import numpy as np
+
+    from sklearn.metrics import adjusted_mutual_info_score, adjusted_rand_score
+
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+
+    if clusters_a_path.is_dir():
+        clusters_a_path = clusters_a_path / "clusters.pkl"
+
+    if clusters_b_path.is_dir():
+        clusters_b_path = clusters_b_path / "clusters.pkl"
+
+    with console.status("[italic]Collecting labels...[/italic]", spinner="dots"):
+        with open(clusters_a_path, mode="rb") as f:
+            clusters = pickle.load(f)
+            total = sum(len(c) for c in clusters)
+            true_labels = np.empty(total, dtype=np.uint64)
+            for i, mol_ids in enumerate(clusters):
+                true_labels[mol_ids] = i
+            idxs_a = np.concatenate(clusters[:top])
+
+        with open(clusters_b_path, mode="rb") as f:
+            clusters = pickle.load(f)
+            total = sum(len(c) for c in clusters)
+            pred_labels = np.empty(total, dtype=np.uint64)
+            for i, mol_ids in enumerate(clusters):
+                pred_labels[mol_ids] = i
+            idxs_b = np.concatenate(clusters[:top])
+    if use_first_clustering_indices:
+        idxs = idxs_a
+    else:
+        idxs = np.unique(np.concatenate((idxs_a, idxs_b)))
+
+    true_labels = true_labels[idxs]
+    pred_labels = pred_labels[idxs]
+
+    timer = Timer()
+    timer.init_timing("total")
+    if ami:
+        with console.status("[italic]Calc. AMI score...[/italic]", spinner="dots"):
+            ami_score = adjusted_mutual_info_score(true_labels, pred_labels)
+        console.print(f"Adjusted Mutual Information (AMI): {ami_score:.4f}")
+
+    if ari:
+        with console.status("[italic]Calc. ARI score...[/italic]", spinner="dots"):
+            ari_score = adjusted_rand_score(true_labels, pred_labels)
+        console.print(f"Adjusted Rand Index (ARI): {ari_score:.4f}")
+    timer.end_timing("total", console, indent=False)
+
+
 @app.command("summary", rich_help_panel="Analysis")
 def _table_summary(
     clusters_path: Annotated[
