@@ -207,9 +207,7 @@ class _InitialRound:
                     threshold=self.threshold + self.refine_threshold_change,
                 )
                 for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                    tree._fit_buffers(
-                        bufs, reinsert_index_seqs=mol_idxs, input_is_packed=False
-                    )
+                    tree._fit_buffers(bufs, reinsert_index_seqs=mol_idxs)
                     del mol_idxs
                     del bufs
 
@@ -252,9 +250,7 @@ class _TreeMergingRound:
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(
-                buf_path, reinsert_index_seqs=mol_idxs, input_is_packed=False
-            )
+            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs)
             del mol_idxs
 
         # Either do a refinement step, or fetch and save the bufs and idxs for the next
@@ -305,9 +301,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(
-                buf_path, reinsert_index_seqs=mol_idxs, input_is_packed=False
-            )
+            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs)
             del mol_idxs
 
         # Save clusters and exit
