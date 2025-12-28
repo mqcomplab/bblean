@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=83996b78"></script>
+    <script src="../../_static/documentation_options.js?v=7a5c2a51"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -408,6 +408,7 @@
 <span class="c1"># ./LICENSES/GPL-3.0-only.txt.  If not, see &lt;http://www.gnu.org/licenses/gpl-3.0.html&gt;.</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;BitBirch &#39;Lean&#39; class for fast, memory-efficient O(N) clustering&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>  <span class="c1"># Stringize type annotations for no runtime overhead</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tpx</span>
@@ -532,8 +533,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">n_features</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">n_features</span>
     <span class="n">branching_factor</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">branching_factor</span>
-    <span class="n">new_subcluster1</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span><span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-    <span class="n">new_subcluster2</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span><span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
+    <span class="n">new_subcluster1</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n_features</span><span class="p">)</span>
+    <span class="n">new_subcluster2</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n_features</span><span class="p">)</span>
 
     <span class="n">node1</span> <span class="o">=</span> <span class="n">_BFNode</span><span class="p">(</span><span class="n">branching_factor</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
     <span class="n">node2</span> <span class="o">=</span> <span class="n">node</span>  <span class="c1"># Rename for clarity</span>
@@ -755,13 +756,15 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="p">,</span>
-        <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">mol_indices</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
-        <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">,</span>
-        <span class="n">buffer</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">buffer</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span>
+        <span class="n">mol_indices</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">packed_centroid</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">check_indices</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># If packed centroid is passed, it must be equal to the packed centroid</span>
+        <span class="c1"># of the linear sum (this is not checked)</span>
+        <span class="k">if</span> <span class="n">mol_indices</span> <span class="ow">and</span> <span class="n">check_indices</span> <span class="ow">and</span> <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;len mol_indices must be equal to buffer[-1] if specified&quot;</span><span class="p">)</span>
         <span class="c1"># NOTE: Internally, _buffer holds both &quot;linear_sum&quot; and &quot;n_samples&quot; It is</span>
         <span class="c1"># guaranteed to always have the minimum required uint dtype It should not be</span>
         <span class="c1"># accessed by external classes, only used internally. The individual parts can</span>
@@ -770,43 +773,39 @@
         <span class="c1">#</span>
         <span class="c1"># IMPORTANT: To mutate instances of this class, *always* use the public API</span>
         <span class="c1"># given by replace|add_to_n_samples_and_linear_sum(...)</span>
-        <span class="k">if</span> <span class="n">buffer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">linear_sum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;linear_sum&#39; and &#39;buffer&#39; are mutually exclusive&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">check_indices</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;Expected len(mol_indices) == buffer[-1],&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; but found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">buffer</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">centroid_from_sum</span><span class="p">(</span><span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">linear_sum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">check_indices</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;Expected len(mol_indices) == 1,&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; but found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> != 1&quot;</span>
-                    <span class="p">)</span>
-                <span class="n">buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">linear_sum</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-                <span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">linear_sum</span>
-                <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">buffer</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">pack_fingerprints</span><span class="p">(</span>
-                    <span class="n">linear_sum</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># Empty subcluster</span>
-                <span class="k">if</span> <span class="n">check_indices</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;Expected len(mol_indices) == 0 for empty subcluster,&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot; but found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span><span class="si">}</span><span class="s2"> != 0&quot;</span>
-                    <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_features</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-                    <span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
-                <span class="p">)</span>  <span class="c1"># Will be overwritten</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span> <span class="o">=</span> <span class="n">buffer</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mol_indices</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">packed_centroid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">packed_centroid</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">centroid_from_sum</span><span class="p">(</span><span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">pack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;_BFNode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">empty</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+        <span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>  <span class="c1"># Will be overwritten</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_features</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span>
+            <span class="p">[],</span>
+            <span class="n">packed_centroid</span><span class="p">,</span>
+            <span class="n">check_indices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_fingerprint</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">fp</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">min_safe_uint</span><span class="p">(</span><span class="n">weight</span><span class="p">))</span>
+            <span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">fp</span>
+            <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">buffer</span> <span class="o">*=</span> <span class="n">weight</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">buffer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+            <span class="n">buffer</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">fp</span>
+            <span class="n">buffer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">packed_centroid</span> <span class="o">=</span> <span class="n">pack_fingerprints</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">packed_centroid</span><span class="p">,</span> <span class="n">check_indices</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">unpacked_centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
@@ -1079,6 +1078,7 @@
         <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">max_fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">weights</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Build a BF Tree for the input data.</span>
 
@@ -1131,15 +1131,19 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">iterable</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">reinsert_indices</span><span class="p">,</span> <span class="n">arr_iterable</span><span class="p">)</span>
 
+        <span class="n">it_weights</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">it_weights</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">it_weights</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+
         <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span>
         <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span>
         <span class="n">merge_accept_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merge_accept_fn</span>
 
         <span class="n">arr_idx</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">fp</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
-            <span class="n">subcluster</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span>
-                <span class="n">linear_sum</span><span class="o">=</span><span class="n">fp</span><span class="p">,</span> <span class="n">mol_indices</span><span class="o">=</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span>
-            <span class="p">)</span>
+            <span class="n">subcluster</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="o">.</span><span class="n">from_fingerprint</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="n">it_weights</span><span class="p">))</span>
             <span class="n">split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">insert_bf_subcluster</span><span class="p">(</span>
                 <span class="n">subcluster</span><span class="p">,</span> <span class="n">merge_accept_fn</span><span class="p">,</span> <span class="n">threshold</span>
             <span class="p">)</span>
@@ -1160,22 +1164,22 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_fit_buffers</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">X</span><span class="p">:</span> <span class="n">_Input</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">reinsert_index_seqs</span><span class="p">:</span> <span class="p">(</span>
-            <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">|</span> <span class="n">tp</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;omit&quot;</span><span class="p">]</span>
-        <span class="p">)</span> <span class="o">=</span> <span class="s2">&quot;omit&quot;</span><span class="p">,</span>
+        <span class="n">reinsert_index_seqs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">check_indices</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tpx</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Build a BF Tree starting from buffers</span>
 
 <span class="sd">        Buffers are arrays of the form:</span>
 <span class="sd">            - buffer[0:-1] = linear_sum</span>
 <span class="sd">            - buffer[-1] = n_samples</span>
-<span class="sd">        And X is either an array or a list of such buffers</span>
+<span class="sd">        X is either an array or a list of such buffers</span>
 
 <span class="sd">        If `reinsert_index_seqs` is passed, X corresponds only to the buffers to be</span>
 <span class="sd">        reinserted into the tree, and `reinsert_index_seqs` are the sequences</span>
 <span class="sd">        of indices associated with such buffers.</span>
 
-<span class="sd">        If `reinsert_index_seqs` is &quot;omit&quot;, then no indices are collected in the tree.</span>
+<span class="sd">        If `reinsert_index_seqs` is None, then no indices are collected in the tree.</span>
+<span class="sd">        Num samples is mutually exclusive with reinsert_index_seqs.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1209,16 +1213,13 @@
         <span class="n">branching_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span>
         <span class="n">idx_provider</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
         <span class="n">arr_idx</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">reinsert_index_seqs</span> <span class="o">==</span> <span class="s2">&quot;omit&quot;</span><span class="p">:</span>
-            <span class="n">idx_provider</span> <span class="o">=</span> <span class="p">(()</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_fitted_fps</span><span class="p">))</span>
-            <span class="n">check</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">reinsert_index_seqs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">idx_provider</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">idx_provider</span> <span class="o">=</span> <span class="n">reinsert_index_seqs</span>
-            <span class="n">check</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="k">for</span> <span class="n">idxs</span><span class="p">,</span> <span class="n">buf</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx_provider</span><span class="p">,</span> <span class="n">arr_iterable</span><span class="p">):</span>
-            <span class="n">subcluster</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span>
-                <span class="n">buffer</span><span class="o">=</span><span class="n">buf</span><span class="p">,</span> <span class="n">mol_indices</span><span class="o">=</span><span class="n">idxs</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span> <span class="n">check_indices</span><span class="o">=</span><span class="n">check</span>
-            <span class="p">)</span>
+            <span class="n">subcluster</span> <span class="o">=</span> <span class="n">_BFSubcluster</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">idxs</span><span class="p">,</span> <span class="n">check_indices</span><span class="o">=</span><span class="n">check_indices</span><span class="p">)</span>
             <span class="n">split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">insert_bf_subcluster</span><span class="p">(</span>
                 <span class="n">subcluster</span><span class="p">,</span> <span class="n">merge_accept_fn</span><span class="p">,</span> <span class="n">threshold</span>
             <span class="p">)</span>
