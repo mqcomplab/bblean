@@ -71,12 +71,14 @@ def _iter_ranges_and_smiles_batches(
     num_per_batch: int,
     tab_separated: bool = False,
     replace_dummy_atoms: bool = False,
+    assume_paths: bool = True,
 ) -> tp.Iterable[tuple[tuple[int, int], tuple[str, ...]]]:
+    if assume_paths:
+        it = iter_smiles_from_paths(smiles_paths, tab_separated, replace_dummy_atoms)
+    else:
+        it = tp.cast(tp.Iterator[str], smiles_paths)
     start_idx = 0
-    for batch in batched(
-        iter_smiles_from_paths(smiles_paths, tab_separated, replace_dummy_atoms),
-        num_per_batch,
-    ):
+    for batch in batched(it, num_per_batch):
         size = len(batch)
         end_idx = start_idx + size
         yield (start_idx, end_idx), batch
