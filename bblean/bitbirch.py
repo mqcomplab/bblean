@@ -396,13 +396,14 @@ class _BFSubcluster:
     def __init__(
         self,
         buffer: NDArray[np.integer],
-        mol_indices: list[int],
+        mol_indices: tp.Sequence[int],
         packed_centroid: NDArray[np.uint8] | None = None,
+        check_indices: bool = True,
     ) -> None:
-        # NOTE The constructor should *not* be called directly for this class, as it
-        # does not perform checks. The class should always be constructed through its
-        # classmethods
-        #
+        # If packed centroid is passed, it must be equal to the packed centroid
+        # of the linear sum (this is not checked)
+        if mol_indices and check_indices and buffer[-1] != len(mol_indices):
+            raise ValueError("len mol_indices must be equal to buffer[-1] if specified")
         # NOTE: Internally, _buffer holds both "linear_sum" and "n_samples" It is
         # guaranteed to always have the minimum required uint dtype It should not be
         # accessed by external classes, only used internally. The individual parts can
@@ -412,54 +413,38 @@ class _BFSubcluster:
         # IMPORTANT: To mutate instances of this class, *always* use the public API
         # given by replace|add_to_n_samples_and_linear_sum(...)
         self._buffer = buffer
-        self.mol_indices = mol_indices
-        if packed_centroid is None:
-            packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
-        self.packed_centroid = packed_centroid
+        self.mol_indices = list(mol_indices)
+        if packed_centroid is not None:
+            self.packed_centroid = packed_centroid
+        else:
+            self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
         self.child: tp.Optional["_BFNode"] = None
 
     @classmethod
     def empty(cls, n_features: int) -> tpx.Self:
-        buffer = np.zeros((n_features + 1,), dtype=np.uint8)
         packed_centroid = np.empty(0, dtype=np.uint8)  # Will be overwritten
-        return cls(buffer, [], packed_centroid)
+        return cls(
+            np.zeros((n_features + 1,), dtype=np.uint8),
+            [],
+            packed_centroid,
+            check_indices=False,
+        )
 
     @classmethod
     def from_fingerprint(
-        cls, fp: NDArray[np.uint8], index: int | None = None
+        cls, fp: NDArray[np.uint8], index: int, weight: int | None = None
     ) -> tpx.Self:
-        buffer = np.empty((len(fp) + 1,), dtype=np.uint8)
-        buffer[:-1] = fp
-        buffer[-1] = 1
-        mol_indices = [index] if index is not None else []
-        return cls(buffer, mol_indices, pack_fingerprints(fp))
-
-    @classmethod
-    def from_buffer(
-        cls,
-        buffer: NDArray[np.integer],
-        mol_indices: tp.Sequence[int] = (),
-        n_samples: int | None = None,
-    ) -> tpx.Self:
-        if mol_indices and buffer[-1] != len(mol_indices):
-            raise ValueError("len mol_indices must be equal to buffer[-1] if specified")
-        return cls(buffer, list(mol_indices))
-
-    @classmethod
-    def from_linear_sum(
-        cls,
-        linear_sum: NDArray[np.integer],
-        mol_indices: tp.Sequence[int] = (),
-        n_samples: int | None = None,
-    ) -> tpx.Self:
-        if n_samples is None:
-            n_samples = len(mol_indices)
-        elif mol_indices:
-            raise ValueError("mol_indices can't be specified if n_samples is")
-        buffer = np.empty((len(linear_sum) + 1,), dtype=min_safe_uint(n_samples))
-        buffer[:-1] = linear_sum
-        buffer[-1] = n_samples
-        return cls(buffer, list(mol_indices))
+        if weight is not None:
+            buffer = np.empty((len(fp) + 1,), dtype=min_safe_uint(weight))
+            buffer[:-1] = fp
+            buffer[-1] = 1
+            buffer *= weight
+        else:
+            buffer = np.empty((len(fp) + 1,), dtype=np.uint8)
+            buffer[:-1] = fp
+            buffer[-1] = 1
+        packed_centroid = pack_fingerprints(fp)
+        return cls(buffer, [index], packed_centroid, check_indices=False)
 
     @property
     def unpacked_centroid(self) -> NDArray[np.uint8]:
@@ -725,6 +710,7 @@ class BitBirch:
         input_is_packed: bool = True,
         n_features: int | None = None,
         max_fps: int | None = None,
+        weights: tp.Iterable[int] | None = None,
     ) -> tpx.Self:
         r"""Build a BF Tree for the input data.
 
@@ -777,13 +763,19 @@ class BitBirch:
         else:
             iterable = zip(reinsert_indices, arr_iterable)
 
+        it_weights: tp.Iterator[int | None]
+        if weights is None:
+            it_weights = itertools.repeat(None)
+        else:
+            it_weights = iter(weights)
+
         threshold = self.threshold
         branching_factor = self.branching_factor
         merge_accept_fn = self._merge_accept_fn
 
         arr_idx = 0
         for idx, fp in iterable:
-            subcluster = _BFSubcluster.from_fingerprint(fp, idx)
+            subcluster = _BFSubcluster.from_fingerprint(fp, idx, next(it_weights))
             split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
             )
@@ -804,15 +796,13 @@ class BitBirch:
         self,
         X: _Input | Path | str,
         reinsert_index_seqs: tp.Iterable[tp.Sequence[int]] | None,
-        num_samples: tp.Sequence[int] | NDArray[np.int64] | None = None,
-        expand_buffer: bool = False,
+        check_indices: bool = True,
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
-        If num_samples is None, then buffers are arrays of the form:
+        Buffers are arrays of the form:
             - buffer[0:-1] = linear_sum
             - buffer[-1] = n_samples
-        Otherwise buffers are just linear sums.
         X is either an array or a list of such buffers
 
         If `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
@@ -838,9 +828,7 @@ class BitBirch:
         else:
             mmanager = _ArrayMemPagesManager.from_bb_input(X, can_release=False)
 
-        n_features = _validate_n_features(X, input_is_packed=False)
-        if num_samples is None:
-            n_features -= 1
+        n_features = _validate_n_features(X, input_is_packed=False) - 1
         # Start a new tree the first time this function is called
         if self._only_has_leaves:
             raise ValueError("Internal nodes were released, call reset() before fit()")
@@ -862,13 +850,7 @@ class BitBirch:
             idx_provider = reinsert_index_seqs
 
         for idxs, buf in zip(idx_provider, arr_iterable):
-            if num_samples is not None:
-                samples = num_samples[arr_idx]
-                if expand_buffer:
-                    buf = buf * samples
-                subcluster = _BFSubcluster.from_linear_sum(buf, idxs, samples)
-            else:
-                subcluster = _BFSubcluster.from_buffer(buf, idxs)
+            subcluster = _BFSubcluster(buf, idxs, check_indices=check_indices)
             split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
             )
