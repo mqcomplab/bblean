@@ -2,7 +2,7 @@ import itertools
 import pytest
 import numpy as np
 
-from bblean.bitbirch import BitBirch
+from bblean.bitbirch import BitBirch, guess_threshold
 from bblean.fingerprints import pack_fingerprints, make_fake_fingerprints
 
 from inline_snapshot import snapshot
@@ -40,6 +40,20 @@ def test_bb_cluster_simple_repeated_fps() -> None:
         )
         ids = BitBirch().fit(mixed_fp, n_features=2048).get_cluster_mol_ids()
         assert ids == [list(range(repeats))]
+
+
+def test_guess_threhsold() -> None:
+    fps = make_fake_fingerprints(
+        100, n_features=8, seed=12620509540149709235, pack=True
+    )
+    thresh = guess_threshold(fps)
+    assert thresh == snapshot(0.9206757283047081)
+
+    fps = make_fake_fingerprints(
+        100, n_features=2048, seed=12620509540149709235, pack=True
+    )
+    thresh = guess_threshold(fps)
+    assert thresh == snapshot(0.5020659756940657)
 
 
 def test_bb_cluster_3_fps() -> None:
