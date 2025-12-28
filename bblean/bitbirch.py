@@ -47,6 +47,7 @@
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
 from __future__ import annotations  # Stringize type annotations for no runtime overhead
+import itertools
 import pickle
 import sys
 import typing_extensions as tpx
@@ -171,8 +172,8 @@ def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
     """
     n_features = node.n_features
     branching_factor = node.branching_factor
-    new_subcluster1 = _BFSubcluster(n_features=n_features)
-    new_subcluster2 = _BFSubcluster(n_features=n_features)
+    new_subcluster1 = _BFSubcluster.empty(n_features)
+    new_subcluster2 = _BFSubcluster.empty(n_features)
 
     node1 = _BFNode(branching_factor, n_features)
     node2 = node  # Rename for clarity
@@ -394,13 +395,15 @@ class _BFSubcluster:
 
     def __init__(
         self,
-        *,
-        linear_sum: NDArray[np.integer] | None = None,
-        mol_indices: tp.Sequence[int] = (),
-        n_features: int = 2048,
-        buffer: NDArray[np.integer] | None = None,
+        buffer: NDArray[np.integer],
+        mol_indices: tp.Sequence[int],
+        packed_centroid: NDArray[np.uint8] | None = None,
         check_indices: bool = True,
-    ):
+    ) -> None:
+        # If packed centroid is passed, it must be equal to the packed centroid
+        # of the linear sum (this is not checked)
+        if mol_indices and check_indices and buffer[-1] != len(mol_indices):
+            raise ValueError("len mol_indices must be equal to buffer[-1] if specified")
         # NOTE: Internally, _buffer holds both "linear_sum" and "n_samples" It is
         # guaranteed to always have the minimum required uint dtype It should not be
         # accessed by external classes, only used internally. The individual parts can
@@ -409,43 +412,39 @@ class _BFSubcluster:
         #
         # IMPORTANT: To mutate instances of this class, *always* use the public API
         # given by replace|add_to_n_samples_and_linear_sum(...)
-        if buffer is not None:
-            if linear_sum is not None:
-                raise ValueError("'linear_sum' and 'buffer' are mutually exclusive")
-            if check_indices and len(mol_indices) != buffer[-1]:
-                raise ValueError(
-                    "Expected len(mol_indices) == buffer[-1],"
-                    f" but found {len(mol_indices)} != {buffer[-1]}"
-                )
-            self._buffer = buffer
-            self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
-        else:
-            if linear_sum is not None:
-                if check_indices and len(mol_indices) != 1:
-                    raise ValueError(
-                        "Expected len(mol_indices) == 1,"
-                        f" but found {len(mol_indices)} != 1"
-                    )
-                buffer = np.empty((len(linear_sum) + 1,), dtype=np.uint8)
-                buffer[:-1] = linear_sum
-                buffer[-1] = 1
-                self._buffer = buffer
-                self.packed_centroid = pack_fingerprints(
-                    linear_sum.astype(np.uint8, copy=False)
-                )
-            else:
-                # Empty subcluster
-                if check_indices and len(mol_indices) != 0:
-                    raise ValueError(
-                        "Expected len(mol_indices) == 0 for empty subcluster,"
-                        f" but found {len(mol_indices)} != 0"
-                    )
-                self._buffer = np.zeros((n_features + 1,), dtype=np.uint8)
-                self.packed_centroid = np.empty(
-                    0, dtype=np.uint8
-                )  # Will be overwritten
+        self._buffer = buffer
         self.mol_indices = list(mol_indices)
+        if packed_centroid is not None:
+            self.packed_centroid = packed_centroid
+        else:
+            self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
         self.child: tp.Optional["_BFNode"] = None
+
+    @classmethod
+    def empty(cls, n_features: int) -> tpx.Self:
+        packed_centroid = np.empty(0, dtype=np.uint8)  # Will be overwritten
+        return cls(
+            np.zeros((n_features + 1,), dtype=np.uint8),
+            [],
+            packed_centroid,
+            check_indices=False,
+        )
+
+    @classmethod
+    def from_fingerprint(
+        cls, fp: NDArray[np.uint8], index: int, weight: int | None = None
+    ) -> tpx.Self:
+        if weight is not None:
+            buffer = np.empty((len(fp) + 1,), dtype=min_safe_uint(weight))
+            buffer[:-1] = fp
+            buffer[-1] = 1
+            buffer *= weight
+        else:
+            buffer = np.empty((len(fp) + 1,), dtype=np.uint8)
+            buffer[:-1] = fp
+            buffer[-1] = 1
+        packed_centroid = pack_fingerprints(fp)
+        return cls(buffer, [index], packed_centroid, check_indices=False)
 
     @property
     def unpacked_centroid(self) -> NDArray[np.uint8]:
@@ -711,6 +710,7 @@ class BitBirch:
         input_is_packed: bool = True,
         n_features: int | None = None,
         max_fps: int | None = None,
+        weights: tp.Iterable[int] | None = None,
     ) -> tpx.Self:
         r"""Build a BF Tree for the input data.
 
@@ -763,15 +763,19 @@ class BitBirch:
         else:
             iterable = zip(reinsert_indices, arr_iterable)
 
+        it_weights: tp.Iterator[int | None]
+        if weights is None:
+            it_weights = itertools.repeat(None)
+        else:
+            it_weights = iter(weights)
+
         threshold = self.threshold
         branching_factor = self.branching_factor
         merge_accept_fn = self._merge_accept_fn
 
         arr_idx = 0
         for idx, fp in iterable:
-            subcluster = _BFSubcluster(
-                linear_sum=fp, mol_indices=[idx], n_features=n_features
-            )
+            subcluster = _BFSubcluster.from_fingerprint(fp, idx, next(it_weights))
             split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
             )
@@ -791,22 +795,22 @@ class BitBirch:
     def _fit_buffers(
         self,
         X: _Input | Path | str,
-        reinsert_index_seqs: (
-            tp.Iterable[tp.Sequence[int]] | tp.Literal["omit"]
-        ) = "omit",
+        reinsert_index_seqs: tp.Iterable[tp.Sequence[int]] | None,
+        check_indices: bool = True,
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
         Buffers are arrays of the form:
             - buffer[0:-1] = linear_sum
             - buffer[-1] = n_samples
-        And X is either an array or a list of such buffers
+        X is either an array or a list of such buffers
 
         If `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
         reinserted into the tree, and `reinsert_index_seqs` are the sequences
         of indices associated with such buffers.
 
-        If `reinsert_index_seqs` is "omit", then no indices are collected in the tree.
+        If `reinsert_index_seqs` is None, then no indices are collected in the tree.
+        Num samples is mutually exclusive with reinsert_index_seqs.
 
         Parameters
         ----------
@@ -840,16 +844,13 @@ class BitBirch:
         branching_factor = self.branching_factor
         idx_provider: tp.Iterable[tp.Sequence[int]]
         arr_idx = 0
-        if reinsert_index_seqs == "omit":
-            idx_provider = (() for idx in range(self.num_fitted_fps))
-            check = False
+        if reinsert_index_seqs is None:
+            idx_provider = itertools.repeat(())
         else:
             idx_provider = reinsert_index_seqs
-            check = True
+
         for idxs, buf in zip(idx_provider, arr_iterable):
-            subcluster = _BFSubcluster(
-                buffer=buf, mol_indices=idxs, n_features=n_features, check_indices=check
-            )
+            subcluster = _BFSubcluster(buf, idxs, check_indices=check_indices)
             split = self._root.insert_bf_subcluster(
                 subcluster, merge_accept_fn, threshold
             )
