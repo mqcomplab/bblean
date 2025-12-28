@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=7a5c2a51"></script>
+    <script src="../../_static/documentation_options.js?v=dd94cd60"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -441,12 +441,14 @@
     <span class="n">num_per_batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">tab_separated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">replace_dummy_atoms</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">assume_paths</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]:</span>
+    <span class="k">if</span> <span class="n">assume_paths</span><span class="p">:</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">,</span> <span class="n">tab_separated</span><span class="p">,</span> <span class="n">replace_dummy_atoms</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="n">tp</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">smiles_paths</span><span class="p">)</span>
     <span class="n">start_idx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batched</span><span class="p">(</span>
-        <span class="n">iter_smiles_from_paths</span><span class="p">(</span><span class="n">smiles_paths</span><span class="p">,</span> <span class="n">tab_separated</span><span class="p">,</span> <span class="n">replace_dummy_atoms</span><span class="p">),</span>
-        <span class="n">num_per_batch</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batched</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">num_per_batch</span><span class="p">):</span>
         <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
         <span class="n">end_idx</span> <span class="o">=</span> <span class="n">start_idx</span> <span class="o">+</span> <span class="n">size</span>
         <span class="k">yield</span> <span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">),</span> <span class="n">batch</span>
