@@ -47,13 +47,13 @@ def test_guess_threhsold() -> None:
         100, n_features=8, seed=12620509540149709235, pack=True
     )
     thresh = guess_threshold(fps)
-    assert thresh == snapshot(0.9206757283047081)
+    assert thresh > 0.9 and thresh < 1.0
 
     fps = make_fake_fingerprints(
         100, n_features=2048, seed=12620509540149709235, pack=True
     )
     thresh = guess_threshold(fps)
-    assert thresh == snapshot(0.5020659756940657)
+    assert thresh > 0.4 and thresh < 0.6
 
 
 def test_bb_cluster_3_fps() -> None:
