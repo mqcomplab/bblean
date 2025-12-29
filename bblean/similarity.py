@@ -293,7 +293,7 @@ def estimate_jt_std(
     n_samples: int | None = None,
     input_is_packed: bool = True,
     n_features: int | None = None,
-    min_samples: int = 1_000_000,
+    max_samples: int = 1_000_000,
 ) -> float:
     r"""Estimate the std of all pairwise Tanimoto.
 
@@ -303,15 +303,19 @@ def estimate_jt_std(
         The standard deviation of all pairwise Tanimoto among the sampled fingerprints.
     """
     num_fps = len(fps)
-    if num_fps > min_samples:
-        np.random.seed(42)
-        random_choices = np.random.choice(num_fps, size=min_samples, replace=False)
+    if num_fps > max_samples:
+        rng = np.random.default_rng(42)
+        random_choices = rng.choice(num_fps, size=max_samples, replace=False)
         fps = fps[random_choices]
         num_fps = len(fps)
     if n_samples is None:
         # Heuristic: use at least 50 samples, or 1 per 10,000 fingerprints,
         # to balance statistical representativeness and computational efficiency
-        n_samples = max(num_fps // 10_000, 50)
+        # TODO: This heuristic is broken, too few samples until 500k
+        if num_fps <= 500_000:
+            n_samples = 50
+        else:
+            n_samples = num_fps // 10_000
     sample_idxs = jt_stratified_sampling(fps, n_samples, input_is_packed, n_features)
 
     # Work with only the sampled fingerprints

@@ -75,6 +75,8 @@ from bblean.similarity import (
     jt_most_dissimilar_packed,
     jt_isim_medoid,
     centroid_from_sum,
+    estimate_jt_std,
+    jt_isim,
 )
 
 if os.getenv("BITBIRCH_NO_EXTENSIONS"):
@@ -88,6 +90,36 @@ else:
         from bblean.fingerprints import unpack_fingerprints as _unpack_fingerprints
 
 __all__ = ["BitBirch"]
+
+
+def guess_threshold(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    max_samples: int = 1_000_000,
+    factor: float = 3.0,
+) -> float:
+    r""":meta private:
+
+    Guess the optimal bitbirch threshold
+
+    Uses the heuristic mean_tanimoto + 3.0 * std_tanimoto
+    """
+    num_fps = len(fps)
+    if num_fps > max_samples:
+        rng = np.random.default_rng(42)
+        random_choices = rng.choice(num_fps, size=max_samples, replace=False)
+        fps = fps[random_choices]
+        num_fps = len(fps)
+    mean = jt_isim(fps, input_is_packed, n_features)
+    if num_fps <= 50:
+        n_samples = num_fps
+    else:
+        n_samples = max(5 * np.sqrt(num_fps), 50)
+    std = estimate_jt_std(
+        fps, input_is_packed=input_is_packed, n_features=n_features, n_samples=n_samples
+    )
+    return mean + factor * std
 
 
 # For backwards compatibility with the global "set_merge", keep weak references to all
