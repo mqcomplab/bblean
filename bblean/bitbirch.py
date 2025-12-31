@@ -99,8 +99,8 @@ def guess_threshold(
     n_features: int | None = None,
     max_samples: int = 1_000_000,
     factor: float = 3.0,
-    return_mean_std: tp.Literal[True] = True,
-) -> tuple[float, float, float]:
+    return_mean_std: tp.Literal[False] = False,
+) -> float:
     pass
 
 
@@ -111,8 +111,8 @@ def guess_threshold(
     n_features: int | None = None,
     max_samples: int = 1_000_000,
     factor: float = 3.0,
-    return_mean_std: tp.Literal[False] = False,
-) -> float:
+    return_mean_std: tp.Literal[True] = True,
+) -> tuple[float, float, float]:
     pass
 
 
