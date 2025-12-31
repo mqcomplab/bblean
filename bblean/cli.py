@@ -1,5 +1,6 @@
 r"""Command line interface entrypoints"""
 
+import numpy as np
 import warnings
 import random
 import typing as tp
@@ -928,6 +929,50 @@ def _plot_summary(
             save=save,
             show=show,
         )
+
+
+@app.command("thresh")
+def _guess_threshold(
+    ctx: Context,
+    input_: Annotated[
+        Path,
+        Argument(help="`*.npy` file with fingerprints"),
+    ],
+    factor: Annotated[
+        float,
+        Option("-f", "--factor"),
+    ] = 3.0,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " It must be provided for packed inputs *if it is not a multiple of 8*."
+            " For typical fingerprint sizes (e.g. 2048, 1024), it is not required",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    input_is_packed: Annotated[
+        bool,
+        Option(
+            "--packed-input/--unpacked-input",
+            help="Toggle whether the input consists on packed or unpacked fingerprints",
+            rich_help_panel="Advanced",
+        ),
+    ] = True,
+    max_samples: Annotated[
+        int,
+        Option("-m", "--max-samples"),
+    ] = 1_000_000,
+) -> None:
+    r"""Estimate the optimal BitBirch threshold for a fingerprints file"""
+    from bblean.bitbirch import guess_threshold
+    from bblean._console import get_console
+
+    console = get_console()
+    fps = np.load(input_)
+    thresh = guess_threshold(fps, input_is_packed, n_features, max_samples, factor)
+    console.print(f"Estimated optimal threshold: {thresh:.4f}")
 
 
 @app.command("run")
