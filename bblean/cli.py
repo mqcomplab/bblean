@@ -971,7 +971,11 @@ def _guess_threshold(
 
     console = get_console()
     fps = np.load(input_)
-    thresh = guess_threshold(fps, input_is_packed, n_features, max_samples, factor)
+    thresh, mean, std = guess_threshold(
+        fps, input_is_packed, n_features, max_samples, factor, return_mean_std=True
+    )
+    console.print(f"Estimated average similarity: {mean:.4f}")
+    console.print(f"Estimated similarity deviation: {std:.4f}")
     console.print(f"Estimated optimal threshold: {thresh:.4f}")
 
 

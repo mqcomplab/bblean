@@ -208,5 +208,4 @@ def get_merge_accept_fn(
         return NeverMerge(tolerance)
     raise ValueError(
         f"Unknown merge criterion {merge_criterion} "
-        "Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius"
-    )
+        "Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius")
