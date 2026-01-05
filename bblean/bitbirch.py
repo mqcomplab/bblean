@@ -92,13 +92,38 @@ else:
 __all__ = ["BitBirch"]
 
 
+@tp.overload
 def guess_threshold(
     fps: NDArray[np.uint8],
     input_is_packed: bool = True,
     n_features: int | None = None,
     max_samples: int = 1_000_000,
     factor: float = 3.0,
+    return_mean_std: tp.Literal[False] = False,
 ) -> float:
+    pass
+
+
+@tp.overload
+def guess_threshold(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    max_samples: int = 1_000_000,
+    factor: float = 3.0,
+    return_mean_std: tp.Literal[True] = True,
+) -> tuple[float, float, float]:
+    pass
+
+
+def guess_threshold(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    max_samples: int = 1_000_000,
+    factor: float = 3.0,
+    return_mean_std: bool = False,
+) -> float | tuple[float, float, float]:
     r""":meta private:
 
     Guess the optimal bitbirch threshold
@@ -119,7 +144,10 @@ def guess_threshold(
     std = estimate_jt_std(
         fps, input_is_packed=input_is_packed, n_features=n_features, n_samples=n_samples
     )
-    return mean + factor * std
+    thresh = mean + factor * std
+    if return_mean_std:
+        return thresh, mean, std
+    return thresh
 
 
 # For backwards compatibility with the global "set_merge", keep weak references to all

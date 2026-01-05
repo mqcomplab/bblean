@@ -46,13 +46,13 @@ def test_guess_threhsold() -> None:
     fps = make_fake_fingerprints(
         100, n_features=8, seed=12620509540149709235, pack=True
     )
-    thresh = guess_threshold(fps)
+    thresh = guess_threshold(fps, return_mean_std=False)
     assert thresh > 0.9 and thresh < 1.0
 
     fps = make_fake_fingerprints(
         100, n_features=2048, seed=12620509540149709235, pack=True
     )
-    thresh = guess_threshold(fps)
+    thresh = guess_threshold(fps, return_mean_std=False)
     assert thresh > 0.4 and thresh < 0.6
 
 
