@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=3a536c42"></script>
+    <script src="../../_static/documentation_options.js?v=06d934ad"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -453,13 +453,38 @@
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;BitBirch&quot;</span><span class="p">]</span>
 
 
+<span class="nd">@tp</span><span class="o">.</span><span class="n">overload</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">guess_threshold</span><span class="p">(</span>
     <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
     <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+    <span class="n">return_mean_std</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+
+<span class="nd">@tp</span><span class="o">.</span><span class="n">overload</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">guess_threshold</span><span class="p">(</span>
+    <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+    <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
+    <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+    <span class="n">return_mean_std</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="k">pass</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">guess_threshold</span><span class="p">(</span>
+    <span class="n">fps</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
+    <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
+    <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+    <span class="n">return_mean_std</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:</span>
 
 <span class="sd">    Guess the optimal bitbirch threshold</span>
@@ -480,7 +505,10 @@
     <span class="n">std</span> <span class="o">=</span> <span class="n">estimate_jt_std</span><span class="p">(</span>
         <span class="n">fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">mean</span> <span class="o">+</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">std</span>
+    <span class="n">thresh</span> <span class="o">=</span> <span class="n">mean</span> <span class="o">+</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">std</span>
+    <span class="k">if</span> <span class="n">return_mean_std</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">thresh</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span>
+    <span class="k">return</span> <span class="n">thresh</span>
 
 
 <span class="c1"># For backwards compatibility with the global &quot;set_merge&quot;, keep weak references to all</span>
