@@ -69,6 +69,48 @@ class DiameterMerge(MergeAcceptFunction):
         return jt_isim_from_sum(new_ls, new_n) >= threshold
 
 
+class FlexibleToleranceDiameterMerge(MergeAcceptFunction):
+    name = "flexible-tolerance-diameter"
+    # NOTE: Equivalent to tolerance-diameter but uses min(old_dc, threshold) as the
+    # criteria
+
+    def __init__(
+        self,
+        tolerance: float = 0.05,
+        n_max: int = 1000,
+        decay: float = 1e-3,
+        adaptive: bool = True,
+    ) -> None:
+        self.tolerance = tolerance
+        self.decay = decay
+        self.offset = np.exp(-decay * n_max)
+        if not adaptive:
+            self.decay = 0.0
+            self.offset = 0.0
+
+    def __call__(
+        self,
+        threshold: float,
+        new_ls: NDArray[np.integer],
+        new_n: int,
+        old_ls: NDArray[np.integer],
+        nom_ls: NDArray[np.integer],
+        old_n: int,
+        nom_n: int,
+    ) -> bool:
+        new_dc = jt_isim_from_sum(new_ls, new_n)
+        if new_dc < threshold:
+            return False
+        if old_n == 1:
+            return True
+        old_dc = jt_isim_from_sum(old_ls, old_n)
+        tol = max(self.tolerance * (np.exp(-self.decay * old_n) - self.offset), 0.0)
+        return new_dc >= min(old_dc, threshold) - tol
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tolerance})"
+
+
 class ToleranceDiameterMerge(MergeAcceptFunction):
     name = "tolerance-diameter"
     # NOTE: The reliability of the estimate of the cluster should be a function of the
@@ -202,6 +244,8 @@ def get_merge_accept_fn(
         return ToleranceMerge(tolerance)
     elif merge_criterion == "tolerance-diameter":
         return ToleranceDiameterMerge(tolerance)
+    elif merge_criterion == "flexible-tolerance-diameter":
+        return FlexibleToleranceDiameterMerge(tolerance)
     elif merge_criterion == "tolerance-radius":
         return ToleranceRadiusMerge(tolerance)
     elif merge_criterion == "never-merge":
