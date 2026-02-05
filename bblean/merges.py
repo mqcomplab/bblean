@@ -153,7 +153,6 @@ class MergeAcceptFunction:
 
         This function must not return a value
         """
-        pass
 
     def discard(self) -> None:
         r"""If called inside a hook, immediatly discard the incident subcluster
