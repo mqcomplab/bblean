@@ -24,7 +24,7 @@ _BUILTIN_MERGES = [
 
 
 class DiscardSubcluster(Exception):
-    r"""If raised inside a hook, immediatly discard the incident subcluster
+    r"""If raised in hooks, immediatly exit the merge discarding the incident subcluster
 
     Discarded subclusters will not be stored in the final tree, and will only show
     up if calling `bblean.BitBirch.get_assigments` (or the `labels_` attribute if
@@ -33,7 +33,7 @@ class DiscardSubcluster(Exception):
 
 
 class RejectMerge(Exception):
-    r"""If raised inside a hook, immediatly reject the merge"""
+    r"""If raised in hooks, immediatly exit the merge and reject it"""
 
 
 class MergeAcceptFunction:
