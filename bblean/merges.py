@@ -389,23 +389,79 @@ class ToleranceLegacyMerge(MergeAcceptFunction):
         return f"{self.__class__.__name__}({self.tolerance})"
 
 
+# Make these ones leaner with less calls so they don't take up any extra time at all in
+# the default case
+class _FastMerge(MergeAcceptFunction):
+    def __call__(
+        self,
+        thresh: float,
+        new_ls: NDArray[np.integer],
+        new_n: int,
+        old_ls: NDArray[np.integer],
+        nom_ls: NDArray[np.integer],
+        old_n: int,
+        nom_n: int,
+        old_idxs: tp.Sequence[int],
+        nom_idxs: tp.Sequence[int],
+    ) -> bool:
+        return self.check_merge(
+            thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, old_idxs, nom_idxs
+        )
+
+    @property
+    def name(self) -> str:
+        return "-".join(
+            s.lower()
+            for s in re.split(r"(?=[A-Z])", self.__class__.__name__)[1:]
+            if s not in ["Merge", "Fast"]
+        )
+
+
+class _FastDiameterMerge(_FastMerge, DiameterMerge):
+    pass
+
+
+class _FastRadiusMerge(_FastMerge, RadiusMerge):
+    pass
+
+
+class _FastToleranceDiameterMerge(_FastMerge, ToleranceDiameterMerge):
+    pass
+
+
+class _FastFlexibleToleranceDiameterMerge(_FastMerge, FlexibleToleranceDiameterMerge):
+    pass
+
+
+class _FastToleranceRadiusMerge(_FastMerge, ToleranceRadiusMerge):
+    pass
+
+
+class _FastToleranceLegacyMerge(_FastMerge, ToleranceLegacyMerge):
+    pass
+
+
+class _FastNeverMerge(_FastMerge, NeverMerge):
+    pass
+
+
 def _get_merge_accept_fn(
     merge_criterion: str, tolerance: float = 0.05
 ) -> MergeAcceptFunction:
     if merge_criterion == "radius":
-        return RadiusMerge()
+        return _FastRadiusMerge()
     elif merge_criterion == "diameter":
-        return DiameterMerge()
+        return _FastDiameterMerge()
     elif merge_criterion == "tolerance-legacy":
-        return ToleranceLegacyMerge(tolerance)
+        return _FastToleranceLegacyMerge(tolerance)
     elif merge_criterion == "tolerance-diameter":
-        return ToleranceDiameterMerge(tolerance)
+        return _FastToleranceDiameterMerge(tolerance)
     elif merge_criterion == "flexible-tolerance-diameter":
-        return FlexibleToleranceDiameterMerge(tolerance)
+        return _FastFlexibleToleranceDiameterMerge(tolerance)
     elif merge_criterion == "tolerance-radius":
-        return ToleranceRadiusMerge(tolerance)
+        return _FastToleranceRadiusMerge(tolerance)
     elif merge_criterion == "never":
-        return NeverMerge(tolerance)
+        return _FastNeverMerge(tolerance)
     raise ValueError(
         f"Unknown merge criterion {merge_criterion} "
         "Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius"
