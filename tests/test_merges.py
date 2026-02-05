@@ -1,6 +1,7 @@
-from numpy.typing import NDArray
-import numpy as np
+import typing as tp
 
+import numpy as np
+from numpy.typing import NDArray
 from inline_snapshot import snapshot
 
 from legacy_merges import (  # type: ignore
@@ -212,13 +213,18 @@ def test_tolerance() -> None:
                 assert val == val_expect
 
 
-def test_custom_merge():
+def test_custom_merge() -> None:
     class TrackingDiameterMerge(DiameterMerge):
         def __init__(self, max_cluster_size: int) -> None:
             self.max_cluster_size = max_cluster_size
-            self.redundant_mol_idxs = []
+            self.redundant_mol_idxs: list[int] = []
 
-        def on_after_check_merge(self, accepted, old_idxs, nominee_idxs):
+        def on_after_check_merge(
+            self,
+            accepted: bool,
+            old_idxs: tp.Sequence[int],
+            nominee_idxs: tp.Sequence[int],
+        ) -> None:
             if accepted and len(old_idxs) >= self.max_cluster_size:
                 self.redundant_mol_idxs.extend(nominee_idxs)
                 self.discard()
