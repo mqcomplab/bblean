@@ -22,7 +22,7 @@ from sklearn.base import (
 
 from bblean.fingerprints import unpack_fingerprints
 from bblean.bitbirch import BitBirch as _BitBirch
-from bblean._merges import MergeAcceptFunction
+from bblean.merges import MergeAcceptFunction
 
 __all__ = ["BitBirch", "UnpackedBitBirch"]
 

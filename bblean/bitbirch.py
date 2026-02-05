@@ -64,7 +64,12 @@ import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
 from bblean._memory import _mmap_file_and_madvise_sequential, _ArrayMemPagesManager
-from bblean._merges import get_merge_accept_fn, MergeAcceptFunction, BUILTIN_MERGES
+from bblean.merges import (
+    MergeAcceptFunction,
+    _get_merge_accept_fn,
+    _BUILTIN_MERGES,
+    _DiscardSubcluster,
+)
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import (
     pack_fingerprints,
@@ -185,7 +190,7 @@ def set_merge(merge_criterion: str, tolerance: float = 0.05) -> None:
     warnings.warn(msg, UserWarning)
     # Set the global merge_accept function
     global _global_merge_accept
-    _global_merge_accept = get_merge_accept_fn(merge_criterion, tolerance)
+    _global_merge_accept = _get_merge_accept_fn(merge_criterion, tolerance)
     for bbirch in _BITBIRCH_INSTANCES:
         bbirch._merge_accept_fn = _global_merge_accept
 
@@ -578,7 +583,17 @@ class _BFSubcluster:
         # np.add with explicit dtype is safe from overflows, e.g. :
         # np.add(np.uint8(255), np.uint8(255), dtype=np.uint16) = np.uint16(510)
         new_ls = np.add(old_ls, nom_ls, dtype=min_safe_uint(new_n))
-        if merge_accept_fn(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
+        if merge_accept_fn(
+            threshold,
+            new_ls,
+            new_n,
+            old_ls,
+            nom_ls,
+            old_n,
+            nom_n,
+            self.mol_indices,
+            nominee_cluster.mol_indices,
+        ):
             self.replace_n_samples_and_linear_sum(new_n, new_ls)
             self.mol_indices.extend(nominee_cluster.mol_indices)
             return True
@@ -679,7 +694,6 @@ class BitBirch:
             self._merge_accept_fn = _global_merge_accept
         else:
             merge_criterion = "diameter" if merge_criterion is None else merge_criterion
-            tolerance = 0.05 if tolerance is None else tolerance
             if isinstance(merge_criterion, MergeAcceptFunction):
                 if tolerance is not None:
                     raise ValueError(
@@ -687,7 +701,8 @@ class BitBirch:
                     )
                 self._merge_accept_fn = merge_criterion
             else:
-                self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
+                tolerance = 0.05 if tolerance is None else tolerance
+                self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
 
         # Tree state
         self._num_fitted_fps = 0
@@ -696,6 +711,7 @@ class BitBirch:
         # TODO: Type correctly
         self._global_clustering_centroid_labels: NDArray[np.int64] | None = None
         self._n_global_clusters = 0
+        self._has_discarded = False
 
         # For backwards compatibility, weak-register in global state This is used to
         # update the merge_accept function if the global set_merge() is called
@@ -752,7 +768,7 @@ class BitBirch:
         if isinstance(merge_criterion, MergeAcceptFunction):
             self._merge_accept_fn = merge_criterion
         elif isinstance(merge_criterion, str):
-            self._merge_accept_fn = get_merge_accept_fn(merge_criterion, _tolerance)
+            self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, _tolerance)
         if hasattr(self._merge_accept_fn, "tolerance"):
             self._merge_accept_fn.tolerance = _tolerance
         elif tolerance is not None:
@@ -836,9 +852,15 @@ class BitBirch:
         arr_idx = 0
         for idx, fp in iterable:
             subcluster = _BFSubcluster.from_fingerprint(fp, idx, next(it_weights))
-            split = self._root.insert_bf_subcluster(
-                subcluster, merge_accept_fn, threshold
-            )
+            try:
+                split = self._root.insert_bf_subcluster(
+                    subcluster, merge_accept_fn, threshold
+                )
+            except _DiscardSubcluster:
+                self._has_discarded = True
+                self._num_fitted_fps += 1
+                arr_idx += 1
+                continue
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(self._root)
@@ -911,9 +933,15 @@ class BitBirch:
 
         for idxs, buf in zip(idx_provider, arr_iterable):
             subcluster = _BFSubcluster(buf, idxs, check_indices=check_indices)
-            split = self._root.insert_bf_subcluster(
-                subcluster, merge_accept_fn, threshold
-            )
+            try:
+                split = self._root.insert_bf_subcluster(
+                    subcluster, merge_accept_fn, threshold
+                )
+            except _DiscardSubcluster:
+                self._has_discarded = True
+                self._num_fitted_fps += len(idxs)
+                arr_idx += 1
+                continue
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(self._root)
@@ -1086,7 +1114,7 @@ class BitBirch:
                 f"Provided n_mols {n_mols} is different"
                 f" from the number of fitted fingerprints {self.num_fitted_fps}"
             )
-        if check_valid:
+        if check_valid or self._has_discarded:
             assignments = np.full(self.num_fitted_fps, 0, dtype=np.uint64)
         else:
             assignments = np.empty(self.num_fitted_fps, dtype=np.uint64)
@@ -1114,7 +1142,7 @@ class BitBirch:
                 assignments[mol_ids] = i
 
         # Check that there are no unassigned molecules
-        if check_valid and (assignments == 0).any():
+        if not self._has_discarded and check_valid and (assignments == 0).any():
             raise ValueError("There are unasigned molecules")
         return assignments
 
@@ -1384,7 +1412,7 @@ class BitBirch:
         parts = [
             f"threshold={self.threshold}",
             f"branching_factor={self.branching_factor}",
-            f"merge_criterion='{fn.name if fn.name in BUILTIN_MERGES else fn}'",
+            f"merge_criterion='{fn.name if fn.name in _BUILTIN_MERGES else fn}'",
         ]
         if self.tolerance is not None:
             parts.append(f"tolerance={self.tolerance}")
