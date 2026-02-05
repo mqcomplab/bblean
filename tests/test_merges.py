@@ -17,6 +17,7 @@ from bblean.merges import (
     ToleranceLegacyMerge,
     ToleranceDiameterMerge,
     ToleranceRadiusMerge,
+    DiscardSubcluster,
 )
 from bblean.fingerprints import make_fake_fingerprints
 from bblean.similarity import centroid_from_sum
@@ -219,7 +220,7 @@ def test_custom_merge() -> None:
             self.max_cluster_size = max_cluster_size
             self.redundant_mol_idxs: list[int] = []
 
-        def on_after_check_merge(
+        def on_check_merge_end(
             self,
             accepted: bool,
             old_idxs: tp.Sequence[int],
@@ -227,7 +228,7 @@ def test_custom_merge() -> None:
         ) -> None:
             if accepted and len(old_idxs) >= self.max_cluster_size:
                 self.redundant_mol_idxs.extend(nominee_idxs)
-                self.discard()
+                raise DiscardSubcluster
 
     merge_fn = TrackingDiameterMerge(max_cluster_size=32)
 
