@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=79bc1a5d"></script>
+    <script src="../../_static/documentation_options.js?v=b71a71ea"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -384,12 +384,23 @@
 <span class="p">]</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">_DiscardSubcluster</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="k">pass</span>
+<div class="viewcode-block" id="DiscardSubcluster">
+<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.DiscardSubcluster">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiscardSubcluster</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;If raised in hooks, immediatly exit the merge discarding the incident subcluster</span>
+
+<span class="sd">    Discarded subclusters will not be stored in the final tree, and will only show</span>
+<span class="sd">    up if calling `bblean.BitBirch.get_assigments` (or the `labels_` attribute if</span>
+<span class="sd">    using `bblean.sklearn`) with a cluster label of 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">_RejectSubcluster</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-    <span class="k">pass</span>
+
+<div class="viewcode-block" id="RejectMerge">
+<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.RejectMerge">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RejectMerge</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;If raised in hooks, immediatly exit the merge and reject it&quot;&quot;&quot;</span></div>
+
 
 
 <div class="viewcode-block" id="MergeAcceptFunction">
@@ -422,20 +433,20 @@
         <span class="n">nom_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_before_check_merge</span><span class="p">(</span>
+            <span class="n">thresh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_check_merge_start</span><span class="p">(</span>
                 <span class="n">thresh</span><span class="p">,</span> <span class="n">new_ls</span><span class="p">,</span> <span class="n">new_n</span><span class="p">,</span> <span class="n">old_ls</span><span class="p">,</span> <span class="n">nom_ls</span><span class="p">,</span> <span class="n">old_n</span><span class="p">,</span> <span class="n">nom_n</span><span class="p">,</span> <span class="n">old_idxs</span><span class="p">,</span> <span class="n">nom_idxs</span>
             <span class="p">)</span>
             <span class="n">accepted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_merge</span><span class="p">(</span>
                 <span class="n">thresh</span><span class="p">,</span> <span class="n">new_ls</span><span class="p">,</span> <span class="n">new_n</span><span class="p">,</span> <span class="n">old_ls</span><span class="p">,</span> <span class="n">nom_ls</span><span class="p">,</span> <span class="n">old_n</span><span class="p">,</span> <span class="n">nom_n</span><span class="p">,</span> <span class="n">old_idxs</span><span class="p">,</span> <span class="n">nom_idxs</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">on_after_check_merge</span><span class="p">(</span><span class="n">accepted</span><span class="p">,</span> <span class="n">old_idxs</span><span class="p">,</span> <span class="n">nom_idxs</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">_RejectSubcluster</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">on_check_merge_end</span><span class="p">(</span><span class="n">accepted</span><span class="p">,</span> <span class="n">old_idxs</span><span class="p">,</span> <span class="n">nom_idxs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">RejectMerge</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="n">accepted</span>
 
-<div class="viewcode-block" id="MergeAcceptFunction.on_before_check_merge">
-<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.MergeAcceptFunction.on_before_check_merge">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">on_before_check_merge</span><span class="p">(</span>
+<div class="viewcode-block" id="MergeAcceptFunction.on_check_merge_start">
+<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.MergeAcceptFunction.on_check_merge_start">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_check_merge_start</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">new_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span>
@@ -505,9 +516,9 @@
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
-<div class="viewcode-block" id="MergeAcceptFunction.on_after_check_merge">
-<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.MergeAcceptFunction.on_after_check_merge">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">on_after_check_merge</span><span class="p">(</span>
+<div class="viewcode-block" id="MergeAcceptFunction.on_check_merge_end">
+<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.MergeAcceptFunction.on_check_merge_end">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_check_merge_end</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">accepted</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
@@ -524,25 +535,6 @@
 
 <span class="sd">        This function must not return a value</span>
 <span class="sd">        &quot;&quot;&quot;</span></div>
-
-
-<div class="viewcode-block" id="MergeAcceptFunction.discard">
-<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.MergeAcceptFunction.discard">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">discard</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;If called inside a hook, immediatly discard the incident subcluster</span>
-
-<span class="sd">        Discarded subclusters will not be stored in the final tree, and will only show</span>
-<span class="sd">        up if calling `bblean.BitBirch.get_assigments` (or the `labels_` attribute if</span>
-<span class="sd">        using `bblean.sklearn`) with a cluster label of 0.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="n">_DiscardSubcluster</span></div>
-
-
-<div class="viewcode-block" id="MergeAcceptFunction.reject">
-<a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.MergeAcceptFunction.reject">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">reject</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;If called inside a hook, immediatly reject the merge&quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="n">_RejectSubcluster</span></div>
 
 
     <span class="nd">@property</span>

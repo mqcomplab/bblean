@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=79bc1a5d"></script>
+    <script src="../_static/documentation_options.js?v=b71a71ea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
@@ -417,6 +417,33 @@ library. Make sure you understand the features here before applying them.</p>
 </tbody>
 </table>
 </div>
+<p class="rubric">Exceptions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#bblean.merges.DiscardSubcluster" title="bblean.merges.DiscardSubcluster"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DiscardSubcluster</span></code></a></p></td>
+<td><p>If raised in hooks, immediatly exit the merge discarding the incident subcluster</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#bblean.merges.RejectMerge" title="bblean.merges.RejectMerge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RejectMerge</span></code></a></p></td>
+<td><p>If raised in hooks, immediatly exit the merge and reject it</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py exception">
+<dt class="sig sig-object py" id="bblean.merges.DiscardSubcluster">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">bblean.merges.</span></span><span class="sig-name descname"><span class="pre">DiscardSubcluster</span></span><a class="reference internal" href="../_modules/bblean/merges.html#DiscardSubcluster"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.DiscardSubcluster" title="Link to this definition">#</a></dt>
+<dd><p>If raised in hooks, immediatly exit the merge discarding the incident subcluster</p>
+<p>Discarded subclusters will not be stored in the final tree, and will only show
+up if calling <code class="xref any docutils literal notranslate"><span class="pre">bblean.BitBirch.get_assigments</span></code> (or the <code class="xref any docutils literal notranslate"><span class="pre">labels_</span></code> attribute if
+using <code class="xref any docutils literal notranslate"><span class="pre">bblean.sklearn</span></code>) with a cluster label of 0.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="bblean.merges.RejectMerge">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">bblean.merges.</span></span><span class="sig-name descname"><span class="pre">RejectMerge</span></span><a class="reference internal" href="../_modules/bblean/merges.html#RejectMerge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.RejectMerge" title="Link to this definition">#</a></dt>
+<dd><p>If raised in hooks, immediatly exit the merge and reject it</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="bblean.merges.MergeAcceptFunction">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">bblean.merges.</span></span><span class="sig-name descname"><span class="pre">MergeAcceptFunction</span></span><a class="reference internal" href="../_modules/bblean/merges.html#MergeAcceptFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.MergeAcceptFunction" title="Link to this definition">#</a></dt>
@@ -429,8 +456,8 @@ as <code class="docutils literal notranslate"><span class="pre">BitBirch(...,</s
 <p>This is an advanced feature, make sure you fully understand what you are doing!</p>
 </div>
 <dl class="py method">
-<dt class="sig sig-object py" id="bblean.merges.MergeAcceptFunction.on_before_check_merge">
-<span class="sig-name descname"><span class="pre">on_before_check_merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_idxs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_idxs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/merges.html#MergeAcceptFunction.on_before_check_merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.MergeAcceptFunction.on_before_check_merge" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="bblean.merges.MergeAcceptFunction.on_check_merge_start">
+<span class="sig-name descname"><span class="pre">on_check_merge_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_sum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_idxs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_idxs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/merges.html#MergeAcceptFunction.on_check_merge_start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.MergeAcceptFunction.on_check_merge_start" title="Link to this definition">#</a></dt>
 <dd><p>Hook called before a merge is checked (meant to be overriden)</p>
 <p>See <a class="reference internal" href="#bblean.merges.MergeAcceptFunction.check_merge" title="bblean.merges.MergeAcceptFunction.check_merge"><code class="xref any py py-meth docutils literal notranslate"><span class="pre">MergeAcceptFunction.check_merge</span></code></a> for an explanation of the different args</p>
 <div class="admonition warning">
@@ -473,8 +500,8 @@ pitfalls of unsigned integer arithmetic.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="bblean.merges.MergeAcceptFunction.on_after_check_merge">
-<span class="sig-name descname"><span class="pre">on_after_check_merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accepted</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_idxs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_idxs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/merges.html#MergeAcceptFunction.on_after_check_merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.MergeAcceptFunction.on_after_check_merge" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="bblean.merges.MergeAcceptFunction.on_check_merge_end">
+<span class="sig-name descname"><span class="pre">on_check_merge_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accepted</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old_idxs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nominee_idxs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/merges.html#MergeAcceptFunction.on_check_merge_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.MergeAcceptFunction.on_check_merge_end" title="Link to this definition">#</a></dt>
 <dd><p>Hook called after a merge is checked (meant to be overriden)</p>
 <p>accept: Whether the merge was accepted
 old_idxs: Indices of the mols in cluster before the nominee cluster is merged
@@ -482,25 +509,6 @@ nominee_idxs: Nominee indices to merge.</p>
 <p>If merging a single molecule (the most common case, when calling
 <code class="xref any docutils literal notranslate"><span class="pre">bblean.BitBirch.fit</span></code>, <code class="docutils literal notranslate"><span class="pre">nominee_idxs</span></code> will be a list with a <em>single index</em>)</p>
 <p>This function must not return a value</p>
-<dl class="field-list simple">
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="bblean.merges.MergeAcceptFunction.discard">
-<span class="sig-name descname"><span class="pre">discard</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/merges.html#MergeAcceptFunction.discard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.MergeAcceptFunction.discard" title="Link to this definition">#</a></dt>
-<dd><p>If called inside a hook, immediatly discard the incident subcluster</p>
-<p>Discarded subclusters will not be stored in the final tree, and will only show
-up if calling <code class="xref any docutils literal notranslate"><span class="pre">bblean.BitBirch.get_assigments</span></code> (or the <code class="xref any docutils literal notranslate"><span class="pre">labels_</span></code> attribute if
-using <code class="xref any docutils literal notranslate"><span class="pre">bblean.sklearn</span></code>) with a cluster label of 0.</p>
-<dl class="field-list simple">
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="bblean.merges.MergeAcceptFunction.reject">
-<span class="sig-name descname"><span class="pre">reject</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bblean/merges.html#MergeAcceptFunction.reject"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bblean.merges.MergeAcceptFunction.reject" title="Link to this definition">#</a></dt>
-<dd><p>If called inside a hook, immediatly reject the merge</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -587,12 +595,12 @@ using <code class="xref any docutils literal notranslate"><span class="pre">bble
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.DiscardSubcluster"><code class="docutils literal notranslate"><span class="pre">DiscardSubcluster</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.RejectMerge"><code class="docutils literal notranslate"><span class="pre">RejectMerge</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction.on_before_check_merge"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction.on_before_check_merge()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction.on_check_merge_start"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction.on_check_merge_start()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction.check_merge"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction.check_merge()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction.on_after_check_merge"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction.on_after_check_merge()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction.discard"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction.discard()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction.reject"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction.reject()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.MergeAcceptFunction.on_check_merge_end"><code class="docutils literal notranslate"><span class="pre">MergeAcceptFunction.on_check_merge_end()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bblean.merges.RadiusMerge"><code class="docutils literal notranslate"><span class="pre">RadiusMerge</span></code></a></li>
