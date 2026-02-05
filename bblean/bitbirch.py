@@ -68,7 +68,7 @@ from bblean.merges import (
     MergeAcceptFunction,
     _get_merge_accept_fn,
     _BUILTIN_MERGES,
-    _DiscardSubcluster,
+    DiscardSubcluster,
 )
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import (
@@ -856,7 +856,7 @@ class BitBirch:
                 split = self._root.insert_bf_subcluster(
                     subcluster, merge_accept_fn, threshold
                 )
-            except _DiscardSubcluster:
+            except DiscardSubcluster:
                 self._has_discarded = True
                 self._num_fitted_fps += 1
                 arr_idx += 1
@@ -937,7 +937,7 @@ class BitBirch:
                 split = self._root.insert_bf_subcluster(
                     subcluster, merge_accept_fn, threshold
                 )
-            except _DiscardSubcluster:
+            except DiscardSubcluster:
                 self._has_discarded = True
                 self._num_fitted_fps += len(idxs)
                 arr_idx += 1

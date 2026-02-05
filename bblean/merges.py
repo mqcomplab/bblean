@@ -23,12 +23,17 @@ _BUILTIN_MERGES = [
 ]
 
 
-class _DiscardSubcluster(Exception):
-    pass
+class DiscardSubcluster(Exception):
+    r"""If raised inside a hook, immediatly discard the incident subcluster
+
+    Discarded subclusters will not be stored in the final tree, and will only show
+    up if calling `bblean.BitBirch.get_assigments` (or the `labels_` attribute if
+    using `bblean.sklearn`) with a cluster label of 0.
+    """
 
 
-class _RejectSubcluster(Exception):
-    pass
+class RejectMerge(Exception):
+    r"""If raised inside a hook, immediatly reject the merge"""
 
 
 class MergeAcceptFunction:
@@ -66,7 +71,7 @@ class MergeAcceptFunction:
                 thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, old_idxs, nom_idxs
             )
             self.on_after_check_merge(accepted, old_idxs, nom_idxs)
-        except _RejectSubcluster:
+        except RejectMerge:
             return False
         return accepted
 
@@ -153,19 +158,6 @@ class MergeAcceptFunction:
 
         This function must not return a value
         """
-
-    def discard(self) -> None:
-        r"""If called inside a hook, immediatly discard the incident subcluster
-
-        Discarded subclusters will not be stored in the final tree, and will only show
-        up if calling `bblean.BitBirch.get_assigments` (or the `labels_` attribute if
-        using `bblean.sklearn`) with a cluster label of 0.
-        """
-        raise _DiscardSubcluster
-
-    def reject(self) -> None:
-        r"""If called inside a hook, immediatly reject the merge"""
-        raise _RejectSubcluster
 
     @property
     def name(self) -> str:
