@@ -220,7 +220,7 @@ def test_custom_merge() -> None:
             self.max_cluster_size = max_cluster_size
             self.redundant_mol_idxs: list[int] = []
 
-        def on_after_check_merge(
+        def on_check_merge_end(
             self,
             accepted: bool,
             old_idxs: tp.Sequence[int],

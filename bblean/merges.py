@@ -64,18 +64,18 @@ class MergeAcceptFunction:
         nom_idxs: tp.Sequence[int],
     ) -> bool:
         try:
-            thresh = self.on_before_check_merge(
+            thresh = self.on_check_merge_start(
                 thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, old_idxs, nom_idxs
             )
             accepted = self.check_merge(
                 thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, old_idxs, nom_idxs
             )
-            self.on_after_check_merge(accepted, old_idxs, nom_idxs)
+            self.on_check_merge_end(accepted, old_idxs, nom_idxs)
         except RejectMerge:
             return False
         return accepted
 
-    def on_before_check_merge(
+    def on_check_merge_start(
         self,
         threshold: float,
         new_sum: NDArray[np.integer],
@@ -141,7 +141,7 @@ class MergeAcceptFunction:
         """
         raise NotImplementedError
 
-    def on_after_check_merge(
+    def on_check_merge_end(
         self,
         accepted: bool,
         old_idxs: tp.Sequence[int],
