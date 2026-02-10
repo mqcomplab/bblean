@@ -132,7 +132,7 @@ def system_mem_gib() -> tuple[int, int] | tuple[None, None]:
 
 
 def get_peak_memory_gib(out_dir: Path) -> float | None:
-    file = out_dir / "max-rss.txt"
+    file = out_dir / "max-rss.json"
     if not file.exists():
         return None
     with open(file, mode="r", encoding="utf-8") as f:
@@ -174,7 +174,7 @@ def monitor_rss_process(
             os.fsync(f.fileno())
         if total_rss_gib > max_rss_gib:
             max_rss_gib = total_rss_gib
-            with open(file.parent / "max-rss.txt", mode="w", encoding="utf-8") as f:
+            with open(file.parent / "max-rss.json", mode="w", encoding="utf-8") as f:
                 f.write(f"{max_rss_gib}\n")
                 f.flush()
                 os.fsync(f.fileno())
