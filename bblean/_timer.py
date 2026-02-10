@@ -8,8 +8,9 @@ from rich.console import Console
 
 
 class Timer:
-    def __init__(self) -> None:
+    def __init__(self, indent: bool = True) -> None:
         self._timings_s: dict[str, float] = {}
+        self._indent = indent
 
     @property
     def timings_s(self) -> dict[str, float]:
@@ -21,8 +22,12 @@ class Timer:
         self._timings_s[label] = time.perf_counter()
 
     def end_timing(
-        self, label: str = "total", console: Console | None = None, indent: bool = True
+        self,
+        label: str = "total",
+        console: Console | None = None,
+        indent: bool | None = None,
     ) -> None:
+        indent = indent if indent is not None else self._indent
         if label not in self._timings_s:
             raise ValueError(f"{label} has not been initialized")
         self._timings_s[label] = time.perf_counter() - self._timings_s[label]
