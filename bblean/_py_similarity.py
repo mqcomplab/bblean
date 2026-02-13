@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 import numpy as np
 
 from bblean.utils import min_safe_uint
-from bblean.fingerprints import unpack_fingerprints, pack_fingerprints
+from bblean.fingerprints import unpack_fingerprints
 
 
 def centroid_from_sum(
@@ -78,35 +78,6 @@ def jt_compl_isim(
     linear_sum = np.sum(fps, axis=0)
     comp_sims = [jt_isim_from_sum(linear_sum - fp, n_objects) for fp in fps]
     return np.array(comp_sims, dtype=np.float64)
-
-
-def jt_isim_medoid(
-    fps: NDArray[np.uint8],
-    input_is_packed: bool = True,
-    n_features: int | None = None,
-    pack: bool = True,
-) -> tuple[int, NDArray[np.uint8]]:
-    r"""Calculate the (Tanimoto) medoid of a set of fingerprints, using iSIM
-
-    Returns both the index of the medoid in the input array and the medoid itself
-
-    .. note::
-        Returns the first (or only) fingerprint for array of size 2 and 1 respectively.
-        Raises ValueError for arrays of size 0
-
-    """
-    if not fps.size:
-        raise ValueError("Size of fingerprints set must be > 0")
-    if input_is_packed:
-        fps = unpack_fingerprints(fps, n_features)
-    if len(fps) < 3:
-        idx = 0  # Medoid undefined for sets of 3 or more fingerprints
-    else:
-        idx = np.argmin(jt_compl_isim(fps, input_is_packed, n_features)).item()
-    m = fps[idx]
-    if pack:
-        return idx, pack_fingerprints(m)
-    return idx, m
 
 
 # Requires numpy >= 2.0
