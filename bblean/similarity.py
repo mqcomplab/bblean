@@ -122,10 +122,11 @@ def jt_isim_medoid(
         raise ValueError("Size of fingerprints set must be > 0")
     if input_is_packed:
         fps = unpack_fingerprints(fps, n_features)
+
     if len(fps) < 3:
         idx = 0  # Medoid undefined for sets of 3 or more fingerprints
     else:
-        idx = np.argmin(jt_compl_isim(fps, input_is_packed, n_features)).item()
+        idx = np.argmin(jt_compl_isim(fps, input_is_packed=False)).item()
     m = fps[idx]
     if pack:
         return idx, pack_fingerprints(m)

@@ -1017,6 +1017,7 @@ class BitBirch:
         global_clusters: bool = False,
         input_is_packed: bool = True,
         n_features: int | None = None,
+        iterative_unpacking: bool = False,
     ) -> _MedoidsMolIds:
         r"""Get a dict with medoid idxs, medoids and mol indices of the leaves
 
@@ -1026,10 +1027,11 @@ class BitBirch:
             sort=sort, global_clusters=global_clusters
         )
 
-        if input_is_packed:
+        if input_is_packed and not iterative_unpacking:
             fps = _unpack_fingerprints(fps, n_features=n_features)
+            input_is_packed = False
         cluster_medoid_idxs, cluster_medoids = self._unpacked_medoids_from_members(
-            fps, cluster_members
+            fps, cluster_members, input_is_packed, n_features
         )
         if pack:
             cluster_medoids = pack_fingerprints(cluster_medoids)
@@ -1041,16 +1043,26 @@ class BitBirch:
 
     @staticmethod
     def _unpacked_medoids_from_members(
-        unpacked_fps: NDArray[np.uint8], cluster_members: tp.Sequence[list[int]]
+        fps: NDArray[np.uint8],
+        cluster_members: tp.Sequence[list[int]],
+        input_is_packed: bool = True,
+        n_features: int | None = None,
     ) -> tuple[NDArray[np.int64], NDArray[np.uint8]]:
-        cluster_medoids = np.zeros(
-            (len(cluster_members), unpacked_fps.shape[1]), dtype=np.uint8
-        )
+        if not input_is_packed:
+            feats_num = fps.shape[1]
+            n_features = None
+        elif n_features is None:
+            feats_num = fps.shape[1] * 8
+        else:
+            feats_num = n_features
+
+        cluster_medoids = np.zeros((len(cluster_members), feats_num), dtype=np.uint8)
         cluster_medoid_idxs = np.zeros((len(cluster_members),), dtype=np.int64)
         for idx, members in enumerate(cluster_members):
             cluster_medoid_idxs[idx], cluster_medoids[idx, :] = jt_isim_medoid(
-                unpacked_fps[members],
-                input_is_packed=False,
+                fps[members],
+                input_is_packed=input_is_packed,
+                n_features=n_features,
                 pack=False,
             )
         return cluster_medoid_idxs, cluster_medoids
