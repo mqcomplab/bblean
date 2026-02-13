@@ -503,7 +503,9 @@ class _BFSubcluster:
             buffer = np.empty((len(fp) + 1,), dtype=min_safe_uint(weight))
             buffer[:-1] = fp
             buffer[-1] = 1
-            buffer *= weight
+            # This inplace multiplication is actually safe, since we initialized
+            # buffer with min_safe_uint, so it can be done without issue
+            np.multiply(buffer, weight, out=buffer, casting="unsafe")
         else:
             buffer = np.empty((len(fp) + 1,), dtype=np.uint8)
             buffer[:-1] = fp
