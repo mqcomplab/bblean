@@ -116,10 +116,13 @@ class IVFIndex:
         predictor = BitBirch._global_clustering_predictor(
             centrals, n_clusters, method=method, **method_kwargs
         )
-        # Direct reassignment reassigns the fingerprints directly using the predictor
-        # instead of indirectly reassigning using the central labels
+        # This is the bottleneck for building this index
+        # K-means is feasible, agglomerative is extremely expensive
+        # In this case there is no need to add 1 either in either case
+        predictor.fit(centrals)
         if direct_reassignment:
-            predictor.fit(centrals)
+            # Direct reassignment reassigns the fingerprints directly using the
+            # predictor instead of indirectly reassigning using the central labels
             if method.endswith("-normalized"):
                 labels = predictor.predict(
                     fps / np.linalg.norm(fps, axis=1, keepdims=True)
@@ -128,10 +131,10 @@ class IVFIndex:
                 labels = predictor.predict(fps)
             mol_ids = [(labels == i).tolist() for i in range(n_clusters)]
         else:
-            labels = predictor.fit_predict(centrals) + 1
+            labels = predictor.predict(centrals)
             num_centrals = len(centrals)
             n_clusters = n_clusters if num_centrals > n_clusters else num_centrals
-            mol_ids = BitBirch._new_ids_from_labels(members, labels - 1, n_clusters)
+            mol_ids = BitBirch._new_ids_from_labels(members, labels, n_clusters)
 
         if sort:
             mol_ids.sort(key=lambda x: len(x), reverse=True)
