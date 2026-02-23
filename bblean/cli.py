@@ -353,6 +353,126 @@ def _table_summary(
             console.print(f"    - Dunn index: {dunn:.4f} (Higher is better)")
 
 
+@app.command("plot-isim", rich_help_panel="Analysis", hidden=True)
+def _plot_isim(
+    clusters_path: Annotated[
+        Path,
+        Argument(help="Path to the clusters file, or a dir with a clusters.pkl file"),
+    ],
+    fps_path: Annotated[
+        Path | None,
+        Option(
+            "-f",
+            "--fps-path",
+            help="Path to fingerprint file, or directory with fingerprint files",
+            show_default=False,
+        ),
+    ] = None,
+    title: Annotated[
+        str | None,
+        Option("--title", help="Plot title"),
+    ] = None,
+    top: Annotated[
+        int | None,
+        Option("--top"),
+    ] = None,
+    input_is_packed: Annotated[
+        bool,
+        Option("--packed-input/--unpacked-input", rich_help_panel="Advanced"),
+    ] = True,
+    min_size: Annotated[
+        int,
+        Option("--min-size"),
+    ] = 0,
+    n_features: Annotated[
+        int | None,
+        Option(
+            "--n-features",
+            help="Number of features in the fingerprints."
+            " Only for packed inputs *if it is not a multiple of 8*."
+            " Not required for typical fingerprint sizes (e.g. 2048, 1024)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
+    save: Annotated[
+        bool,
+        Option("--save/--no-save"),
+    ] = True,
+    filename: Annotated[
+        str | None,
+        Option("--filename"),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        Option("-v/-V", "--verbose/--no-verbose"),
+    ] = True,
+    show: Annotated[
+        bool,
+        Option("--show/--no-show", hidden=True),
+    ] = True,
+    threshold: Annotated[
+        float | None,
+        Option("-t", "--threshold"),
+    ] = None,
+) -> None:
+    r"""Population plot of the clustering results"""
+    from bblean._console import get_console
+
+    console = get_console(silent=not verbose)
+    # Imports may take a bit of time since sklearn is slow, so start the spinner here
+    with console.status("[italic]Analyzing clusters...[/italic]", spinner="dots"):
+        import json
+        from bblean.plotting import (
+            _dispatch_visualization,
+            isim_dist_plot,
+            isim_size_ordered_plot,
+        )
+
+        if clusters_path.is_dir():
+            clusters_path = clusters_path / "clusters.pkl"
+        config_path = clusters_path.parent / "config.json"
+        if threshold is None:
+            if config_path.exists():
+                with open(config_path, mode="rt", encoding="utf-8") as f:
+                    threshold = json.load(f)["threshold"]
+            else:
+                threshold = None
+        fig_0, axs_0 = _dispatch_visualization(
+            clusters_path,
+            "isims-dist",
+            isim_dist_plot,
+            {"threshold": threshold},
+            min_size=min_size,
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            fps_path=fps_path,
+            title=title,
+            filename=filename,
+            verbose=verbose,
+            save=save,
+            show=False,
+            warn_nan=False,
+        )
+        _dispatch_visualization(
+            clusters_path,
+            "isim-ordered",
+            isim_size_ordered_plot,
+            {"threshold": threshold},
+            min_size=min_size,
+            top=top,
+            n_features=n_features,
+            input_is_packed=input_is_packed,
+            fps_path=fps_path,
+            title=title,
+            filename=filename,
+            verbose=verbose,
+            save=save,
+            show=show,
+            warn_nan=False,
+        )
+
+
 @app.command("plot-pops", rich_help_panel="Analysis")
 def _plot_pops(
     clusters_path: Annotated[

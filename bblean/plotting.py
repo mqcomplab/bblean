@@ -33,12 +33,111 @@ __all__ = [
 ]
 
 
+def isim_size_ordered_plot(
+    c: ClusterAnalysis,
+    /,
+    threshold: float | None = None,
+    title: str | None = None,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""iSIMs of clusters ordered by size"""
+    fig, axs = plt.subplots(1, 2, figsize=(6.4, 3), sharex=True, sharey=True)
+
+    # ordered by size by default, note that this generates some NaNs
+    cluster_isims = c.isims
+    seq_idxs = np.arange(1, len(cluster_isims) + 1)
+    axs[0].set_ylim(0, 1.0)
+    axs[0].scatter(seq_idxs, cluster_isims, color="tab:green", s=1.5, alpha=0.5)
+    pad = 5
+    kernel = np.ones(11) / 11
+    padded = np.pad(cluster_isims, (pad, pad), mode="edge")
+    moving_average = np.convolve(padded, kernel, mode="valid")
+    moving_average_sq = np.convolve(
+        padded**2,
+        kernel,
+        mode="valid",
+    )
+    moving_std = np.sqrt(moving_average_sq - moving_average**2)
+    axs[1].plot(
+        seq_idxs,
+        moving_average,
+        color="darkgreen",
+        linewidth=1,
+        linestyle="solid",
+        label="Moving average",
+    )
+    axs[1].fill_between(
+        seq_idxs,
+        moving_average - moving_std,
+        moving_average + moving_std,
+        color="tab:gray",
+        alpha=0.4,
+        label="Moving std.",
+    )
+    axs[1].legend()
+    axs[0].set_xlabel("Cluster label")
+    axs[1].set_xlabel("Cluster label")
+    axs[0].set_ylabel("Cluster iSIM")
+    msg = f"iSIM for top {c.clusters_num} largest clusters, ordered by size"
+    if threshold is not None:
+        for ax in axs:
+            ax.axhline(threshold, linestyle="dashed", linewidth=0.5, color="k")
+            ax.text(
+                0.02,
+                threshold - 0.03,
+                f"threshold = {threshold:.2f}",
+                transform=ax.get_yaxis_transform(),  # x in axes, y in data coords
+                fontsize=5,
+            )
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (axs[0], axs[1])
+
+
+def isim_dist_plot(
+    c: ClusterAnalysis,
+    /,
+    threshold: float | None = None,
+    title: str | None = None,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Distribution of cluster populations using KDE"""
+    fig, ax = plt.subplots()
+    cluster_isims = c.isims
+    sns.kdeplot(
+        ax=ax,
+        data=cluster_isims,
+        color="tab:green",
+        bw_adjust=0.25,
+        gridsize=len(cluster_isims) // 5,
+        fill=True,
+        warn_singular=False,
+    )
+    ax.set_ylabel("Density")
+    ax.set_xlim(0, 1.0)
+    ax.set_xlabel("Cluster iSIM")
+    msg = f"iSIM distribution for top {c.clusters_num} largest clusters"
+    if threshold is not None:
+        ax.axvline(threshold, linestyle="dashed", linewidth=0.5, color="k")
+        ax.text(
+            threshold - 0.03,
+            0.3,
+            f"threshold = {threshold:.2f}",
+            transform=ax.get_xaxis_transform(),  # x in axes, y in data coords
+            rotation=90,
+            fontsize=5,
+        )
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
+
+
 def pops_plot(
     c: ClusterAnalysis,
     /,
     title: str | None = None,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
-    r"""Distrubution of cluster populations using KDE"""
+    r"""Distribution of cluster populations using KDE"""
     fig, ax = plt.subplots()
     cluster_sizes = c.sizes
     sns.kdeplot(
@@ -50,7 +149,7 @@ def pops_plot(
         fill=True,
         warn_singular=False,
     )
-    ax.set_xlabel("Density")
+    ax.set_ylabel("Density")
     ax.set_xlabel("Cluster size")
     msg = f"Populations for top {c.clusters_num} largest clusters"
     if c.min_size is not None:
@@ -442,7 +541,8 @@ def _dispatch_visualization(
     verbose: bool = True,
     save: bool = True,
     show: bool = True,
-) -> None:
+    warn_nan: bool = True,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     if clusters_path.is_dir():
         clusters_path = clusters_path / "clusters.pkl"
     with open(clusters_path, mode="rb") as f:
@@ -477,8 +577,9 @@ def _dispatch_visualization(
         n_features=n_features,
         input_is_packed=input_is_packed,
         min_size=min_size,
+        warn_nan=warn_nan,
     )
-    fn(ca, title=title, **fn_kwargs)
+    out = fn(ca, title=title, **fn_kwargs)
     if save:
         if filename is None:
             unique_id = format(random.getrandbits(32), "08x")
@@ -486,3 +587,4 @@ def _dispatch_visualization(
         plt.savefig(Path.cwd() / filename)
     if show:
         plt.show()
+    return out
