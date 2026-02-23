@@ -1309,8 +1309,6 @@ def _run(
     input_fps_dir.mkdir()
 
     input_smiles_dir = (out_dir / "input-smiles").resolve()
-    input_smiles_dir.mkdir()
-
     smiles_files = []
     if smiles_path:
         smiles_files = (
@@ -1318,6 +1316,8 @@ def _run(
             if not smiles_path.is_dir()
             else sorted(smiles_path.glob("*.smi"))
         )
+    if smiles_files:
+        input_smiles_dir.mkdir()
     if copy_inputs:
         for file in input_files:
             shutil.copy(file, input_fps_dir / file.name)
