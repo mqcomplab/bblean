@@ -1482,9 +1482,10 @@ class BitBirch:
         if not self.is_init:
             raise ValueError("The model has not been fitted yet.")
         centroids = np.vstack(self.get_centroids(packed=False))
-        labels = self._centrals_global_clustering(
+        predictor = self._global_clustering_predictor(
             centroids, n_clusters, method=method, input_is_packed=False, **method_kwargs
         )
+        labels = predictor.fit_predict(centroids)
         num_centroids = len(centroids)
         self._n_global_clusters = (
             n_clusters if num_centroids > n_clusters else num_centroids
@@ -1493,7 +1494,7 @@ class BitBirch:
         return self
 
     @staticmethod
-    def _centrals_global_clustering(
+    def _global_clustering_predictor(
         centrals: NDArray[np.uint8],
         n_clusters: int,
         *,
@@ -1502,7 +1503,7 @@ class BitBirch:
         n_features: int | None = None,
         # TODO: Type correctly
         **method_kwargs: tp.Any,
-    ) -> NDArray[np.int64]:
+    ) -> tp.Any:
         r""":meta private:"""
         if method not in {"agglomerative", "kmeans", "kmeans-normalized"}:
             raise ValueError(f"Unknown method {method}")

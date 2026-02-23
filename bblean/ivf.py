@@ -98,6 +98,7 @@ class IVFIndex:
         input_is_packed: bool = True,
         n_features: int | None = None,
         sort: bool = True,
+        direct_reassignment: bool = False,
         **method_kwargs: tp.Any,
     ) -> tpx.Self:
         """Build the IVF index from bitbirch clusters"""
@@ -111,16 +112,30 @@ class IVFIndex:
         if input_is_packed:
             fps = unpack_fingerprints(fps, n_features)
             centrals = unpack_fingerprints(centrals, n_features)
-        labels = BitBirch._centrals_global_clustering(
+
+        predictor = BitBirch._global_clustering_predictor(
             centrals, n_clusters, method=method, **method_kwargs
         )
+        # Direct reassignment reassigns the fingerprints directly using the predictor
+        # instead of indirectly reassigning using the central labels
+        if direct_reassignment:
+            predictor.fit(centrals)
+            if method.endswith("-normalized"):
+                labels = predictor.predict(
+                    fps / np.linalg.norm(fps, axis=1, keepdims=True)
+                )
+            else:
+                labels = predictor.predict(fps)
+            mol_ids = [(labels == i).tolist() for i in range(n_clusters)]
+        else:
+            labels = predictor.fit_predict(centrals) + 1
+            num_centrals = len(centrals)
+            n_clusters = n_clusters if num_centrals > n_clusters else num_centrals
+            mol_ids = BitBirch._new_ids_from_labels(members, labels - 1, n_clusters)
 
-        num_centrals = len(centrals)
-        n_clusters = n_clusters if num_centrals > n_clusters else num_centrals
-        mol_ids = BitBirch._new_ids_from_labels(members, labels - 1, n_clusters)
         if sort:
             mol_ids.sort(key=lambda x: len(x), reverse=True)
-        medoids = BitBirch._unpacked_medoids_from_members(fps, mol_ids)
+        _, medoids = BitBirch._unpacked_medoids_from_members(fps, mol_ids)
         fps = pack_fingerprints(fps)
         return cls(pack_fingerprints(medoids), mol_ids, fps, smiles)
 

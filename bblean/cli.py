@@ -2119,6 +2119,10 @@ def _build_idx(
         int | None,
         Option("--n-clusters"),
     ] = None,
+    direct_reassignment: Annotated[
+        bool,
+        Option("-d/-D", "--direct-reassignment/--no-direct-reassignment"),
+    ] = False,
     verbose: Annotated[
         bool,
         Option("--verbose/--no-verbose"),
@@ -2197,6 +2201,7 @@ def _build_idx(
             n_clusters,
             input_is_packed=True,
             sort=True,
+            direct_reassignment=direct_reassignment,
             **kwargs,
         )
 
