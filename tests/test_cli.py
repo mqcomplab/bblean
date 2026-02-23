@@ -19,7 +19,18 @@ def test_umap() -> None:
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
         result = runner.invoke(
-            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.3"]
+            app,
+            [
+                "run",
+                str(dir),
+                "-o",
+                str(out_dir),
+                "-b",
+                "50",
+                "-t",
+                "0.3",
+                "--no-monitor-mem",
+            ],
         )
         assert result.exit_code == 0
         result = runner.invoke(
@@ -49,7 +60,18 @@ def test_pops() -> None:
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
         result = runner.invoke(
-            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.3"]
+            app,
+            [
+                "run",
+                str(dir),
+                "-o",
+                str(out_dir),
+                "-b",
+                "50",
+                "-t",
+                "0.3",
+                "--no-monitor-mem",
+            ],
         )
         assert result.exit_code == 0
         result = runner.invoke(
@@ -80,7 +102,18 @@ def test_pca() -> None:
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
         result = runner.invoke(
-            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.3"]
+            app,
+            [
+                "run",
+                str(dir),
+                "-o",
+                str(out_dir),
+                "-b",
+                "50",
+                "-t",
+                "0.3",
+                "--no-monitor-mem",
+            ],
         )
         assert result.exit_code == 0
         result = runner.invoke(
@@ -110,7 +143,18 @@ def test_tsne() -> None:
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
         result = runner.invoke(
-            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.3"]
+            app,
+            [
+                "run",
+                str(dir),
+                "-o",
+                str(out_dir),
+                "-b",
+                "50",
+                "-t",
+                "0.3",
+                "--no-monitor-mem",
+            ],
         )
         assert result.exit_code == 0
         result = runner.invoke(
@@ -140,7 +184,18 @@ def test_summary() -> None:
         np.save(dir / "fingerprints.npy", fps)
         out_dir = dir / "output"
         result = runner.invoke(
-            app, ["run", str(dir), "-o", str(out_dir), "-b", "50", "-t", "0.1"]
+            app,
+            [
+                "run",
+                str(dir),
+                "-o",
+                str(out_dir),
+                "-b",
+                "50",
+                "-t",
+                "0.1",
+                "--no-monitor-mem",
+            ],
         )
         assert result.exit_code == 0
         result = runner.invoke(

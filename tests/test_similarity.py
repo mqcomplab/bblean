@@ -7,6 +7,7 @@ from legacy_fns import calculate_comp_sim, calculate_medoid  # type: ignore
 
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
 # _cpp_similarity are tested independently
+import bblean.similarity
 import bblean._py_similarity as pysim
 
 try:
@@ -254,22 +255,13 @@ def test_jt_compl_isim() -> None:
     fps = make_fake_fingerprints(2, seed=17408390758220920002, pack=False)
     with pytest.warns(RuntimeWarning):
         _ = pysim.jt_compl_isim(fps)
+    if CSIM_AVAIL:
+        with pytest.warns(RuntimeWarning):
+            _ = csim.jt_compl_isim(fps)
 
     fps = make_fake_fingerprints(10, seed=17408390758220920002, pack=False)
-    assert calculate_comp_sim(fps).tolist() == [
-        0.20256457907452147,
-        0.24748926949201983,
-        0.22550084742079876,
-        0.2002884861456855,
-        0.23889840001690868,
-        0.2364222674813306,
-        0.1986207548061027,
-        0.19904732709222533,
-        0.21303348506016495,
-        0.2225069540267648,
-    ]
-
-    assert pysim.jt_compl_isim(fps).tolist() == snapshot(
+    output = pysim.jt_compl_isim(fps).tolist()
+    assert output == snapshot(
         [
             0.20256457907452147,
             0.24748926949201983,
@@ -283,17 +275,24 @@ def test_jt_compl_isim() -> None:
             0.2225069540267648,
         ]
     )
+    if CSIM_AVAIL:
+        assert csim.jt_compl_isim(fps).tolist() == output
     assert (
         pysim.jt_compl_isim(np.zeros((10, 512), dtype=np.uint8))
         == np.ones(10, dtype=np.float64)
     ).all()
+    if CSIM_AVAIL:
+        assert (
+            csim.jt_compl_isim(np.zeros((10, 512), dtype=np.uint8))
+            == np.ones(10, dtype=np.float64)
+        ).all()
 
 
 def test_jt_isim_medoid() -> None:
     fps = make_fake_fingerprints(
         30, n_features=8, seed=17408390758220920002, pack=False
     )
-    idx, m = pysim.jt_isim_medoid(fps)
+    idx, m = bblean.similarity.jt_isim_medoid(fps)
     assert idx == snapshot(26)
     assert m.tolist() == snapshot([1, 1, 0, 1, 1, 1, 1, 1])
     assert calculate_medoid(fps).tolist() == [1, 1, 0, 1, 1, 1, 1, 1]

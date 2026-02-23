@@ -47,6 +47,7 @@
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
 from __future__ import annotations  # Stringize type annotations for no runtime overhead
+import itertools
 import pickle
 import sys
 import typing_extensions as tpx
@@ -63,7 +64,12 @@ import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
 from bblean._memory import _mmap_file_and_madvise_sequential, _ArrayMemPagesManager
-from bblean._merges import get_merge_accept_fn, MergeAcceptFunction, BUILTIN_MERGES
+from bblean.merges import (
+    MergeAcceptFunction,
+    _get_merge_accept_fn,
+    _BUILTIN_MERGES,
+    DiscardSubcluster,
+)
 from bblean.utils import min_safe_uint
 from bblean.fingerprints import (
     pack_fingerprints,
@@ -74,6 +80,8 @@ from bblean.similarity import (
     jt_most_dissimilar_packed,
     jt_isim_medoid,
     centroid_from_sum,
+    estimate_jt_std,
+    jt_isim,
 )
 
 if os.getenv("BITBIRCH_NO_EXTENSIONS"):
@@ -87,6 +95,64 @@ else:
         from bblean.fingerprints import unpack_fingerprints as _unpack_fingerprints
 
 __all__ = ["BitBirch"]
+
+
+@tp.overload
+def guess_threshold(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    max_samples: int = 1_000_000,
+    factor: float = 3.0,
+    return_mean_std: tp.Literal[False] = False,
+) -> float:
+    pass
+
+
+@tp.overload
+def guess_threshold(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    max_samples: int = 1_000_000,
+    factor: float = 3.0,
+    return_mean_std: tp.Literal[True] = True,
+) -> tuple[float, float, float]:
+    pass
+
+
+def guess_threshold(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    max_samples: int = 1_000_000,
+    factor: float = 3.0,
+    return_mean_std: bool = False,
+) -> float | tuple[float, float, float]:
+    r""":meta private:
+
+    Guess the optimal bitbirch threshold
+
+    Uses the heuristic mean_tanimoto + 3.0 * std_tanimoto
+    """
+    num_fps = len(fps)
+    if num_fps > max_samples:
+        rng = np.random.default_rng(42)
+        random_choices = rng.choice(num_fps, size=max_samples, replace=False)
+        fps = fps[random_choices]
+        num_fps = len(fps)
+    mean = jt_isim(fps, input_is_packed, n_features)
+    if num_fps <= 50:
+        n_samples = num_fps
+    else:
+        n_samples = max(5 * np.sqrt(num_fps), 50)
+    std = estimate_jt_std(
+        fps, input_is_packed=input_is_packed, n_features=n_features, n_samples=n_samples
+    )
+    thresh = mean + factor * std
+    if return_mean_std:
+        return thresh, mean, std
+    return thresh
 
 
 # For backwards compatibility with the global "set_merge", keep weak references to all
@@ -124,7 +190,7 @@ def set_merge(merge_criterion: str, tolerance: float = 0.05) -> None:
     warnings.warn(msg, UserWarning)
     # Set the global merge_accept function
     global _global_merge_accept
-    _global_merge_accept = get_merge_accept_fn(merge_criterion, tolerance)
+    _global_merge_accept = _get_merge_accept_fn(merge_criterion, tolerance)
     for bbirch in _BITBIRCH_INSTANCES:
         bbirch._merge_accept_fn = _global_merge_accept
 
@@ -171,8 +237,8 @@ def _split_node(node: "_BFNode") -> tuple["_BFSubcluster", "_BFSubcluster"]:
     """
     n_features = node.n_features
     branching_factor = node.branching_factor
-    new_subcluster1 = _BFSubcluster(n_features=n_features)
-    new_subcluster2 = _BFSubcluster(n_features=n_features)
+    new_subcluster1 = _BFSubcluster.empty(n_features)
+    new_subcluster2 = _BFSubcluster.empty(n_features)
 
     node1 = _BFNode(branching_factor, n_features)
     node2 = node  # Rename for clarity
@@ -394,13 +460,15 @@ class _BFSubcluster:
 
     def __init__(
         self,
-        *,
-        linear_sum: NDArray[np.integer] | None = None,
-        mol_indices: tp.Sequence[int] = (),
-        n_features: int = 2048,
-        buffer: NDArray[np.integer] | None = None,
+        buffer: NDArray[np.integer],
+        mol_indices: tp.Sequence[int],
+        packed_centroid: NDArray[np.uint8] | None = None,
         check_indices: bool = True,
-    ):
+    ) -> None:
+        # If packed centroid is passed, it must be equal to the packed centroid
+        # of the linear sum (this is not checked)
+        if mol_indices and check_indices and buffer[-1] != len(mol_indices):
+            raise ValueError("len mol_indices must be equal to buffer[-1] if specified")
         # NOTE: Internally, _buffer holds both "linear_sum" and "n_samples" It is
         # guaranteed to always have the minimum required uint dtype It should not be
         # accessed by external classes, only used internally. The individual parts can
@@ -409,43 +477,41 @@ class _BFSubcluster:
         #
         # IMPORTANT: To mutate instances of this class, *always* use the public API
         # given by replace|add_to_n_samples_and_linear_sum(...)
-        if buffer is not None:
-            if linear_sum is not None:
-                raise ValueError("'linear_sum' and 'buffer' are mutually exclusive")
-            if check_indices and len(mol_indices) != buffer[-1]:
-                raise ValueError(
-                    "Expected len(mol_indices) == buffer[-1],"
-                    f" but found {len(mol_indices)} != {buffer[-1]}"
-                )
-            self._buffer = buffer
-            self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
-        else:
-            if linear_sum is not None:
-                if check_indices and len(mol_indices) != 1:
-                    raise ValueError(
-                        "Expected len(mol_indices) == 1,"
-                        f" but found {len(mol_indices)} != 1"
-                    )
-                buffer = np.empty((len(linear_sum) + 1,), dtype=np.uint8)
-                buffer[:-1] = linear_sum
-                buffer[-1] = 1
-                self._buffer = buffer
-                self.packed_centroid = pack_fingerprints(
-                    linear_sum.astype(np.uint8, copy=False)
-                )
-            else:
-                # Empty subcluster
-                if check_indices and len(mol_indices) != 0:
-                    raise ValueError(
-                        "Expected len(mol_indices) == 0 for empty subcluster,"
-                        f" but found {len(mol_indices)} != 0"
-                    )
-                self._buffer = np.zeros((n_features + 1,), dtype=np.uint8)
-                self.packed_centroid = np.empty(
-                    0, dtype=np.uint8
-                )  # Will be overwritten
+        self._buffer = buffer
         self.mol_indices = list(mol_indices)
+        if packed_centroid is not None:
+            self.packed_centroid = packed_centroid
+        else:
+            self.packed_centroid = centroid_from_sum(buffer[:-1], buffer[-1], pack=True)
         self.child: tp.Optional["_BFNode"] = None
+
+    @classmethod
+    def empty(cls, n_features: int) -> tpx.Self:
+        packed_centroid = np.empty(0, dtype=np.uint8)  # Will be overwritten
+        return cls(
+            np.zeros((n_features + 1,), dtype=np.uint8),
+            [],
+            packed_centroid,
+            check_indices=False,
+        )
+
+    @classmethod
+    def from_fingerprint(
+        cls, fp: NDArray[np.uint8], index: int, weight: int | None = None
+    ) -> tpx.Self:
+        if weight is not None:
+            buffer = np.empty((len(fp) + 1,), dtype=min_safe_uint(weight))
+            buffer[:-1] = fp
+            buffer[-1] = 1
+            # This inplace multiplication is actually safe, since we initialized
+            # buffer with min_safe_uint, so it can be done without issue
+            np.multiply(buffer, weight, out=buffer, casting="unsafe")
+        else:
+            buffer = np.empty((len(fp) + 1,), dtype=np.uint8)
+            buffer[:-1] = fp
+            buffer[-1] = 1
+        packed_centroid = pack_fingerprints(fp)
+        return cls(buffer, [index], packed_centroid, check_indices=False)
 
     @property
     def unpacked_centroid(self) -> NDArray[np.uint8]:
@@ -519,7 +585,17 @@ class _BFSubcluster:
         # np.add with explicit dtype is safe from overflows, e.g. :
         # np.add(np.uint8(255), np.uint8(255), dtype=np.uint16) = np.uint16(510)
         new_ls = np.add(old_ls, nom_ls, dtype=min_safe_uint(new_n))
-        if merge_accept_fn(threshold, new_ls, new_n, old_ls, nom_ls, old_n, nom_n):
+        if merge_accept_fn(
+            threshold,
+            new_ls,
+            new_n,
+            old_ls,
+            nom_ls,
+            old_n,
+            nom_n,
+            self.mol_indices,
+            nominee_cluster.mol_indices,
+        ):
             self.replace_n_samples_and_linear_sum(new_n, new_ls)
             self.mol_indices.extend(nominee_cluster.mol_indices)
             return True
@@ -532,6 +608,7 @@ class _CentroidsMolIds(tp.TypedDict):
 
 
 class _MedoidsMolIds(tp.TypedDict):
+    medoid_idxs: NDArray[np.int64]
     medoids: NDArray[np.uint8]
     mol_ids: list[list[int]]
 
@@ -619,7 +696,6 @@ class BitBirch:
             self._merge_accept_fn = _global_merge_accept
         else:
             merge_criterion = "diameter" if merge_criterion is None else merge_criterion
-            tolerance = 0.05 if tolerance is None else tolerance
             if isinstance(merge_criterion, MergeAcceptFunction):
                 if tolerance is not None:
                     raise ValueError(
@@ -627,7 +703,8 @@ class BitBirch:
                     )
                 self._merge_accept_fn = merge_criterion
             else:
-                self._merge_accept_fn = get_merge_accept_fn(merge_criterion, tolerance)
+                tolerance = 0.05 if tolerance is None else tolerance
+                self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
 
         # Tree state
         self._num_fitted_fps = 0
@@ -636,6 +713,7 @@ class BitBirch:
         # TODO: Type correctly
         self._global_clustering_centroid_labels: NDArray[np.int64] | None = None
         self._n_global_clusters = 0
+        self._has_discarded = False
 
         # For backwards compatibility, weak-register in global state This is used to
         # update the merge_accept function if the global set_merge() is called
@@ -648,7 +726,7 @@ class BitBirch:
 
     @merge_criterion.setter
     def merge_criterion(self, value: str) -> None:
-        self.set_merge(criterion=value)
+        self.set_merge(merge_criterion=value)
 
     @property
     def tolerance(self) -> float | None:
@@ -673,7 +751,7 @@ class BitBirch:
 
     def set_merge(
         self,
-        criterion: str | MergeAcceptFunction | None = None,
+        merge_criterion: str | MergeAcceptFunction | None = None,
         *,
         tolerance: float | None = None,
         threshold: float | None = None,
@@ -689,10 +767,10 @@ class BitBirch:
                 "the global set_merge() function has *not* been used"
             )
         _tolerance = 0.05 if tolerance is None else tolerance
-        if isinstance(criterion, MergeAcceptFunction):
-            self._merge_accept_fn = criterion
-        elif isinstance(criterion, str):
-            self._merge_accept_fn = get_merge_accept_fn(criterion, _tolerance)
+        if isinstance(merge_criterion, MergeAcceptFunction):
+            self._merge_accept_fn = merge_criterion
+        elif isinstance(merge_criterion, str):
+            self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, _tolerance)
         if hasattr(self._merge_accept_fn, "tolerance"):
             self._merge_accept_fn.tolerance = _tolerance
         elif tolerance is not None:
@@ -710,6 +788,7 @@ class BitBirch:
         input_is_packed: bool = True,
         n_features: int | None = None,
         max_fps: int | None = None,
+        weights: tp.Iterable[int] | None = None,
     ) -> tpx.Self:
         r"""Build a BF Tree for the input data.
 
@@ -762,18 +841,28 @@ class BitBirch:
         else:
             iterable = zip(reinsert_indices, arr_iterable)
 
+        it_weights: tp.Iterator[int | None]
+        if weights is None:
+            it_weights = itertools.repeat(None)
+        else:
+            it_weights = iter(weights)
+
         threshold = self.threshold
         branching_factor = self.branching_factor
         merge_accept_fn = self._merge_accept_fn
 
         arr_idx = 0
         for idx, fp in iterable:
-            subcluster = _BFSubcluster(
-                linear_sum=fp, mol_indices=[idx], n_features=n_features
-            )
-            split = self._root.insert_bf_subcluster(
-                subcluster, merge_accept_fn, threshold
-            )
+            subcluster = _BFSubcluster.from_fingerprint(fp, idx, next(it_weights))
+            try:
+                split = self._root.insert_bf_subcluster(
+                    subcluster, merge_accept_fn, threshold
+                )
+            except DiscardSubcluster:
+                self._has_discarded = True
+                self._num_fitted_fps += 1
+                arr_idx += 1
+                continue
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(self._root)
@@ -790,22 +879,22 @@ class BitBirch:
     def _fit_buffers(
         self,
         X: _Input | Path | str,
-        reinsert_index_seqs: (
-            tp.Iterable[tp.Sequence[int]] | tp.Literal["omit"]
-        ) = "omit",
+        reinsert_index_seqs: tp.Iterable[tp.Sequence[int]] | None,
+        check_indices: bool = True,
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
         Buffers are arrays of the form:
             - buffer[0:-1] = linear_sum
             - buffer[-1] = n_samples
-        And X is either an array or a list of such buffers
+        X is either an array or a list of such buffers
 
         If `reinsert_index_seqs` is passed, X corresponds only to the buffers to be
         reinserted into the tree, and `reinsert_index_seqs` are the sequences
         of indices associated with such buffers.
 
-        If `reinsert_index_seqs` is "omit", then no indices are collected in the tree.
+        If `reinsert_index_seqs` is None, then no indices are collected in the tree.
+        Num samples is mutually exclusive with reinsert_index_seqs.
 
         Parameters
         ----------
@@ -839,19 +928,22 @@ class BitBirch:
         branching_factor = self.branching_factor
         idx_provider: tp.Iterable[tp.Sequence[int]]
         arr_idx = 0
-        if reinsert_index_seqs == "omit":
-            idx_provider = (() for idx in range(self.num_fitted_fps))
-            check = False
+        if reinsert_index_seqs is None:
+            idx_provider = itertools.repeat(())
         else:
             idx_provider = reinsert_index_seqs
-            check = True
+
         for idxs, buf in zip(idx_provider, arr_iterable):
-            subcluster = _BFSubcluster(
-                buffer=buf, mol_indices=idxs, n_features=n_features, check_indices=check
-            )
-            split = self._root.insert_bf_subcluster(
-                subcluster, merge_accept_fn, threshold
-            )
+            subcluster = _BFSubcluster(buf, idxs, check_indices=check_indices)
+            try:
+                split = self._root.insert_bf_subcluster(
+                    subcluster, merge_accept_fn, threshold
+                )
+            except DiscardSubcluster:
+                self._has_discarded = True
+                self._num_fitted_fps += len(idxs)
+                arr_idx += 1
+                continue
 
             if split:
                 new_subcluster1, new_subcluster2 = _split_node(self._root)
@@ -925,33 +1017,55 @@ class BitBirch:
         global_clusters: bool = False,
         input_is_packed: bool = True,
         n_features: int | None = None,
+        iterative_unpacking: bool = False,
     ) -> _MedoidsMolIds:
-        """Get a dict with medoids and mol indices of the leaves"""
+        r"""Get a dict with medoid idxs, medoids and mol indices of the leaves
+
+        The medoid indices are indices into the cluster mol ids, not into the fps array
+        """
         cluster_members = self.get_cluster_mol_ids(
             sort=sort, global_clusters=global_clusters
         )
 
-        if input_is_packed:
+        if input_is_packed and not iterative_unpacking:
             fps = _unpack_fingerprints(fps, n_features=n_features)
-        cluster_medoids = self._unpacked_medoids_from_members(fps, cluster_members)
+            input_is_packed = False
+        cluster_medoid_idxs, cluster_medoids = self._unpacked_medoids_from_members(
+            fps, cluster_members, input_is_packed, n_features
+        )
         if pack:
             cluster_medoids = pack_fingerprints(cluster_medoids)
-        return {"medoids": cluster_medoids, "mol_ids": cluster_members}
+        return {
+            "medoid_idxs": cluster_medoid_idxs,
+            "medoids": cluster_medoids,
+            "mol_ids": cluster_members,
+        }
 
     @staticmethod
     def _unpacked_medoids_from_members(
-        unpacked_fps: NDArray[np.uint8], cluster_members: tp.Sequence[list[int]]
-    ) -> NDArray[np.uint8]:
-        cluster_medoids = np.zeros(
-            (len(cluster_members), unpacked_fps.shape[1]), dtype=np.uint8
-        )
+        fps: NDArray[np.uint8],
+        cluster_members: tp.Sequence[list[int]],
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+    ) -> tuple[NDArray[np.int64], NDArray[np.uint8]]:
+        if not input_is_packed:
+            feats_num = fps.shape[1]
+            n_features = None
+        elif n_features is None:
+            feats_num = fps.shape[1] * 8
+        else:
+            feats_num = n_features
+
+        cluster_medoids = np.zeros((len(cluster_members), feats_num), dtype=np.uint8)
+        cluster_medoid_idxs = np.zeros((len(cluster_members),), dtype=np.int64)
         for idx, members in enumerate(cluster_members):
-            cluster_medoids[idx, :] = jt_isim_medoid(
-                unpacked_fps[members],
-                input_is_packed=False,
+            cluster_medoid_idxs[idx], cluster_medoids[idx, :] = jt_isim_medoid(
+                fps[members],
+                input_is_packed=input_is_packed,
+                n_features=n_features,
                 pack=False,
-            )[1]
-        return cluster_medoids
+            )
+        return cluster_medoid_idxs, cluster_medoids
 
     def get_medoids(
         self,
@@ -1014,7 +1128,7 @@ class BitBirch:
                 f"Provided n_mols {n_mols} is different"
                 f" from the number of fitted fingerprints {self.num_fitted_fps}"
             )
-        if check_valid:
+        if check_valid or self._has_discarded:
             assignments = np.full(self.num_fitted_fps, 0, dtype=np.uint64)
         else:
             assignments = np.empty(self.num_fitted_fps, dtype=np.uint64)
@@ -1042,7 +1156,7 @@ class BitBirch:
                 assignments[mol_ids] = i
 
         # Check that there are no unassigned molecules
-        if check_valid and (assignments == 0).any():
+        if not self._has_discarded and check_valid and (assignments == 0).any():
             raise ValueError("There are unasigned molecules")
         return assignments
 
@@ -1312,7 +1426,7 @@ class BitBirch:
         parts = [
             f"threshold={self.threshold}",
             f"branching_factor={self.branching_factor}",
-            f"merge_criterion='{fn.name if fn.name in BUILTIN_MERGES else fn}'",
+            f"merge_criterion='{fn.name if fn.name in _BUILTIN_MERGES else fn}'",
         ]
         if self.tolerance is not None:
             parts.append(f"tolerance={self.tolerance}")
