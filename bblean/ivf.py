@@ -129,7 +129,7 @@ class IVFIndex:
                 )
             else:
                 labels = predictor.predict(fps)
-            mol_ids = [(labels == i).tolist() for i in range(n_clusters)]
+            mol_ids = [(labels == i).nonzero()[0].tolist() for i in range(n_clusters)]
         else:
             labels = predictor.predict(centrals)
             num_centrals = len(centrals)
@@ -138,9 +138,10 @@ class IVFIndex:
 
         if sort:
             mol_ids.sort(key=lambda x: len(x), reverse=True)
-        _, medoids = BitBirch._unpacked_medoids_from_members(fps, mol_ids)
-        fps = pack_fingerprints(fps)
-        return cls(pack_fingerprints(medoids), mol_ids, fps, smiles)
+        _, medoids = BitBirch._unpacked_medoids_from_members(
+            fps, mol_ids, input_is_packed=False
+        )
+        return cls(pack_fingerprints(medoids), mol_ids, pack_fingerprints(fps), smiles)
 
     def _find_candidate_idxs(
         self, query_fp_packed: NDArray[np.uint8], n_probe: int
