@@ -2045,6 +2045,14 @@ def _query_idx(
         int,
         Option("-p", "--probe"),
     ] = 1,
+    n_features: Annotated[
+        int,
+        Option("-n", "--n-features"),
+    ] = DEFAULTS.n_features,
+    fp_kind: Annotated[
+        str,
+        Option("-f", "--fp-kind"),
+    ] = DEFAULTS.fp_kind,
 ) -> None:
     from bblean._console import get_console
     from bblean.fingerprints import fps_from_smiles
@@ -2052,8 +2060,9 @@ def _query_idx(
 
     console = get_console()
     index = IVFIndex.from_dir(idx_path)
-    # TODO: This is a placeholder, must be modified!!
-    query_fp = fps_from_smiles([query], kind="rdkit", n_features=2048, pack=True)[0]
+    query_fp = fps_from_smiles([query], kind=fp_kind, n_features=n_features, pack=True)[
+        0
+    ]
     results_list = index.search(query_fp, n_probe=num_probe, threshold=threshold, k=k)
 
     for r in results_list:
