@@ -1,5 +1,6 @@
 r"""Analysis of clustering results"""
 
+import warnings
 from pathlib import Path
 from collections import defaultdict
 import dataclasses
@@ -164,7 +165,9 @@ class ClusterAnalysis:
 
 # Get the number of unique scaffolds and the scaffold isim
 def scaffold_analysis(
-    smiles: tp.Iterable[str], fp_kind: str = DEFAULTS.fp_kind
+    smiles: tp.Iterable[str],
+    fp_kind: str = DEFAULTS.fp_kind,
+    warn_nan: bool = True,
 ) -> ScaffoldAnalysis:
     r"""Perform a scaffold analysis of a sequence of smiles
 
@@ -175,7 +178,13 @@ def scaffold_analysis(
     scaffolds = [MurckoScaffold.MurckoScaffoldSmilesFromSmiles(smi) for smi in smiles]
     unique_scaffolds = set(scaffolds)
     scaffolds_fps = fps_from_smiles(unique_scaffolds, kind=fp_kind, pack=False)
-    scaffolds_isim = jt_isim(scaffolds_fps, input_is_packed=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "default" if warn_nan else "ignore",
+            category=RuntimeWarning,
+            message="Invalid n_objects.*",
+        )
+        scaffolds_isim = jt_isim(scaffolds_fps, input_is_packed=False)
     return ScaffoldAnalysis(len(unique_scaffolds), scaffolds_isim)
 
 
@@ -189,6 +198,7 @@ def cluster_analysis(
     scaffold_fp_kind: str = DEFAULTS.fp_kind,
     input_is_packed: bool = True,
     min_size: int = 0,
+    warn_nan: bool = True,
 ) -> ClusterAnalysis:
     r"""Perform a cluster analysis starting from clusters, smiles, and fingerprints"""
     if isinstance(smiles, str):
@@ -235,15 +245,25 @@ def cluster_analysis(
         info["labels"].append(i)
         info["sizes"].append(size)
         if smiles.size:
-            analysis = scaffold_analysis(smiles[c], fp_kind=scaffold_fp_kind)
+            analysis = scaffold_analysis(
+                smiles[c], fp_kind=scaffold_fp_kind, warn_nan=warn_nan
+            )
             info["unique_scaffolds_num"].append(analysis.unique_num)
             info["unique_scaffolds_isim"].append(analysis.isim)
         if fps_provider is not None:
             assert selected is not None
             _fps = fps_provider[sorted(c)]
-            info["isim"].append(
-                jt_isim(_fps, input_is_packed=input_is_packed, n_features=n_features)
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "default" if warn_nan else "ignore",
+                    category=RuntimeWarning,
+                    message="Invalid n_objects.*",
+                )
+                info["isim"].append(
+                    jt_isim(
+                        _fps, input_is_packed=input_is_packed, n_features=n_features
+                    )
+                )
             selected[start : start + size] = _fps
         start += size
     return ClusterAnalysis(
