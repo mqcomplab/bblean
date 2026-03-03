@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=3a853aca"></script>
+    <script src="../../_static/documentation_options.js?v=ba923f70"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -361,6 +361,7 @@
   <h1>Source code for bblean.analysis</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Analysis of clustering results&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
@@ -527,7 +528,9 @@
 <div class="viewcode-block" id="scaffold_analysis">
 <a class="viewcode-back" href="../../_api_autogen/bblean.analysis.html#bblean.analysis.scaffold_analysis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">scaffold_analysis</span><span class="p">(</span>
-    <span class="n">smiles</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">fp_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span>
+    <span class="n">smiles</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">fp_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
+    <span class="n">warn_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScaffoldAnalysis</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Perform a scaffold analysis of a sequence of smiles</span>
 
@@ -538,7 +541,13 @@
     <span class="n">scaffolds</span> <span class="o">=</span> <span class="p">[</span><span class="n">MurckoScaffold</span><span class="o">.</span><span class="n">MurckoScaffoldSmilesFromSmiles</span><span class="p">(</span><span class="n">smi</span><span class="p">)</span> <span class="k">for</span> <span class="n">smi</span> <span class="ow">in</span> <span class="n">smiles</span><span class="p">]</span>
     <span class="n">unique_scaffolds</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">scaffolds</span><span class="p">)</span>
     <span class="n">scaffolds_fps</span> <span class="o">=</span> <span class="n">fps_from_smiles</span><span class="p">(</span><span class="n">unique_scaffolds</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">fp_kind</span><span class="p">,</span> <span class="n">pack</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">scaffolds_isim</span> <span class="o">=</span> <span class="n">jt_isim</span><span class="p">(</span><span class="n">scaffolds_fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+            <span class="s2">&quot;default&quot;</span> <span class="k">if</span> <span class="n">warn_nan</span> <span class="k">else</span> <span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+            <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Invalid n_objects.*&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">scaffolds_isim</span> <span class="o">=</span> <span class="n">jt_isim</span><span class="p">(</span><span class="n">scaffolds_fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ScaffoldAnalysis</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_scaffolds</span><span class="p">),</span> <span class="n">scaffolds_isim</span><span class="p">)</span></div>
 
 
@@ -555,6 +564,7 @@
     <span class="n">scaffold_fp_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">min_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">warn_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClusterAnalysis</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Perform a cluster analysis starting from clusters, smiles, and fingerprints&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -601,15 +611,25 @@
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;sizes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">smiles</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
-            <span class="n">analysis</span> <span class="o">=</span> <span class="n">scaffold_analysis</span><span class="p">(</span><span class="n">smiles</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">fp_kind</span><span class="o">=</span><span class="n">scaffold_fp_kind</span><span class="p">)</span>
+            <span class="n">analysis</span> <span class="o">=</span> <span class="n">scaffold_analysis</span><span class="p">(</span>
+                <span class="n">smiles</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">fp_kind</span><span class="o">=</span><span class="n">scaffold_fp_kind</span><span class="p">,</span> <span class="n">warn_nan</span><span class="o">=</span><span class="n">warn_nan</span>
+            <span class="p">)</span>
             <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_num&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">unique_num</span><span class="p">)</span>
             <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_isim&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">isim</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fps_provider</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">selected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="n">_fps</span> <span class="o">=</span> <span class="n">fps_provider</span><span class="p">[</span><span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span>
-            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">jt_isim</span><span class="p">(</span><span class="n">_fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+                    <span class="s2">&quot;default&quot;</span> <span class="k">if</span> <span class="n">warn_nan</span> <span class="k">else</span> <span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+                    <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Invalid n_objects.*&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">jt_isim</span><span class="p">(</span>
+                        <span class="n">_fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
             <span class="n">selected</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span> <span class="o">=</span> <span class="n">_fps</span>
         <span class="n">start</span> <span class="o">+=</span> <span class="n">size</span>
     <span class="k">return</span> <span class="n">ClusterAnalysis</span><span class="p">(</span>
