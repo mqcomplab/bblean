@@ -282,18 +282,20 @@ def _table_summary(
         table = Table(title=(f"Top {top} clusters" if top is not None else "Clusters"))
         table.add_column("Size", justify="center")
         table.add_column("% fps", justify="center")
-        table.add_column("iSIM", justify="center")
+        if ca.has_isims:
+            table.add_column("iSIM", justify="center")
         if smiles_path is not None:
             table.add_column("Size/Scaff.", justify="center")
             table.add_column("Num. Scaff.", justify="center")
             table.add_column("Scaff. iSIM", justify="center")
-        sizes = ca.sizes
-        isims = ca.isims
         total_fps = ca.total_fps
         for i in range(ca.clusters_num):
-            size = sizes[i]
+            size = ca.sizes[i]
             percent = size / total_fps * 100
-            table.add_row(f"{size:,}", f"{percent:.2f}", f"{isims[i]:.3f}")
+            parts = [f"{size:,}", f"{percent:.2f}"]
+            if ca.has_isims:
+                parts.append(f"{ca.isims[i]:.3f}")
+            table.add_row(*parts)
         console.print(table)
         console.print()
         console.print(f"Total num. fps: {total_fps:,}")

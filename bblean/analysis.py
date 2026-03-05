@@ -144,6 +144,10 @@ class ClusterAnalysis:
         return self._df["isim"]
 
     @property
+    def has_isims(self) -> bool:
+        return "isim" in self._df
+
+    @property
     def labels(self) -> pd.Series:
         return self._df["labels"]
 
