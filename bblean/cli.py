@@ -97,6 +97,10 @@ def _compare(
         bool,
         Option("--use-first-clustering-indices/--no-use-first-clustering-indices"),
     ] = False,
+    json: Annotated[
+        bool,
+        Option("-j/-J", "--json/--no-json"),
+    ] = False,
     verbose: Annotated[
         bool,
         Option("-v/-V", "--verbose/--no-verbose"),
@@ -141,6 +145,14 @@ def _compare(
 
     true_labels = true_labels[idxs]
     pred_labels = pred_labels[idxs]
+    if json:
+        output = {}
+        if ami:
+            output["ami"] = adjusted_mutual_info_score(true_labels, pred_labels)
+        if ari:
+            output["ari"] = adjusted_rand_score(true_labels, pred_labels)
+        console.print(output, highlight=False)
+        sys.exit(0)
 
     timer = Timer()
     timer.init_timing("total")
