@@ -157,7 +157,9 @@ class _InitialRound:
         max_fps: int | None = None,
         merge_criterion: str = DEFAULTS.merge_criterion,
         input_is_packed: bool = True,
+        merge_attempts: int = 1,
     ) -> None:
+        self.k = merge_attempts
         self.n_features = n_features
         self.refinement_before_midsection = refinement_before_midsection
         if refinement_before_midsection not in ["full", "split", "none"]:
@@ -203,11 +205,15 @@ class _InitialRound:
                 tree.reset()
                 tree.set_merge(
                     merge_criterion=self.refine_merge_criterion,
-                    tolerance=self.tolerance,
+                    tolerance=(
+                        self.tolerance
+                        if "tolerance" in self.refine_merge_criterion
+                        else None
+                    ),
                     threshold=self.threshold + self.refine_threshold_change,
                 )
                 for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
-                    tree._fit_buffers(bufs, reinsert_index_seqs=mol_idxs)
+                    tree._fit_buffers(bufs, reinsert_index_seqs=mol_idxs, k=self.k)
                     del mol_idxs
                     del bufs
 
@@ -228,7 +234,9 @@ class _TreeMergingRound:
         split_largest_cluster: bool,
         merge_criterion: str,
         all_fp_paths: tp.Sequence[Path] = (),
+        merge_attempts: int = 1,
     ) -> None:
+        self.k = merge_attempts
         self.all_fp_paths = list(all_fp_paths)
         self.branching_factor = branching_factor
         self.threshold = threshold
@@ -244,13 +252,13 @@ class _TreeMergingRound:
             branching_factor=self.branching_factor,
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
-            tolerance=self.tolerance,
+            tolerance=self.tolerance if "tolerance" in self.merge_criterion else None,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs)
+            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs, k=self.k)
             del mol_idxs
 
         # Either do a refinement step, or fetch and save the bufs and idxs for the next
@@ -275,6 +283,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         out_dir: Path | str,
         save_tree: bool,
         save_centroids: bool,
+        merge_attempts: int = 1,
     ) -> None:
         super().__init__(
             branching_factor,
@@ -285,6 +294,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             False,
             merge_criterion,
             (),
+            merge_attempts,
         )
         self.save_tree = save_tree
         self.save_centroids = save_centroids
@@ -295,13 +305,13 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             branching_factor=self.branching_factor,
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
-            tolerance=self.tolerance,
+            tolerance=self.tolerance if "tolerance" in self.merge_criterion else None,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs)
+            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs, k=self.k)
             del mol_idxs
 
         # Save clusters and exit
@@ -361,6 +371,7 @@ def run_multiround_bitbirch(
     mp_context: tp.Any = None,
     save_tree: bool = False,
     save_centroids: bool = True,
+    merge_attempts: int = 1,
     # Debug
     max_fps: int | None = None,
     verbose: bool = False,
@@ -393,6 +404,7 @@ def run_multiround_bitbirch(
         branching_factor=branching_factor,
         tolerance=tolerance,
         out_dir=out_dir,
+        merge_attempts=merge_attempts,
     )
     timer = Timer()
     timer.init_timing("total")

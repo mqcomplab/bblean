@@ -1599,6 +1599,10 @@ def _multiround(
         bool,
         Option("--cleanup/--no-cleanup", hidden=True),
     ] = True,
+    merge_attempts: Annotated[
+        int,
+        Option("-m", "--merge-attempts"),
+    ] = 1,
 ) -> None:
     r"""Run multi-round BitBIRCH clustering, optionally parallelize over `*.npy` files"""  # noqa:E501
     from bblean._console import get_console
@@ -1670,6 +1674,7 @@ def _multiround(
         refinement_before_midsection=refinement_before_midsection,
         num_midsection_rounds=num_midsection_rounds,
         split_largest_after_each_midsection_round=split_largest_after_midsection,
+        merge_attempts=merge_attempts,
         # Debug
         max_fps=max_fps,
         verbose=verbose,

@@ -373,6 +373,7 @@ class _BFNode:
         subcluster: "_BFSubcluster",
         merge_accept_fn: MergeAcceptFunction,
         threshold: float,
+        k: int = 1,
     ) -> bool:
         """Insert a new subcluster into the node."""
         if not self._subclusters:
@@ -383,10 +384,32 @@ class _BFNode:
         sim_matrix = _jt_sim_arr_vec_packed(
             self.packed_centroids, subcluster.packed_centroid
         )
+        if k > 1:
+            order = np.argsort(sim_matrix)[::-1]
+            closest_node = self._subclusters[order[0]].child
+
         closest_idx = np.argmax(sim_matrix)
         closest_subcluster = self._subclusters[closest_idx]
         closest_node = closest_subcluster.child
         if closest_node is None:
+            if k > 1:
+                for idx in range(min(k, len(order))):
+                    close_idx = order[idx]
+                    close_subcluster = self._subclusters[close_idx]
+                    merge_was_successful = close_subcluster.merge_subcluster(
+                        subcluster, threshold, merge_accept_fn
+                    )
+                    if merge_was_successful:
+                        # Merge success, update the centroid
+                        self._packed_centroids_buf[close_idx] = (
+                            close_subcluster.packed_centroid
+                        )
+                        return False
+                # Could not merge due to criteria
+                # Append subcluster, and check if splitting *this node* is needed
+                self.append_subcluster(subcluster)
+                return len(self._subclusters) > self.branching_factor
+
             # The subcluster doesn't have a child node (this is a leaf node)
             # attempt direct merge
             merge_was_successful = closest_subcluster.merge_subcluster(
@@ -403,7 +426,7 @@ class _BFNode:
 
         # Hard case: the closest subcluster has a child (is 'tracking'), use recursion
         child_must_be_split = closest_node.insert_bf_subcluster(
-            subcluster, merge_accept_fn, threshold
+            subcluster, merge_accept_fn, threshold, k
         )
         if child_must_be_split:
             # Split the child node and redistribute subclusters. Update
@@ -789,6 +812,7 @@ class BitBirch:
         n_features: int | None = None,
         max_fps: int | None = None,
         weights: tp.Iterable[int] | None = None,
+        k: int = 1,
     ) -> tpx.Self:
         r"""Build a BF Tree for the input data.
 
@@ -856,7 +880,7 @@ class BitBirch:
             subcluster = _BFSubcluster.from_fingerprint(fp, idx, next(it_weights))
             try:
                 split = self._root.insert_bf_subcluster(
-                    subcluster, merge_accept_fn, threshold
+                    subcluster, merge_accept_fn, threshold, k
                 )
             except DiscardSubcluster:
                 self._has_discarded = True
@@ -881,6 +905,7 @@ class BitBirch:
         X: _Input | Path | str,
         reinsert_index_seqs: tp.Iterable[tp.Sequence[int]] | None,
         check_indices: bool = True,
+        k: int = 1,
     ) -> tpx.Self:
         r"""Build a BF Tree starting from buffers
 
@@ -937,7 +962,7 @@ class BitBirch:
             subcluster = _BFSubcluster(buf, idxs, check_indices=check_indices)
             try:
                 split = self._root.insert_bf_subcluster(
-                    subcluster, merge_accept_fn, threshold
+                    subcluster, merge_accept_fn, threshold, k
                 )
             except DiscardSubcluster:
                 self._has_discarded = True
