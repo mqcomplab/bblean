@@ -1601,7 +1601,7 @@ def _multiround(
     ] = True,
     merge_attempts: Annotated[
         int,
-        Option("-m", "--merge-attempts"),
+        Option("--merge-attempts"),
     ] = 1,
 ) -> None:
     r"""Run multi-round BitBIRCH clustering, optionally parallelize over `*.npy` files"""  # noqa:E501
