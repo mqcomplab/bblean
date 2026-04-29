@@ -203,7 +203,12 @@ class _InitialRound:
                 tree.reset()
                 tree.set_merge(
                     merge_criterion=self.refine_merge_criterion,
-                    tolerance=self.tolerance,
+                    # TODO: hack
+                    tolerance=(
+                        self.tolerance
+                        if "tolerance" in self.refine_merge_criterion
+                        else None
+                    ),
                     threshold=self.threshold + self.refine_threshold_change,
                 )
                 for bufs, mol_idxs in zip(fps_bfs.values(), mols_bfs.values()):
@@ -244,7 +249,8 @@ class _TreeMergingRound:
             branching_factor=self.branching_factor,
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
-            tolerance=self.tolerance,
+            # TODO: hack
+            tolerance=self.tolerance if "tolerance" in self.merge_criterion else None,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
         for buf_path, idx_path in batch_path_pairs:
@@ -295,7 +301,8 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             branching_factor=self.branching_factor,
             threshold=self.threshold,
             merge_criterion=self.merge_criterion,
-            tolerance=self.tolerance,
+            # TODO: hack
+            tolerance=self.tolerance if "tolerance" in self.merge_criterion else None,
         )
         # Rebuild a tree, inserting all BitFeatures from the corresponding batch
         for buf_path, idx_path in batch_path_pairs:
