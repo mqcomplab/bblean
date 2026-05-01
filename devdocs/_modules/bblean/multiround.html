@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=7cd67c27"></script>
+    <script src="../../_static/documentation_options.js?v=1916f65d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -571,7 +571,12 @@
                 <span class="n">tree</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
                 <span class="n">tree</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span>
                     <span class="n">merge_criterion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">refine_merge_criterion</span><span class="p">,</span>
-                    <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">,</span>
+                    <span class="c1"># TODO: hack</span>
+                    <span class="n">tolerance</span><span class="o">=</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span>
+                        <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_merge_criterion</span>
+                        <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
                     <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_threshold_change</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">bufs</span><span class="p">,</span> <span class="n">mol_idxs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fps_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">mols_bfs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
@@ -612,7 +617,8 @@
             <span class="n">branching_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span><span class="p">,</span>
             <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span>
             <span class="n">merge_criterion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span><span class="p">,</span>
-            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">,</span>
+            <span class="c1"># TODO: hack</span>
+            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Rebuild a tree, inserting all BitFeatures from the corresponding batch</span>
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
@@ -663,7 +669,8 @@
             <span class="n">branching_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span><span class="p">,</span>
             <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span>
             <span class="n">merge_criterion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span><span class="p">,</span>
-            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">,</span>
+            <span class="c1"># TODO: hack</span>
+            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Rebuild a tree, inserting all BitFeatures from the corresponding batch</span>
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
