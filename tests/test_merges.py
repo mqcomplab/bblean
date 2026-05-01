@@ -137,7 +137,7 @@ def test_never_merge() -> None:
             old_n = len(old)
             nom_n = len(nom)
             new_n = old_n + nom_n
-            fn = NeverMerge(tolerance=tol)
+            fn = NeverMerge()
             val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, [], [])
             assert not val
 
