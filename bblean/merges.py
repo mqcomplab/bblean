@@ -431,7 +431,7 @@ class _FastNeverMerge(_FastMerge, NeverMerge):
     pass
 
 
-class _FastMaxSizeDebugMerge(_FastMerge, MergeAcceptFunction):
+class _FastCappedMerge(_FastMerge, MergeAcceptFunction):
     r""":meta private:"""
 
     def __init__(self, max_size: int) -> None:
@@ -465,6 +465,99 @@ class _FastMaxSizeDebugMerge(_FastMerge, MergeAcceptFunction):
         return f"{self.__class__.__name__}({self._max_size})"
 
 
+class _FastCappedToleranceDiameterMerge(_FastToleranceDiameterMerge):
+    r""":meta private:"""
+
+    def __init__(self, max_size: int, tolerance: float = 0.05) -> None:
+        super().__init__(tolerance)
+        if max_size < 1:
+            raise ValueError("Max size must be greater or equal to 1")
+        self._max_size = max_size
+        # Total size starts with 1 since the first insertion doesn't go through a merge
+        self._total_size = 1
+
+    def check_merge(
+        self,
+        threshold: float,
+        new_sum: NDArray[np.integer],
+        new_n: int,
+        old_sum: NDArray[np.integer],
+        nominee_sum: NDArray[np.integer],
+        old_n: int,
+        nominee_n: int,
+        old_idxs: tp.Sequence[int] | None = None,
+        nominee_idxs: tp.Sequence[int] | None = None,
+    ) -> bool:
+        if self._total_size >= self._max_size:
+            return True
+        accept = super().check_merge(
+            threshold,
+            new_sum,
+            new_n,
+            old_sum,
+            nominee_sum,
+            old_n,
+            nominee_n,
+            old_idxs,
+            nominee_idxs,
+        )
+        if not accept:
+            self._total_size += 1
+        return accept
+
+    def reset(self) -> None:
+        self._total_size = 1
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tolerance}, {self._max_size})"
+
+
+class _FastCappedDiameterMerge(_FastDiameterMerge):
+    r""":meta private:"""
+
+    def __init__(self, max_size: int) -> None:
+        if max_size < 1:
+            raise ValueError("Max size must be greater or equal to 1")
+        self._max_size = max_size
+        # Total size starts with 1 since the first insertion doesn't go through a merge
+        self._total_size = 1
+
+    def check_merge(
+        self,
+        threshold: float,
+        new_sum: NDArray[np.integer],
+        new_n: int,
+        old_sum: NDArray[np.integer],
+        nominee_sum: NDArray[np.integer],
+        old_n: int,
+        nominee_n: int,
+        old_idxs: tp.Sequence[int] | None = None,
+        nominee_idxs: tp.Sequence[int] | None = None,
+    ) -> bool:
+        if self._total_size >= self._max_size:
+            return True
+        accept = super().check_merge(
+            threshold,
+            new_sum,
+            new_n,
+            old_sum,
+            nominee_sum,
+            old_n,
+            nominee_n,
+            old_idxs,
+            nominee_idxs,
+        )
+        if not accept:
+            self._total_size += 1
+        return accept
+
+    def reset(self) -> None:
+        self._total_size = 1
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._max_size})"
+
+
 def _get_merge_accept_fn(
     merge_criterion: str, tolerance: float = 0.05
 ) -> MergeAcceptFunction:
@@ -482,9 +575,15 @@ def _get_merge_accept_fn(
         return _FastFlexibleToleranceDiameterMerge(tolerance)
     elif merge_criterion == "tolerance-radius":
         return _FastToleranceRadiusMerge(tolerance)
-    elif re.match("max-size-debug-[0-9]+", merge_criterion):
+    elif re.match("diameter-capped-[0-9]+", merge_criterion):
         size = int(merge_criterion.split("-")[-1])
-        return _FastMaxSizeDebugMerge(size)
+        return _FastCappedDiameterMerge(size)
+    elif re.match("tolerance-diameter-capped-[0-9]+", merge_criterion):
+        size = int(merge_criterion.split("-")[-1])
+        return _FastCappedToleranceDiameterMerge(size, tolerance)
+    elif re.match("capped-[0-9]+", merge_criterion):
+        size = int(merge_criterion.split("-")[-1])
+        return _FastCappedMerge(size)
     raise ValueError(
         f"Unknown merge criterion {merge_criterion} "
         "Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius"
