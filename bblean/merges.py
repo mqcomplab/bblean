@@ -324,11 +324,8 @@ class ToleranceRadiusMerge(ToleranceDiameterMerge):
         tol = max(self.tolerance * (np.exp(-self.decay * old_n) - self.offset), 0.0)
         return new_rc >= old_rc - tol
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.tolerance})"
 
-
-class NeverMerge(ToleranceDiameterMerge):
+class NeverMerge(MergeAcceptFunction):
     r""":meta private:"""
 
     def check_merge(
@@ -344,9 +341,6 @@ class NeverMerge(ToleranceDiameterMerge):
         nominee_idxs: tp.Sequence[int] | None = None,
     ) -> bool:
         return False
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}()"
 
 
 class ToleranceLegacyMerge(MergeAcceptFunction):
@@ -437,6 +431,40 @@ class _FastNeverMerge(_FastMerge, NeverMerge):
     pass
 
 
+class _FastMaxSizeDebugMerge(_FastMerge, MergeAcceptFunction):
+    r""":meta private:"""
+
+    def __init__(self, max_size: int) -> None:
+        if max_size < 1:
+            raise ValueError("Max size must be greater or equal to 1")
+        self._max_size = max_size
+        # Total size starts with 1 since the first insertion doesn't go through a merge
+        self._total_size = 1
+
+    def check_merge(
+        self,
+        threshold: float,
+        new_sum: NDArray[np.integer],
+        new_n: int,
+        old_sum: NDArray[np.integer],
+        nominee_sum: NDArray[np.integer],
+        old_n: int,
+        nominee_n: int,
+        old_idxs: tp.Sequence[int] | None = None,
+        nominee_idxs: tp.Sequence[int] | None = None,
+    ) -> bool:
+        if self._total_size >= self._max_size:
+            return True
+        self._total_size += 1
+        return False
+
+    def reset(self) -> None:
+        self._total_size = 1
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._max_size})"
+
+
 def _get_merge_accept_fn(
     merge_criterion: str, tolerance: float = 0.05
 ) -> MergeAcceptFunction:
@@ -444,6 +472,8 @@ def _get_merge_accept_fn(
         return _FastRadiusMerge()
     elif merge_criterion == "diameter":
         return _FastDiameterMerge()
+    elif merge_criterion == "never":
+        return _FastNeverMerge()
     elif merge_criterion == "tolerance-legacy":
         return _FastToleranceLegacyMerge(tolerance)
     elif merge_criterion == "tolerance-diameter":
@@ -452,8 +482,9 @@ def _get_merge_accept_fn(
         return _FastFlexibleToleranceDiameterMerge(tolerance)
     elif merge_criterion == "tolerance-radius":
         return _FastToleranceRadiusMerge(tolerance)
-    elif merge_criterion == "never":
-        return _FastNeverMerge(tolerance)
+    elif re.match("max-size-debug-[0-9]+", merge_criterion):
+        size = int(merge_criterion.split("-")[-1])
+        return _FastMaxSizeDebugMerge(size)
     raise ValueError(
         f"Unknown merge criterion {merge_criterion} "
         "Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius"
