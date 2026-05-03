@@ -1476,6 +1476,14 @@ def _multiround(
             help="Merge criterion for mid rounds ('tolerance-diameter' recommended)",
         ),
     ] = DEFAULTS.refine_merge_criterion,
+    final_merge_criterion: Annotated[
+        str | None,
+        Option(
+            "--set-final-merge",
+            help="Merge criterion for final round (default recommended)",
+            rich_help_panel="Advanced",
+        ),
+    ] = None,
     tolerance: Annotated[
         float,
         Option(
@@ -1656,6 +1664,7 @@ def _multiround(
         out_dir=out_dir,
         initial_merge_criterion=initial_merge_criterion,
         midsection_merge_criterion=mid_merge_criterion,
+        final_merge_criterion=final_merge_criterion,
         num_initial_processes=num_initial_processes,
         num_midsection_processes=num_midsection_processes,
         branching_factor=branching_factor,
