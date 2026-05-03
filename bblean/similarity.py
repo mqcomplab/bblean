@@ -1,10 +1,13 @@
 """Optimized molecular similarity calculators"""
 
+import math
 import os
 import warnings
 
-from numpy.typing import NDArray
+from numpy.typing import NDArray, DTypeLike
 import numpy as np
+
+from bblean._config import DEFAULTS
 
 # NOTE: The most expensive calculation is *jt_sim_packed*, followed by _popcount_2d,
 # centroid_from_sum, packing and unpacking
@@ -362,3 +365,66 @@ def jt_stratified_sampling(
     strata = np.array_split(sorted_indices, n_samples)
     # Get first index of each strata
     return np.array([s[0] for s in strata])
+
+
+def make_fingerprints_with_isim(
+    num: int,
+    n_features: int = DEFAULTS.n_features,
+    pack: bool = True,
+    seed: int | None = None,
+    dtype: DTypeLike = np.uint8,
+    isim_target: float = 0.3,
+    isim_tolerance: float = 1e-2,
+) -> NDArray[np.uint8]:
+    r"""Make random fingerprints targeting a specific isim value"""
+    # NOTE: For now the result may have non-unique fps, and it is *slow*
+
+    import scipy.stats  # Hide this import since scipy is heavy
+
+    if n_features < 1 or n_features % 8 != 0:
+        raise ValueError("n_features must be a multiple of 8, and greater than 0")
+    # Generate "synthetic" fingerprints with a popcount distribution
+    # similar to one in a real smiles database
+    # Fps are guaranteed to *not* be all zeros or all ones
+    if pack:
+        if np.dtype(dtype) != np.dtype(np.uint8):
+            raise ValueError("Only np.uint8 dtype is supported for packed input")
+    loc = 750
+    scale = 400
+    bounds = (0, n_features)
+    rng = np.random.default_rng(seed)
+    safe_bounds = (bounds[0] + 1, bounds[1] - 1)
+    a = (safe_bounds[0] - loc) / scale
+    b = (safe_bounds[1] - loc) / scale
+    popcounts_fake_float = scipy.stats.truncnorm.rvs(
+        a, b, loc=loc, scale=scale, size=num, random_state=rng
+    )
+    popcounts_fake = np.rint(popcounts_fake_float).astype(np.int64)
+    zerocounts_fake = n_features - popcounts_fake
+    repeats_fake = np.empty((num * 2), dtype=np.int64)
+    repeats_fake[0::2] = popcounts_fake
+    repeats_fake[1::2] = zerocounts_fake
+    initial = np.tile(np.array([1, 0], np.uint8), num)
+    expanded = np.repeat(initial, repeats=repeats_fake)
+    fps_fake = rng.permuted(expanded.reshape(num, n_features), axis=-1)
+    isim = jt_isim(fps_fake, input_is_packed=False)
+    diff = isim - isim_target
+    while math.fabs(diff) > isim_tolerance:
+        compls = jt_compl_isim(fps_fake, input_is_packed=False)
+        sort_idxs = np.argsort(compls)
+        ends = (0, -1) if bool(rng.choice(2, p=(0.8, 0.2))) else (1, -2)
+        if diff > 0:
+            fst = sort_idxs[ends[0]]
+            snd = sort_idxs[ends[1]]
+        else:
+            fst = sort_idxs[ends[1]]
+            snd = sort_idxs[ends[0]]
+        fps_fake[fst] = fps_fake[snd]
+        flip_idxs = rng.choice(n_features, size=5, replace=False)
+        fps_fake[fst][flip_idxs] = ~fps_fake[fst][flip_idxs].astype(np.bool)
+        isim = jt_isim(fps_fake, input_is_packed=False)
+        diff = isim - isim_target
+
+    if pack:
+        return np.packbits(fps_fake, axis=1)
+    return fps_fake.astype(dtype, copy=False)
