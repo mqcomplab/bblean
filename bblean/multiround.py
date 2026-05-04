@@ -466,7 +466,12 @@ def run_multiround_bitbirch(
                     processes=num_ps, maxtasksperchild=max_tasks_per_process
                 ) as pool:
                     pool.map(merging_fn, batches)
-
+        # Remove intermediate files
+        if cleanup:
+            for f in out_dir.glob(f"round-{round_idx - 1}-*.npy"):
+                f.unlink()
+            for f in out_dir.glob(f"round-{round_idx - 1}-*.pkl"):
+                f.unlink()
         timer.end_timing(f"round-{round_idx}", console)
         console.print_peak_mem(out_dir)
 
@@ -490,9 +495,9 @@ def run_multiround_bitbirch(
     console.print_peak_mem(out_dir)
     # Remove intermediate files
     if cleanup:
-        for f in out_dir.glob("round-*.npy"):
+        for f in out_dir.glob(f"round-{round_idx - 1}-*.npy"):
             f.unlink()
-        for f in out_dir.glob("round-*.pkl"):
+        for f in out_dir.glob(f"round-{round_idx - 1}*.pkl"):
             f.unlink()
     console.print()
     timer.end_timing("total", console, indent=False)
