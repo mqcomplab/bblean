@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=1916f65d"></script>
+    <script src="../../_static/documentation_options.js?v=64daa5a7"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -836,7 +836,12 @@
                     <span class="n">processes</span><span class="o">=</span><span class="n">num_ps</span><span class="p">,</span> <span class="n">maxtasksperchild</span><span class="o">=</span><span class="n">max_tasks_per_process</span>
                 <span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
                     <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">merging_fn</span><span class="p">,</span> <span class="n">batches</span><span class="p">)</span>
-
+        <span class="c1"># Remove intermediate files</span>
+        <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.npy&quot;</span><span class="p">):</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.pkl&quot;</span><span class="p">):</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
         <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
         <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
 
@@ -860,9 +865,9 @@
     <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
     <span class="c1"># Remove intermediate files</span>
     <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;round-*.npy&quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.npy&quot;</span><span class="p">):</span>
             <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;round-*.pkl&quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">*.pkl&quot;</span><span class="p">):</span>
             <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
     <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
