@@ -103,7 +103,6 @@ class Batcher:
         # _sort_within_batch may not have been used here, before, does this change
         # things?
         # Effectively it gives different results
-        # print([f[0].name for f in file_pairs])
         return ("0", self._sort_within_batch(file_pairs))
 
     def prepare_batches_from_prev_round_files_using_schedule(
