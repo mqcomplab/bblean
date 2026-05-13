@@ -93,3 +93,6 @@ examples/*.png
 examples/*.csv
 !examples/biogen_logS.csv
 *.pdf
+
+bb_run_outputs/
+bb_multiround_outputs/

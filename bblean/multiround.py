@@ -86,57 +86,88 @@ def _numpy_streaming_save(
             np.ascontiguousarray(arr).tofile(f)
 
 
-# Glob and sort by uint bits and label, if a console is passed then the number of output
-# files is printed
-def _get_prev_round_buf_and_mol_idxs_files(
-    path: Path, round_idx: int, console: Console | None = None
-) -> list[tuple[Path, Path]]:
-    path = Path(path)
-    # TODO: Important: What should be the logic for batching? currently there doesn't
-    # seem to be much logic for grouping the files
-    buf_files = sorted(path.glob(f"round-{round_idx - 1}-bufs*.npy"))
-    idx_files = sorted(path.glob(f"round-{round_idx - 1}-idxs*.pkl"))
-    if console is not None:
-        console.print(f"    - Collected {len(buf_files)} buffer-index file pairs")
-    return list(zip(buf_files, idx_files))
+# If a console is passed to the methods then the number of output files is printed
+class Batcher:
+    def __init__(self, out_dir: Path, console: Console | None = None) -> None:
+        self._out_dir = out_dir
+        self._console = console
 
+    def collect_all_prev_round_files(
+        self, round_idx: int
+    ) -> tuple[str, tuple[tuple[Path, Path], ...]]:
+        file_pairs = self._get_sorted_buf_and_mol_idxs_files(round_idx - 1)
+        if self._console is not None:
+            self._console.print(
+                f"    - Collected {len(file_pairs)} buffer-index file pairs"
+            )
+        # _sort_within_batch may not have been used here, before, does this change
+        # things?
+        # Effectively it gives different results
+        # print([f[0].name for f in file_pairs])
+        return ("0", self._sort_within_batch(file_pairs))
 
-def _sort_batch(b: tp.Sequence[tuple[Path, Path]]) -> tuple[tuple[Path, Path], ...]:
-    return tuple(
-        sorted(
-            b,
-            key=lambda b: int(b[0].name.split("uint")[-1].split(".")[0]),
-            reverse=True,
+    def prepare_batches_from_prev_round_files_using_schedule(
+        self, round_idx: int, divisions: int
+    ) -> list[tuple[str, tuple[tuple[Path, Path], ...]]]:
+        # TODO:  In this case we split the clusters evenly
+        raise NotImplementedError
+
+    def prepare_batches_from_prev_round_files(
+        self, round_idx: int, bin_size: int
+    ) -> list[tuple[str, tuple[tuple[Path, Path], ...]]]:
+        # If a console is passed then the number of output files is printed
+        file_pairs = self._get_sorted_buf_and_mol_idxs_files(round_idx - 1)
+
+        if self._console is not None:
+            self._console.print(
+                f"    - Collected {len(file_pairs)} buffer-index file pairs"
+            )
+        # Collect file pairs into batches
+        z = len(str(math.ceil(len(file_pairs) / bin_size)))
+        batches = [
+            (str(i).zfill(z), self._sort_within_batch(b))
+            for i, b in enumerate(batched(file_pairs, bin_size))
+        ]
+        if self._console is not None:
+            self._console.print(f"    - Chunked files into {len(batches)} batches")
+        return batches
+
+    # Glob and sort by uint bits and label
+    def _get_sorted_buf_and_mol_idxs_files(
+        self, round_idx: int
+    ) -> list[tuple[Path, Path]]:
+        # TODO: Important: What should be the logic for batching? currently there
+        # doesn't seem to be much logic for grouping the files
+        buf_files = sorted(self._out_dir.glob(f"round-{round_idx}-bufs*.npy"))
+        idx_files = sorted(self._out_dir.glob(f"round-{round_idx}-idxs*.pkl"))
+        return list(zip(buf_files, idx_files))
+
+    @staticmethod
+    def _sort_within_batch(
+        b: tp.Sequence[tuple[Path, Path]]
+    ) -> tuple[tuple[Path, Path], ...]:
+        # Within each batch, sort the files by starting with the uint16 files, followed
+        # by uint8 files, this helps that (approximately) the largest clusters are
+        # fitted first which may improve final cluster quality
+        return tuple(
+            sorted(
+                b,
+                key=lambda b: int(b[0].name.split("uint")[-1].split(".")[0]),
+                reverse=True,
+            )
         )
-    )
-
-
-def _chunk_file_pairs_in_batches(
-    file_pairs: tp.Sequence[tuple[Path, Path]],
-    bin_size: int,
-    console: Console | None = None,
-) -> list[tuple[str, tuple[tuple[Path, Path], ...]]]:
-    z = len(str(math.ceil(len(file_pairs) / bin_size)))
-    # Within each batch, sort the files by starting with the uint16 files, followed by
-    # uint8 files, this helps that (approximately) the largest clusters are fitted first
-    # which may improve final cluster quality
-    batches = [
-        (str(i).zfill(z), _sort_batch(b))
-        for i, b in enumerate(batched(file_pairs, bin_size))
-    ]
-    if console is not None:
-        console.print(f"    - Chunked files into {len(batches)} batches")
-    return batches
 
 
 def _save_bufs_and_mol_idxs(
     out_dir: Path,
-    fps_bfs: dict[str, tp.Any],
-    mols_bfs: dict[str, tp.Any],
+    fps_bfs: dict[str, list[NDArray[np.integer]]],
+    mols_bfs: dict[str, list[list[int]]],
     label: str,
     round_idx: int,
+    max_clusters_per_chunk: int | None = None,
 ) -> None:
     for dtype, buf_list in fps_bfs.items():
+        # Here, if max_clusters_per_chunk is not none, I have to iterate over the chunks
         suffix = f".label-{label}-{dtype.replace('8', '08')}"
         _numpy_streaming_save(buf_list, out_dir / f"round-{round_idx}-bufs{suffix}.npy")
         with open(out_dir / f"round-{round_idx}-idxs{suffix}.pkl", mode="wb") as f:
@@ -157,6 +188,7 @@ class _InitialRound:
         max_fps: int | None = None,
         merge_criterion: str = DEFAULTS.merge_criterion,
         input_is_packed: bool = True,
+        max_clusters_per_chunk: int | None = None,
     ) -> None:
         self.n_features = n_features
         self.refinement_before_midsection = refinement_before_midsection
@@ -171,6 +203,7 @@ class _InitialRound:
         self.refine_merge_criterion = refine_merge_criterion
         self.input_is_packed = input_is_packed
         self.refine_threshold_change = refine_threshold_change
+        self._max_clusters_per_chunk = max_clusters_per_chunk
 
     def __call__(self, file_info: tuple[str, Path, int, int]) -> None:
         file_label, fp_file, start_idx, end_idx = file_info
@@ -219,7 +252,9 @@ class _InitialRound:
                 tree.delete_internal_nodes()
                 fps_bfs, mols_bfs = tree._bf_to_np()
 
-        _save_bufs_and_mol_idxs(self.out_dir, fps_bfs, mols_bfs, file_label, 1)
+        _save_bufs_and_mol_idxs(
+            self.out_dir, fps_bfs, mols_bfs, file_label, 1, self._max_clusters_per_chunk
+        )
 
 
 class _TreeMergingRound:
@@ -233,6 +268,7 @@ class _TreeMergingRound:
         split_largest_cluster: bool,
         merge_criterion: str,
         all_fp_paths: tp.Sequence[Path] = (),
+        max_clusters_per_chunk: int | None = None,
     ) -> None:
         self.all_fp_paths = list(all_fp_paths)
         self.branching_factor = branching_factor
@@ -242,6 +278,7 @@ class _TreeMergingRound:
         self.out_dir = Path(out_dir)
         self.split_largest_cluster = split_largest_cluster
         self.merge_criterion = merge_criterion
+        self._max_clusters_per_chunk = max_clusters_per_chunk
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_label, batch_path_pairs = batch_info
@@ -267,7 +304,12 @@ class _TreeMergingRound:
         else:
             fps_bfs, mols_bfs = tree._bf_to_np()
         _save_bufs_and_mol_idxs(
-            self.out_dir, fps_bfs, mols_bfs, batch_label, self.round_idx
+            self.out_dir,
+            fps_bfs,
+            mols_bfs,
+            batch_label,
+            self.round_idx,
+            self._max_clusters_per_chunk,
         )
 
 
@@ -296,7 +338,8 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         self.save_centroids = save_centroids
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
-        batch_path_pairs = batch_info[1]
+        # Label is unused
+        _, batch_path_pairs = batch_info
         tree = BitBirch(
             branching_factor=self.branching_factor,
             threshold=self.threshold,
@@ -358,8 +401,8 @@ def run_multiround_bitbirch(
     midsection_threshold_change: float = DEFAULTS.refine_threshold_change,
     tolerance: float = DEFAULTS.tolerance,
     # Advanced
-    num_midsection_rounds: int = 1,
-    bin_size: int = 10,
+    num_midsection_rounds: int | None = None,
+    bin_size: int | None = None,
     max_tasks_per_process: int = 1,
     refinement_before_midsection: str = "full",
     split_largest_after_each_midsection_round: bool = False,
@@ -368,6 +411,7 @@ def run_multiround_bitbirch(
     mp_context: tp.Any = None,
     save_tree: bool = False,
     save_centroids: bool = True,
+    cluster_divisions_schedule: tp.Sequence[int] = (),
     # Debug
     max_fps: int | None = None,
     verbose: bool = False,
@@ -380,6 +424,29 @@ def run_multiround_bitbirch(
         The functionality provided by this function is stable, but its API
         (the arguments it takes and its return values) may change in the future.
     """
+    if cluster_divisions_schedule:
+        if bin_size is not None:
+            raise ValueError(
+                "bin_size can't be specified"
+                " together with a cluster divisions schedule"
+            )
+        if num_midsection_rounds is not None:
+            raise ValueError(
+                "num_midsection_rounds can't be specified"
+                " together with a cluster divisions schedule"
+            )
+        num_midsection_rounds = len(cluster_divisions_schedule)
+        if any(d <= 1 for d in cluster_divisions_schedule):
+            raise ValueError("All divisions in the division schedule must be >= 1")
+    else:
+        if num_midsection_rounds is None:
+            raise ValueError(
+                "num_midsection_rounds must be specified if not passing a schedule"
+            )
+        if bin_size is None:
+            raise ValueError("bin_size must be specified if not passing a schedule")
+    assert num_midsection_rounds is not None  # mypy
+
     if final_merge_criterion is None:
         final_merge_criterion = midsection_merge_criterion
     if mp_context is None:
@@ -439,14 +506,19 @@ def run_multiround_bitbirch(
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(out_dir)
 
+    batcher = Batcher(out_dir)
+
     # Mid-section "Tree-Merging" rounds of clustering
     for _ in range(num_midsection_rounds):
         round_idx += 1
         timer.init_timing(f"round-{round_idx}")
         console.print(f"(Midsection) Round {round_idx}: Re-clustering in chunks")
-
-        file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
-        batches = _chunk_file_pairs_in_batches(file_pairs, bin_size, console)
+        if bin_size is not None:
+            batches = batcher.prepare_batches_from_prev_round_files(round_idx, bin_size)
+        else:
+            batches = batcher.prepare_batches_from_prev_round_files_using_schedule(
+                round_idx, cluster_divisions_schedule[round_idx - 1]
+            )
         merging_fn = _TreeMergingRound(
             round_idx=round_idx,
             all_fp_paths=input_files,
@@ -479,8 +551,8 @@ def run_multiround_bitbirch(
     round_idx += 1
     timer.init_timing(f"round-{round_idx}")
     console.print(f"(Final) Round {round_idx}: Final round of clustering")
-    file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
+    final_batch = batcher.collect_all_prev_round_files(round_idx)
     final_fn = _FinalTreeMergingRound(
         save_tree=save_tree,
         save_centroids=save_centroids,
@@ -489,7 +561,7 @@ def run_multiround_bitbirch(
         **common_kwargs,
     )
     with console.status("[italic]BitBirching...[/italic]", spinner="dots"):
-        final_fn(("", file_pairs))
+        final_fn(final_batch)
 
     timer.end_timing(f"round-{round_idx}", console)
     console.print_peak_mem(out_dir)
