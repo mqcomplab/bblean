@@ -426,7 +426,7 @@
 <span class="c1"># You should have received a copy of the GNU General Public License along with this</span>
 <span class="c1"># program. This copy can be located at the root of this repository, under</span>
 <span class="c1"># ./LICENSES/GPL-3.0-only.txt.  If not, see &lt;http://www.gnu.org/licenses/gpl-3.0.html&gt;.</span>
-<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Multi-round BitBirch workflow for clustering huge datasets in parallel&quot;&quot;&quot;</span>
+<span class="sa">r</span><span class="sd">"""Multi-round BitBirch workflow for clustering huge datasets in parallel"""</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
@@ -446,7 +446,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.bitbirch</span><span class="w"> </span><span class="kn">import</span> <span class="n">BitBirch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">_get_fps_file_num</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;run_multiround_bitbirch&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"run_multiround_bitbirch"</span><span class="p">]</span>
 
 
 <span class="c1"># Save a list of numpy arrays into a single array in a streaming fashion, avoiding</span>
@@ -456,11 +456,11 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">first_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">fp_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">header</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">header_data_from_array_1_0</span><span class="p">(</span><span class="n">first_arr</span><span class="p">)</span>
-    <span class="n">header</span><span class="p">[</span><span class="s2">&quot;shape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fp_list</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">first_arr</span><span class="p">))</span>
+    <span class="n">header</span><span class="p">[</span><span class="s2">"shape"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fp_list</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">first_arr</span><span class="p">))</span>
     <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">suffix</span><span class="p">:</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">&quot;.npy&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">".npy"</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">write_array_header_1_0</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">fp_list</span><span class="p">:</span>
             <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">tofile</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
@@ -472,12 +472,12 @@
     <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">round_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">console</span><span class="p">:</span> <span class="n">Console</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]:</span>
     <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="c1"># TODO: Important: What should be the logic for batching? currently there doesn&#39;t</span>
+    <span class="c1"># TODO: Important: What should be the logic for batching? currently there doesn't</span>
     <span class="c1"># seem to be much logic for grouping the files</span>
-    <span class="n">buf_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-bufs*.npy&quot;</span><span class="p">))</span>
-    <span class="n">idx_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-idxs*.pkl&quot;</span><span class="p">))</span>
+    <span class="n">buf_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-bufs*.npy"</span><span class="p">))</span>
+    <span class="n">idx_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-idxs*.pkl"</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">console</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Collected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">buf_files</span><span class="p">)</span><span class="si">}</span><span class="s2"> buffer-index file pairs&quot;</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Collected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">buf_files</span><span class="p">)</span><span class="si">}</span><span class="s2"> buffer-index file pairs"</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">buf_files</span><span class="p">,</span> <span class="n">idx_files</span><span class="p">))</span>
 
 
@@ -485,7 +485,7 @@
     <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
         <span class="nb">sorted</span><span class="p">(</span>
             <span class="n">b</span><span class="p">,</span>
-            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;uint&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"uint"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span>
             <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
@@ -505,7 +505,7 @@
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batched</span><span class="p">(</span><span class="n">file_pairs</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">))</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">console</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Chunked files into </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span><span class="si">}</span><span class="s2"> batches&quot;</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Chunked files into </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span><span class="si">}</span><span class="s2"> batches"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">batches</span>
 
 
@@ -517,9 +517,9 @@
     <span class="n">round_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">buf_list</span> <span class="ow">in</span> <span class="n">fps_bfs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">suffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;.label-</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dtype</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;8&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;08&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">_numpy_streaming_save</span><span class="p">(</span><span class="n">buf_list</span><span class="p">,</span> <span class="n">out_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">-bufs</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">.npy&quot;</span><span class="p">)</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">-idxs</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">suffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">".label-</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">dtype</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'8'</span><span class="p">,</span><span class="w"> </span><span class="s1">'08'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">_numpy_streaming_save</span><span class="p">(</span><span class="n">buf_list</span><span class="p">,</span> <span class="n">out_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">-bufs</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">.npy"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">-idxs</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">.pkl"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">mols_bfs</span><span class="p">[</span><span class="n">dtype</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
 
 
@@ -540,8 +540,8 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">=</span> <span class="n">refinement_before_midsection</span>
-        <span class="k">if</span> <span class="n">refinement_before_midsection</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;full&quot;</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown refinement kind </span><span class="si">{</span><span class="n">refinement_before_midsection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">refinement_before_midsection</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"full"</span><span class="p">,</span> <span class="s2">"split"</span><span class="p">,</span> <span class="s2">"none"</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown refinement kind </span><span class="si">{</span><span class="n">refinement_before_midsection</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="o">=</span> <span class="n">tolerance</span>
@@ -574,11 +574,11 @@
         <span class="c1"># Extract the BitFeatures of the leaves, breaking the largest cluster(s) apart,</span>
         <span class="c1"># to prepare for refinement</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">==</span> <span class="s2">"none"</span><span class="p">:</span>
             <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">_bf_to_np</span><span class="p">()</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;full&quot;</span><span class="p">]:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"split"</span><span class="p">,</span> <span class="s2">"full"</span><span class="p">]:</span>
             <span class="n">fps_bfs</span><span class="p">,</span> <span class="n">mols_bfs</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">_bf_to_np_refine</span><span class="p">(</span><span class="n">fp_file</span><span class="p">,</span> <span class="n">initial_mol</span><span class="o">=</span><span class="n">start_idx</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">==</span> <span class="s2">&quot;full&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">refinement_before_midsection</span> <span class="o">==</span> <span class="s2">"full"</span><span class="p">:</span>
                 <span class="c1"># Finish the first refinement step internally in this round</span>
                 <span class="n">tree</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
                 <span class="n">tree</span><span class="o">.</span><span class="n">set_merge</span><span class="p">(</span>
@@ -586,7 +586,7 @@
                     <span class="c1"># TODO: hack</span>
                     <span class="n">tolerance</span><span class="o">=</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span>
-                        <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_merge_criterion</span>
+                        <span class="k">if</span> <span class="s2">"tolerance"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_merge_criterion</span>
                         <span class="k">else</span> <span class="kc">None</span>
                     <span class="p">),</span>
                     <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">refine_threshold_change</span><span class="p">,</span>
@@ -630,11 +630,11 @@
             <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span>
             <span class="n">merge_criterion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span><span class="p">,</span>
             <span class="c1"># TODO: hack</span>
-            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="k">if</span> <span class="s2">"tolerance"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Rebuild a tree, inserting all BitFeatures from the corresponding batch</span>
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
             <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
@@ -682,11 +682,11 @@
             <span class="n">threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span>
             <span class="n">merge_criterion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span><span class="p">,</span>
             <span class="c1"># TODO: hack</span>
-            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="k">if</span> <span class="s2">&quot;tolerance&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="k">if</span> <span class="s2">"tolerance"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Rebuild a tree, inserting all BitFeatures from the corresponding batch</span>
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
             <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
@@ -694,16 +694,16 @@
         <span class="c1"># Save clusters and exit</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_tree</span><span class="p">:</span>
             <span class="c1"># TODO: Find alternative solution</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;bitbirch.pkl&quot;</span><span class="p">)</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">"bitbirch.pkl"</span><span class="p">)</span>
         <span class="n">tree</span><span class="o">.</span><span class="n">delete_internal_nodes</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_centroids</span><span class="p">:</span>
             <span class="n">output</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">get_centroids_mol_ids</span><span class="p">()</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;clusters.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;mol_ids&quot;</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;cluster-centroids-packed.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;centroids&quot;</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">"clusters.pkl"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">"mol_ids"</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">"cluster-centroids-packed.pkl"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">"centroids"</span><span class="p">],</span> <span class="n">f</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;clusters.pkl&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="s2">"clusters.pkl"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">get_cluster_mol_ids</span><span class="p">(),</span> <span class="n">f</span><span class="p">)</span>
 
 
@@ -722,7 +722,7 @@
     <span class="k">return</span> <span class="n">files_info</span>
 
 
-<span class="c1"># NOTE: &#39;full_refinement_before_midsection&#39; indicates if the refinement of the batches</span>
+<span class="c1"># NOTE: 'full_refinement_before_midsection' indicates if the refinement of the batches</span>
 <span class="c1"># is fully done after the tree-merging rounds, or if the data is only split before the</span>
 <span class="c1"># tree-merging rounds</span>
 <div class="viewcode-block" id="run_multiround_bitbirch">
@@ -743,7 +743,7 @@
     <span class="n">num_midsection_rounds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">bin_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
     <span class="n">max_tasks_per_process</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">refinement_before_midsection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;full&quot;</span><span class="p">,</span>
+    <span class="n">refinement_before_midsection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"full"</span><span class="p">,</span>
     <span class="n">split_largest_after_each_midsection_round</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">midsection_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">refine_merge_criterion</span><span class="p">,</span>
     <span class="n">final_merge_criterion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -755,17 +755,17 @@
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">cleanup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Timer</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Perform (possibly parallel) multi-round BitBirch clustering</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Perform (possibly parallel) multi-round BitBirch clustering</span>
 
 <span class="sd">    .. warning::</span>
 
 <span class="sd">        The functionality provided by this function is stable, but its API</span>
 <span class="sd">        (the arguments it takes and its return values) may change in the future.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">final_merge_criterion</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">final_merge_criterion</span> <span class="o">=</span> <span class="n">midsection_merge_criterion</span>
     <span class="k">if</span> <span class="n">mp_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">mp_context</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;forkserver&quot;</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">mp_context</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">get_context</span><span class="p">(</span><span class="s2">"forkserver"</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">"linux"</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
     <span class="c1"># Returns timing and for the different rounds</span>
     <span class="c1"># TODO: Also return peak-rss</span>
     <span class="n">console</span> <span class="o">=</span> <span class="n">get_console</span><span class="p">(</span><span class="n">silent</span><span class="o">=</span><span class="ow">not</span> <span class="n">verbose</span><span class="p">)</span>
@@ -775,7 +775,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Sanity check</span>
         <span class="k">if</span> <span class="n">num_midsection_processes</span> <span class="o">&gt;</span> <span class="n">num_initial_processes</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Num. midsection procs. must be &lt;= num. initial processes&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Num. midsection procs. must be &lt;= num. initial processes"</span><span class="p">)</span>
 
     <span class="c1"># Common params to all rounds BitBIRCH</span>
     <span class="n">common_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
@@ -784,7 +784,7 @@
         <span class="n">out_dir</span><span class="o">=</span><span class="n">out_dir</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">()</span>
-    <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">)</span>
+    <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="s2">"total"</span><span class="p">)</span>
 
     <span class="c1"># Get starting and ending idxs for each file, and collect them into tuples</span>
     <span class="n">files_range_tuples</span> <span class="o">=</span> <span class="n">_get_files_range_tuples</span><span class="p">(</span><span class="n">input_files</span><span class="p">)</span>  <span class="c1"># correct</span>
@@ -792,8 +792,8 @@
 
     <span class="c1"># Initial round of clustering</span>
     <span class="n">round_idx</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(Initial) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Cluster initial batch of fingerprints&quot;</span><span class="p">)</span>
+    <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"(Initial) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Cluster initial batch of fingerprints"</span><span class="p">)</span>
 
     <span class="n">initial_fn</span> <span class="o">=</span> <span class="n">_InitialRound</span><span class="p">(</span>
         <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
@@ -807,8 +807,8 @@
         <span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">num_ps</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_initial_processes</span><span class="p">,</span> <span class="n">num_files</span><span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Processing </span><span class="si">{</span><span class="n">num_files</span><span class="si">}</span><span class="s2"> inputs with </span><span class="si">{</span><span class="n">num_ps</span><span class="si">}</span><span class="s2"> processes&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">&quot;[italic]BitBirching...[/italic]&quot;</span><span class="p">,</span> <span class="n">spinner</span><span class="o">=</span><span class="s2">&quot;dots&quot;</span><span class="p">):</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Processing </span><span class="si">{</span><span class="n">num_files</span><span class="si">}</span><span class="s2"> inputs with </span><span class="si">{</span><span class="n">num_ps</span><span class="si">}</span><span class="s2"> processes"</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">"[italic]BitBirching...[/italic]"</span><span class="p">,</span> <span class="n">spinner</span><span class="o">=</span><span class="s2">"dots"</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">num_ps</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">files_range_tuples</span><span class="p">:</span>
                 <span class="n">initial_fn</span><span class="p">(</span><span class="n">tup</span><span class="p">)</span>
@@ -818,14 +818,14 @@
             <span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
                 <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">initial_fn</span><span class="p">,</span> <span class="n">files_range_tuples</span><span class="p">)</span>
 
-    <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
+    <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
 
-    <span class="c1"># Mid-section &quot;Tree-Merging&quot; rounds of clustering</span>
+    <span class="c1"># Mid-section "Tree-Merging" rounds of clustering</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_midsection_rounds</span><span class="p">):</span>
         <span class="n">round_idx</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(Midsection) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Re-clustering in chunks&quot;</span><span class="p">)</span>
+        <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"(Midsection) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Re-clustering in chunks"</span><span class="p">)</span>
 
         <span class="n">file_pairs</span> <span class="o">=</span> <span class="n">_get_prev_round_buf_and_mol_idxs_files</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">round_idx</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
         <span class="n">batches</span> <span class="o">=</span> <span class="n">_chunk_file_pairs_in_batches</span><span class="p">(</span><span class="n">file_pairs</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
@@ -838,8 +838,8 @@
             <span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">num_ps</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_midsection_processes</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">))</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Processing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span><span class="si">}</span><span class="s2"> inputs with </span><span class="si">{</span><span class="n">num_ps</span><span class="si">}</span><span class="s2"> processes&quot;</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">&quot;[italic]BitBirching...[/italic]&quot;</span><span class="p">,</span> <span class="n">spinner</span><span class="o">=</span><span class="s2">&quot;dots&quot;</span><span class="p">):</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Processing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span><span class="si">}</span><span class="s2"> inputs with </span><span class="si">{</span><span class="n">num_ps</span><span class="si">}</span><span class="s2"> processes"</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">"[italic]BitBirching...[/italic]"</span><span class="p">,</span> <span class="n">spinner</span><span class="o">=</span><span class="s2">"dots"</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">num_ps</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">batch_info</span> <span class="ow">in</span> <span class="n">batches</span><span class="p">:</span>
                     <span class="n">merging_fn</span><span class="p">(</span><span class="n">batch_info</span><span class="p">)</span>
@@ -850,17 +850,17 @@
                     <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">merging_fn</span><span class="p">,</span> <span class="n">batches</span><span class="p">)</span>
         <span class="c1"># Remove intermediate files</span>
         <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.npy&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.npy"</span><span class="p">):</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.pkl&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.pkl"</span><span class="p">):</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
-        <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
+        <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
         <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
 
-    <span class="c1"># Final &quot;Tree-Merging&quot; round of clustering</span>
+    <span class="c1"># Final "Tree-Merging" round of clustering</span>
     <span class="n">round_idx</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(Final) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Final round of clustering&quot;</span><span class="p">)</span>
+    <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"(Final) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Final round of clustering"</span><span class="p">)</span>
     <span class="n">file_pairs</span> <span class="o">=</span> <span class="n">_get_prev_round_buf_and_mol_idxs_files</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">round_idx</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
 
     <span class="n">final_fn</span> <span class="o">=</span> <span class="n">_FinalTreeMergingRound</span><span class="p">(</span>
@@ -870,19 +870,19 @@
         <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span> <span class="o">+</span> <span class="n">midsection_threshold_change</span><span class="p">,</span>
         <span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">&quot;[italic]BitBirching...[/italic]&quot;</span><span class="p">,</span> <span class="n">spinner</span><span class="o">=</span><span class="s2">&quot;dots&quot;</span><span class="p">):</span>
-        <span class="n">final_fn</span><span class="p">((</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">file_pairs</span><span class="p">))</span>
+    <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">"[italic]BitBirching...[/italic]"</span><span class="p">,</span> <span class="n">spinner</span><span class="o">=</span><span class="s2">"dots"</span><span class="p">):</span>
+        <span class="n">final_fn</span><span class="p">((</span><span class="s2">""</span><span class="p">,</span> <span class="n">file_pairs</span><span class="p">))</span>
 
-    <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
+    <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">console</span><span class="p">)</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print_peak_mem</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
     <span class="c1"># Remove intermediate files</span>
     <span class="k">if</span> <span class="n">cleanup</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.npy&quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-*.npy"</span><span class="p">):</span>
             <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">*.pkl&quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">out_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">*.pkl"</span><span class="p">):</span>
             <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
-    <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">console</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">timer</span><span class="o">.</span><span class="n">end_timing</span><span class="p">(</span><span class="s2">"total"</span><span class="p">,</span> <span class="n">console</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">timer</span></div>
 
 </pre></div>

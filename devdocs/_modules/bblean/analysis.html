@@ -378,7 +378,7 @@
                 <article class="bd-article">
                   
   <h1>Source code for bblean.analysis</h1><div class="highlight"><pre>
-<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Analysis of clustering results&quot;&quot;&quot;</span>
+<span></span><span class="sa">r</span><span class="sd">"""Analysis of clustering results"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
@@ -402,23 +402,23 @@
 <span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;scaffold_analysis&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;cluster_analysis&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ScaffoldAnalysis&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ClusterAnalysis&quot;</span><span class="p">,</span>
+    <span class="s2">"scaffold_analysis"</span><span class="p">,</span>
+    <span class="s2">"cluster_analysis"</span><span class="p">,</span>
+    <span class="s2">"ScaffoldAnalysis"</span><span class="p">,</span>
+    <span class="s2">"ClusterAnalysis"</span><span class="p">,</span>
 <span class="p">]</span>
 
 
 <span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ScaffoldAnalysis</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
 
     <span class="n">unique_num</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">isim</span><span class="p">:</span> <span class="nb">float</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ClusterAnalysis</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -450,7 +450,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_top_cluster_fps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]]:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Fingerprints not present&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Fingerprints not present"</span><span class="p">)</span>
         <span class="n">fps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_packed_fps</span> <span class="k">if</span> <span class="n">packed</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_unpacked_fps</span>
         <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
@@ -461,36 +461,36 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_clusters_mean_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">"mean"</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_clusters_median_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;50%&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">"50%"</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_clusters_q1</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;25%&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">"25%"</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_clusters_q3</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;75%&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">"75%"</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_clusters_min_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">"min"</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_clusters_max_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">"max"</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_clusters_num</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">[</span><span class="s2">"count"</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">top_unpacked_fps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Fingerprints not present&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Fingerprints not present"</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fps_are_packed</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">unpack_fingerprints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fps</span>
@@ -498,14 +498,14 @@
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">top_packed_fps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Fingerprints not present&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Fingerprints not present"</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fps_are_packed</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fps</span>
         <span class="k">return</span> <span class="n">pack_fingerprints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fps</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">has_scaffolds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;unique_scaffolds_num&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="k">return</span> <span class="s2">"unique_scaffolds_num"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">has_fps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -521,27 +521,27 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">isims</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">"isim"</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">has_isims</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;isim&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span>
+        <span class="k">return</span> <span class="s2">"isim"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">sizes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">&quot;sizes&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">"sizes"</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">unique_scaffolds_num</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_num&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">"unique_scaffolds_num"</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">unique_scaffolds_isim</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_isim&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">[</span><span class="s2">"unique_scaffolds_isim"</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">dump_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -555,10 +555,10 @@
     <span class="n">fp_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">warn_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScaffoldAnalysis</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Perform a scaffold analysis of a sequence of smiles</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Perform a scaffold analysis of a sequence of smiles</span>
 
 <span class="sd">    Note that the order of the input smiles is not relevant</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">smiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">smiles</span><span class="p">]</span>
     <span class="n">scaffolds</span> <span class="o">=</span> <span class="p">[</span><span class="n">MurckoScaffold</span><span class="o">.</span><span class="n">MurckoScaffoldSmilesFromSmiles</span><span class="p">(</span><span class="n">smi</span><span class="p">)</span> <span class="k">for</span> <span class="n">smi</span> <span class="ow">in</span> <span class="n">smiles</span><span class="p">]</span>
@@ -566,9 +566,9 @@
     <span class="n">scaffolds_fps</span> <span class="o">=</span> <span class="n">fps_from_smiles</span><span class="p">(</span><span class="n">unique_scaffolds</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">fp_kind</span><span class="p">,</span> <span class="n">pack</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
-            <span class="s2">&quot;default&quot;</span> <span class="k">if</span> <span class="n">warn_nan</span> <span class="k">else</span> <span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+            <span class="s2">"default"</span> <span class="k">if</span> <span class="n">warn_nan</span> <span class="k">else</span> <span class="s2">"ignore"</span><span class="p">,</span>
             <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span>
-            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Invalid n_objects.*&quot;</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">"Invalid n_objects.*"</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">scaffolds_isim</span> <span class="o">=</span> <span class="n">jt_isim</span><span class="p">(</span><span class="n">scaffolds_fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ScaffoldAnalysis</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_scaffolds</span><span class="p">),</span> <span class="n">scaffolds_isim</span><span class="p">)</span></div>
@@ -589,7 +589,7 @@
     <span class="n">min_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">warn_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClusterAnalysis</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Perform a cluster analysis starting from clusters, smiles, and fingerprints&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Perform a cluster analysis starting from clusters, smiles, and fingerprints"""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">smiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">smiles</span><span class="p">]</span>
     <span class="n">smiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">smiles</span><span class="p">)</span>
@@ -614,7 +614,7 @@
     <span class="k">if</span> <span class="n">fps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">fps_provider</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
-        <span class="n">fps_provider</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">fps_provider</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
     <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="n">fps_provider</span> <span class="o">=</span> <span class="n">_FingerprintFileSequence</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -631,24 +631,24 @@
         <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
         <span class="c1"># If a file sequence is passed, the cluster indices must be sorted.</span>
         <span class="c1"># the cluster analysis is idx-order-independent, so this is fine</span>
-        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;sizes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">"sizes"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">smiles</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
             <span class="n">analysis</span> <span class="o">=</span> <span class="n">scaffold_analysis</span><span class="p">(</span>
                 <span class="n">smiles</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">fp_kind</span><span class="o">=</span><span class="n">scaffold_fp_kind</span><span class="p">,</span> <span class="n">warn_nan</span><span class="o">=</span><span class="n">warn_nan</span>
             <span class="p">)</span>
-            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_num&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">unique_num</span><span class="p">)</span>
-            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;unique_scaffolds_isim&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">isim</span><span class="p">)</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">"unique_scaffolds_num"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">unique_num</span><span class="p">)</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">"unique_scaffolds_isim"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">isim</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fps_provider</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">selected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="n">_fps</span> <span class="o">=</span> <span class="n">fps_provider</span><span class="p">[</span><span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span>
             <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
-                    <span class="s2">&quot;default&quot;</span> <span class="k">if</span> <span class="n">warn_nan</span> <span class="k">else</span> <span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+                    <span class="s2">"default"</span> <span class="k">if</span> <span class="n">warn_nan</span> <span class="k">else</span> <span class="s2">"ignore"</span><span class="p">,</span>
                     <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span>
-                    <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Invalid n_objects.*&quot;</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="s2">"Invalid n_objects.*"</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;isim&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">info</span><span class="p">[</span><span class="s2">"isim"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="n">jt_isim</span><span class="p">(</span>
                         <span class="n">_fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="o">=</span><span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span>
                     <span class="p">)</span>

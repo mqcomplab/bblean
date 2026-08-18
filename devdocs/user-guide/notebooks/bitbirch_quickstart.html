@@ -444,11 +444,11 @@ import bblean.analysis as analysis
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[49]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>smiles = bblean.load_smiles(&quot;./chembl-33-natural-products-subset.smi&quot;)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>smiles = bblean.load_smiles("./chembl-33-natural-products-subset.smi")
 
-# By default the fps created are of the &quot;ecfp4&quot; kind. Here we use &quot;rdkit&quot;
-fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind=&quot;rdkit&quot;)
-print(f&quot;Shape: {fps.shape}, DType: {fps.dtype}&quot;)
+# By default the fps created are of the "ecfp4" kind. Here we use "rdkit"
+fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind="rdkit")
+print(f"Shape: {fps.shape}, DType: {fps.dtype}")
 </pre></div>
 </div>
 </div>
@@ -465,10 +465,10 @@ print(f&quot;Shape: {fps.shape}, DType: {fps.dtype}&quot;)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fps_unpacked = bblean.unpack_fingerprints(fps)
-print(f&quot;Shape unpacked: {fps_unpacked.shape}, DType unpacked: {fps_unpacked.dtype}&quot;)
+print(f"Shape unpacked: {fps_unpacked.shape}, DType unpacked: {fps_unpacked.dtype}")
 
 fps = bblean.pack_fingerprints(fps_unpacked)
-print(f&quot;Shape re-packed: {fps.shape}, DType re-packed: {fps.dtype}&quot;)
+print(f"Shape re-packed: {fps.shape}, DType re-packed: {fps.dtype}")
 </pre></div>
 </div>
 </div>
@@ -496,8 +496,8 @@ print(f&quot;Shape re-packed: {fps.shape}, DType re-packed: {fps.dtype}&quot;)
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Initialize the BitBirch tree. In general, diameter is the best merge criterion for
 # initial clustering. For more info consult the *refinement* paper.
-# 0.5-0.65 is a good threshold range for &quot;rdkit&quot; fingerprints, for ecfp4 use 0.3-0.4 instead
-bb_tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion=&quot;diameter&quot;)
+# 0.5-0.65 is a good threshold range for "rdkit" fingerprints, for ecfp4 use 0.3-0.4 instead
+bb_tree = bblean.BitBirch(branching_factor=50, threshold=0.65, merge_criterion="diameter")
 
 # Cluster the packed fingerprints (By default all bblean functions take packed
 # fingerprints)
@@ -524,10 +524,10 @@ clusters = bb_tree.get_cluster_mol_ids()
 ca = analysis.cluster_analysis(clusters, fps, smiles)
 
 # Afterwards we can use the utility functions on the bblean.plotting module
-plotting.summary_plot(ca, title=&quot;Diameter&quot;)
+plotting.summary_plot(ca, title="Diameter")
 
 # Optionally we can save the cluster analysis metrics as a csv file
-ca.dump_metrics(&quot;./diameter-metrics.csv&quot;)
+ca.dump_metrics("./diameter-metrics.csv")
 plt.show()
 </pre></div>
 </div>
@@ -545,13 +545,13 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Total clusters
-print(&quot;Number of clusters: &quot;, ca.all_clusters_num)
+print("Number of clusters: ", ca.all_clusters_num)
 
 # Clusters with more than 10 molecules
-print(&quot;Number of clusters with more than 10 molecules: &quot;, ca.all_clusters_num_with_size_above(10))
+print("Number of clusters with more than 10 molecules: ", ca.all_clusters_num_with_size_above(10))
 
 # Singletons (clusters with a single element)
-print(&quot;Number of singletons&quot;, ca.all_singletons_num)
+print("Number of singletons", ca.all_singletons_num)
 </pre></div>
 </div>
 </div>
@@ -586,7 +586,7 @@ print(&quot;Number of singletons&quot;, ca.all_singletons_num)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Modify the merge criteria for the tree, from now on bb_tree will use this new criteria
-bb_tree.set_merge(merge_criterion=&quot;tolerance-diameter&quot;, tolerance=0.0)
+bb_tree.set_merge(merge_criterion="tolerance-diameter", tolerance=0.0)
 
 # Refine the tree using the new merge criteria
 bb_tree.refine_inplace(fps)
@@ -609,10 +609,10 @@ BitBirch(threshold=0.65, branching_factor=50, merge_criterion=&#39;tolerance-dia
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusters_refined = bb_tree.get_cluster_mol_ids()
 ca_refined = analysis.cluster_analysis(clusters_refined, fps, smiles)
-plotting.summary_plot(ca_refined, title=&quot;Refined&quot;)
+plotting.summary_plot(ca_refined, title="Refined")
 
 # Again, we can save the cluster analysis metrics as a csv file
-ca.dump_metrics(&quot;./refined-metrics.csv&quot;)
+ca.dump_metrics("./refined-metrics.csv")
 plt.show()
 </pre></div>
 </div>
@@ -629,13 +629,13 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Total clusters
-print(&quot;Number of clusters: &quot;, ca_refined.all_clusters_num)
+print("Number of clusters: ", ca_refined.all_clusters_num)
 
 # Clusters with more than 10 molecules
-print(&quot;Number of clusters with more than 10 molecules: &quot;, ca_refined.all_clusters_num_with_size_above(10))
+print("Number of clusters with more than 10 molecules: ", ca_refined.all_clusters_num_with_size_above(10))
 
 # Singletons (clusters with a single element)
-print(&quot;Number of singletons&quot;, ca_refined.all_singletons_num)
+print("Number of singletons", ca_refined.all_singletons_num)
 </pre></div>
 </div>
 </div>
@@ -678,7 +678,7 @@ print(&quot;Number of singletons&quot;, ca_refined.all_singletons_num)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[59]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.tsne_plot(ca_refined, title=&quot;Refined&quot;)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.tsne_plot(ca_refined, title="Refined")
 plt.show()
 </pre></div>
 </div>
@@ -695,7 +695,7 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[60]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.dump_assignments(&quot;smiles-assignments.csv&quot;, smiles)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.dump_assignments("smiles-assignments.csv", smiles)
 </pre></div>
 </div>
 </div>

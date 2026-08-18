@@ -378,11 +378,11 @@
                 <article class="bd-article">
                   
   <h1>Source code for bblean.merges</h1><div class="highlight"><pre>
-<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Merging criteria for BitBIRCH clustering</span>
+<span></span><span class="sa">r</span><span class="sd">"""Merging criteria for BitBIRCH clustering</span>
 
 <span class="sd">The functionality in this module is advanced and not needed for normal usage of the</span>
 <span class="sd">library. Make sure you understand the features here before applying them.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tp</span>
@@ -393,39 +393,39 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">jt_isim_from_sum</span><span class="p">,</span> <span class="n">jt_isim_radius_compl_from_sum</span>
 
 <span class="n">_BUILTIN_MERGES</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;radius&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;diameter&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;flexible-tolerance-diameter&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;tolerance-diameter&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;tolerance-radius&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;tolerance&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;never&quot;</span><span class="p">,</span>
+    <span class="s2">"radius"</span><span class="p">,</span>
+    <span class="s2">"diameter"</span><span class="p">,</span>
+    <span class="s2">"flexible-tolerance-diameter"</span><span class="p">,</span>
+    <span class="s2">"tolerance-diameter"</span><span class="p">,</span>
+    <span class="s2">"tolerance-radius"</span><span class="p">,</span>
+    <span class="s2">"tolerance"</span><span class="p">,</span>
+    <span class="s2">"never"</span><span class="p">,</span>
 <span class="p">]</span>
 
 
 <div class="viewcode-block" id="DiscardSubcluster">
 <a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.DiscardSubcluster">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DiscardSubcluster</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;If raised in hooks, immediatly exit the merge discarding the incident subcluster</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""If raised in hooks, immediatly exit the merge discarding the incident subcluster</span>
 
 <span class="sd">    Discarded subclusters will not be stored in the final tree, and will only show</span>
 <span class="sd">    up if calling `bblean.BitBirch.get_assigments` (or the `labels_` attribute if</span>
 <span class="sd">    using `bblean.sklearn`) with a cluster label of 0.</span>
-<span class="sd">    &quot;&quot;&quot;</span></div>
+<span class="sd">    """</span></div>
 
 
 
 <div class="viewcode-block" id="RejectMerge">
 <a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.RejectMerge">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RejectMerge</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;If raised in hooks, immediatly exit the merge and reject it&quot;&quot;&quot;</span></div>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""If raised in hooks, immediatly exit the merge and reject it"""</span></div>
 
 
 
 <div class="viewcode-block" id="MergeAcceptFunction">
 <a class="viewcode-back" href="../../_api_autogen/bblean.merges.html#bblean.merges.MergeAcceptFunction">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MergeAcceptFunction</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base class for user defined merges</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Base class for user defined merges</span>
 
 <span class="sd">    If you want to implement a custom BitBirch merge you can subclass this and</span>
 <span class="sd">    pass an instance of this function to a `bblean.BitBirch` class upon creation</span>
@@ -434,7 +434,7 @@
 <span class="sd">    .. warning::</span>
 
 <span class="sd">        This is an advanced feature, make sure you fully understand what you are doing!</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="c1"># For the merge functions, although outputs of jt_isim_from_sum f64, directly using</span>
     <span class="c1"># f64 is *not* faster than starting with uint64</span>
@@ -477,7 +477,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Hook called before a merge is checked (meant to be overriden)</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Hook called before a merge is checked (meant to be overriden)</span>
 
 <span class="sd">        See `MergeAcceptFunction.check_merge` for an explanation of the different args</span>
 
@@ -488,7 +488,7 @@
 
 <span class="sd">        This function must return the threshold, unchanged. If the threshold is modified</span>
 <span class="sd">        by this function, the new threshold will be used for this specific merge check.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">threshold</span></div>
 
 
@@ -506,7 +506,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Check if a merge should be accepted.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Check if a merge should be accepted.</span>
 
 <span class="sd">        All user-defined merges should subclass this function.</span>
 
@@ -531,7 +531,7 @@
 
 <span class="sd">            Numpy arrays passed to this function may use uint types, watch out for</span>
 <span class="sd">            pitfalls of unsigned integer arithmetic.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
@@ -543,7 +543,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Hook called after a merge is checked (meant to be overriden)</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Hook called after a merge is checked (meant to be overriden)</span>
 
 <span class="sd">        accept: Whether the merge was accepted</span>
 <span class="sd">        old_idxs: Indices of the mols in cluster before the nominee cluster is merged</span>
@@ -553,19 +553,19 @@
 <span class="sd">        `bblean.BitBirch.fit`, ``nominee_idxs`` will be a list with a *single index*)</span>
 
 <span class="sd">        This function must not return a value</span>
-<span class="sd">        &quot;&quot;&quot;</span></div>
+<span class="sd">        """</span></div>
 
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;-&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="k">return</span> <span class="s2">"-"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
             <span class="n">s</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?=[A-Z])&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
-            <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="s2">&quot;Merge&quot;</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?=[A-Z])"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="s2">"Merge"</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">()&quot;</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">()"</span></div>
 
 
 
@@ -585,7 +585,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
         <span class="k">return</span> <span class="n">jt_isim_radius_compl_from_sum</span><span class="p">(</span><span class="n">new_sum</span><span class="p">,</span> <span class="n">new_n</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span></div>
 
 
@@ -606,7 +606,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
         <span class="k">return</span> <span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">new_sum</span><span class="p">,</span> <span class="n">new_n</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">threshold</span></div>
 
 
@@ -643,7 +643,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
         <span class="n">new_dc</span> <span class="o">=</span> <span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">new_sum</span><span class="p">,</span> <span class="n">new_n</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_dc</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
@@ -654,7 +654,7 @@
         <span class="k">return</span> <span class="n">new_dc</span> <span class="o">&gt;=</span> <span class="nb">min</span><span class="p">(</span><span class="n">old_dc</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span> <span class="o">-</span> <span class="n">tol</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)"</span></div>
 
 
 
@@ -691,7 +691,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
         <span class="n">new_dc</span> <span class="o">=</span> <span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">new_sum</span><span class="p">,</span> <span class="n">new_n</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_dc</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
@@ -706,7 +706,7 @@
         <span class="k">return</span> <span class="n">new_dc</span> <span class="o">&gt;=</span> <span class="n">old_dc</span> <span class="o">-</span> <span class="n">tol</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)"</span></div>
 
 
 
@@ -726,7 +726,7 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
         <span class="n">new_rc</span> <span class="o">=</span> <span class="n">jt_isim_radius_compl_from_sum</span><span class="p">(</span><span class="n">new_sum</span><span class="p">,</span> <span class="n">new_n</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_rc</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
@@ -737,12 +737,12 @@
         <span class="k">return</span> <span class="n">new_rc</span> <span class="o">&gt;=</span> <span class="n">old_rc</span> <span class="o">-</span> <span class="n">tol</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)"</span></div>
 
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">NeverMerge</span><span class="p">(</span><span class="n">ToleranceDiameterMerge</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">check_merge</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -759,11 +759,11 @@
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">()&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">()"</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ToleranceLegacyMerge</span><span class="p">(</span><span class="n">MergeAcceptFunction</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span> <span class="o">=</span> <span class="n">tolerance</span>
@@ -780,21 +780,21 @@
         <span class="n">old_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">nominee_idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="c1"># First two branches are equivalent to &#39;diameter&#39;</span>
+        <span class="c1"># First two branches are equivalent to 'diameter'</span>
         <span class="n">new_dc</span> <span class="o">=</span> <span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">new_sum</span><span class="p">,</span> <span class="n">new_n</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_dc</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="n">old_n</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">nominee_n</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
-        <span class="c1"># &#39;new_dc &gt;= threshold&#39; and &#39;new_n == old_n + 1&#39; are guaranteed here</span>
+        <span class="c1"># 'new_dc &gt;= threshold' and 'new_n == old_n + 1' are guaranteed here</span>
         <span class="n">old_dc</span> <span class="o">=</span> <span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">old_sum</span><span class="p">,</span> <span class="n">old_n</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">new_dc</span> <span class="o">*</span> <span class="n">new_n</span> <span class="o">-</span> <span class="n">old_dc</span> <span class="o">*</span> <span class="p">(</span><span class="n">old_n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&gt;=</span> <span class="n">old_dc</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">)"</span>
 
 
-<span class="c1"># Make these ones leaner with less calls so they don&#39;t take up any extra time at all in</span>
+<span class="c1"># Make these ones leaner with less calls so they don't take up any extra time at all in</span>
 <span class="c1"># the default case</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">_FastMerge</span><span class="p">(</span><span class="n">MergeAcceptFunction</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
@@ -815,10 +815,10 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;-&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="k">return</span> <span class="s2">"-"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
             <span class="n">s</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?=[A-Z])&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
-            <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Merge&quot;</span><span class="p">,</span> <span class="s2">&quot;Fast&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?=[A-Z])"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"Merge"</span><span class="p">,</span> <span class="s2">"Fast"</span><span class="p">]</span>
         <span class="p">)</span>
 
 
@@ -853,23 +853,23 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_merge_accept_fn</span><span class="p">(</span>
     <span class="n">merge_criterion</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MergeAcceptFunction</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">&quot;radius&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">"radius"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_FastRadiusMerge</span><span class="p">()</span>
-    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">&quot;diameter&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">"diameter"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_FastDiameterMerge</span><span class="p">()</span>
-    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">&quot;tolerance-legacy&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">"tolerance-legacy"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_FastToleranceLegacyMerge</span><span class="p">(</span><span class="n">tolerance</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">&quot;tolerance-diameter&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">"tolerance-diameter"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_FastToleranceDiameterMerge</span><span class="p">(</span><span class="n">tolerance</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">&quot;flexible-tolerance-diameter&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">"flexible-tolerance-diameter"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_FastFlexibleToleranceDiameterMerge</span><span class="p">(</span><span class="n">tolerance</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">&quot;tolerance-radius&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">"tolerance-radius"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_FastToleranceRadiusMerge</span><span class="p">(</span><span class="n">tolerance</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">&quot;never&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">merge_criterion</span> <span class="o">==</span> <span class="s2">"never"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_FastNeverMerge</span><span class="p">(</span><span class="n">tolerance</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Unknown merge criterion </span><span class="si">{</span><span class="n">merge_criterion</span><span class="si">}</span><span class="s2"> &quot;</span>
-        <span class="s2">&quot;Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius&quot;</span>
+        <span class="sa">f</span><span class="s2">"Unknown merge criterion </span><span class="si">{</span><span class="n">merge_criterion</span><span class="si">}</span><span class="s2"> "</span>
+        <span class="s2">"Valid criteria are: radius|diameter|tolerance-diameter|tolerance-radius"</span>
     <span class="p">)</span>
 </pre></div>
 

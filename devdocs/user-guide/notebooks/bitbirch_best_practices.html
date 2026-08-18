@@ -447,11 +447,11 @@ import matplotlib.pyplot as plt
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>smiles = bblean.load_smiles(&quot;./chembl-33-natural-products-subset.smi&quot;, max_num=10000)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>smiles = bblean.load_smiles("./chembl-33-natural-products-subset.smi", max_num=10000)
 
-# By default the fps created are of the &quot;ecfp4&quot; kind. Here we use &quot;rdkit&quot;
-fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind=&quot;ecfp4&quot;)
-print(f&quot;Shape: {fps.shape}, DType: {fps.dtype}&quot;)
+# By default the fps created are of the "ecfp4" kind. Here we use "rdkit"
+fps = bblean.fps_from_smiles(smiles, pack=True, n_features=2048, kind="ecfp4")
+print(f"Shape: {fps.shape}, DType: {fps.dtype}")
 </pre></div>
 </div>
 </div>
@@ -472,7 +472,7 @@ print(f&quot;Shape: {fps.shape}, DType: {fps.dtype}&quot;)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>average_sim = iSIM.jt_isim(fps)
-print(f&quot;Average similarity: {average_sim:.4f}&quot;)
+print(f"Average similarity: {average_sim:.4f}")
 </pre></div>
 </div>
 </div>
@@ -496,7 +496,7 @@ print(f&quot;Average similarity: {average_sim:.4f}&quot;)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>isim_sigma = iSIM.estimate_jt_std(fps)
-print(f&quot;Estimated similarity mean and std: {average_sim:.4f}, std: {std:.4f}&quot;)
+print(f"Estimated similarity mean and std: {average_sim:.4f}, std: {std:.4f}")
 </pre></div>
 </div>
 </div>
@@ -514,7 +514,7 @@ print(f&quot;Estimated similarity mean and std: {average_sim:.4f}, std: {std:.4f
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Initialize the BitBirch tree
 optimal_threshold = average_sim + 4 * std
-bb_tree = bblean.BitBirch(branching_factor=50, threshold=optimal_threshold, merge_criterion=&quot;diameter&quot;)
+bb_tree = bblean.BitBirch(branching_factor=50, threshold=optimal_threshold, merge_criterion="diameter")
 
 # Cluster the packed fingerprints (By default all bblean functions take packed
 # fingerprints)
@@ -537,7 +537,7 @@ BitBirch(threshold=0.3631015470344815, branching_factor=50, merge_criterion=&#39
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusters = bb_tree.get_cluster_mol_ids()
-print(&quot;Number of singletons&quot;, sum(1 for c in clusters if len(c) == 1))
+print("Number of singletons", sum(1 for c in clusters if len(c) == 1))
 </pre></div>
 </div>
 </div>
@@ -600,7 +600,7 @@ clusters = bb_tree.get_cluster_mol_ids()
 ca = analysis.cluster_analysis(clusters, fps, smiles)
 
 # Afterwards we can use the utility functions on the bblean.plotting module
-plotting.summary_plot(ca, title=&quot;Diameter&quot;)
+plotting.summary_plot(ca, title="Diameter")
 plt.show()
 </pre></div>
 </div>
@@ -617,11 +617,11 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Total clusters
-print(&quot;Number of clusters: &quot;, len(clusters))
+print("Number of clusters: ", len(clusters))
 
 # Clusters with more than 10 molecules
 large_clusters = [c for c in clusters if len(c) &gt; 10]
-print(&quot;Number of clusters with more than 10 molecules: &quot;, len(large_clusters))
+print("Number of clusters with more than 10 molecules: ", len(large_clusters))
 </pre></div>
 </div>
 </div>
@@ -653,7 +653,7 @@ print(&quot;Number of clusters with more than 10 molecules: &quot;, len(large_cl
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.tsne_plot(ca, title=&quot;Refined&quot;)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>plotting.tsne_plot(ca, title="Refined")
 plt.show()
 </pre></div>
 </div>
@@ -673,7 +673,7 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.dump_assignments(&quot;smiles-assignments.csv&quot;, smiles)
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>bb_tree.dump_assignments("smiles-assignments.csv", smiles)
 </pre></div>
 </div>
 </div>

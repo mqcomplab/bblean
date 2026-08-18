@@ -378,7 +378,7 @@
                 <article class="bd-article">
                   
   <h1>Source code for bblean.similarity</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Optimized molecular similarity calculators&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""Optimized molecular similarity calculators"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -391,27 +391,27 @@
 <span class="c1"># TODO: Packing and unpacking *should be done in C++ using a lookup table*</span>
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="c1"># JT sim between two (sets of) fingerprints, and average tanimoto (using iSIM)</span>
-    <span class="s2">&quot;jt_isim_from_sum&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_isim&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_sim_packed&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_most_dissimilar_packed&quot;</span><span class="p">,</span>
+    <span class="s2">"jt_isim_from_sum"</span><span class="p">,</span>
+    <span class="s2">"jt_isim"</span><span class="p">,</span>
+    <span class="s2">"jt_sim_packed"</span><span class="p">,</span>
+    <span class="s2">"jt_most_dissimilar_packed"</span><span class="p">,</span>
     <span class="c1"># Radius and diameter from sum</span>
-    <span class="s2">&quot;jt_isim_radius_from_sum&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_isim_radius_compl_from_sum&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_isim_diameter_from_sum&quot;</span><span class="p">,</span>
+    <span class="s2">"jt_isim_radius_from_sum"</span><span class="p">,</span>
+    <span class="s2">"jt_isim_radius_compl_from_sum"</span><span class="p">,</span>
+    <span class="s2">"jt_isim_diameter_from_sum"</span><span class="p">,</span>
     <span class="c1"># Radius and diameter from fps (packed and unpacked)</span>
-    <span class="s2">&quot;jt_isim_radius&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_isim_radius_compl&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_isim_diameter&quot;</span><span class="p">,</span>
+    <span class="s2">"jt_isim_radius"</span><span class="p">,</span>
+    <span class="s2">"jt_isim_radius_compl"</span><span class="p">,</span>
+    <span class="s2">"jt_isim_diameter"</span><span class="p">,</span>
     <span class="c1"># Centroid and medoid</span>
     <span class="c1"># Radius and diameter unpacked / packed</span>
-    <span class="s2">&quot;centroid_from_sum&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;centroid&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_isim_medoid&quot;</span><span class="p">,</span>
+    <span class="s2">"centroid_from_sum"</span><span class="p">,</span>
+    <span class="s2">"centroid"</span><span class="p">,</span>
+    <span class="s2">"jt_isim_medoid"</span><span class="p">,</span>
     <span class="c1"># Complementary similarity</span>
-    <span class="s2">&quot;jt_compl_isim&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_stratified_sampling&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jt_sim_matrix_packed&quot;</span><span class="p">,</span>
+    <span class="s2">"jt_compl_isim"</span><span class="p">,</span>
+    <span class="s2">"jt_stratified_sampling"</span><span class="p">,</span>
+    <span class="s2">"jt_sim_matrix_packed"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">centroid_from_sum</span><span class="p">,</span> <span class="n">centroid</span>
@@ -420,7 +420,7 @@
 <span class="c1"># jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for</span>
 <span class="c1"># speed</span>
 
-<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;BITBIRCH_NO_EXTENSIONS&quot;</span><span class="p">):</span>
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"BITBIRCH_NO_EXTENSIONS"</span><span class="p">):</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">jt_isim_from_sum</span><span class="p">,</span>
         <span class="n">jt_isim_unpacked</span><span class="p">,</span>
@@ -478,8 +478,8 @@
         <span class="p">)</span>
 
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="s2">&quot;C++ optimized similarity calculations not available,&quot;</span>
-            <span class="s2">&quot; falling back to python implementation&quot;</span>
+            <span class="s2">"C++ optimized similarity calculations not available,"</span>
+            <span class="s2">" falling back to python implementation"</span>
         <span class="p">)</span>
 
 
@@ -491,7 +491,7 @@
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the (Tanimoto) medoid of a set of fingerprints, using iSIM</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculate the (Tanimoto) medoid of a set of fingerprints, using iSIM</span>
 
 <span class="sd">    Returns both the index of the medoid in the input array and the medoid itself</span>
 
@@ -499,9 +499,9 @@
 <span class="sd">        Returns the first (or only) fingerprint for array of size 2 and 1 respectively.</span>
 <span class="sd">        Raises ValueError for arrays of size 0</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">fps</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Size of fingerprints set must be &gt; 0&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Size of fingerprints set must be &gt; 0"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">input_is_packed</span><span class="p">:</span>
         <span class="n">fps</span> <span class="o">=</span> <span class="n">unpack_fingerprints</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
 
@@ -523,7 +523,7 @@
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Average Tanimoto, using iSIM</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Average Tanimoto, using iSIM</span>
 
 <span class="sd">    iSIM Tanimoto was first propsed in:</span>
 <span class="sd">    https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b</span>
@@ -550,7 +550,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    isim : float</span>
 <span class="sd">           iSIM Jaccard-Tanimoto value</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">input_is_packed</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">jt_isim_packed</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">jt_isim_unpacked</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span></div>
@@ -564,7 +564,7 @@
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the Tanimoto diameter of a set of fingerprints&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculate the Tanimoto diameter of a set of fingerprints"""</span>
     <span class="k">return</span> <span class="n">jt_isim_diameter_from_sum</span><span class="p">(</span>
         <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
             <span class="p">(</span>
@@ -587,7 +587,7 @@
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the Tanimoto radius of a set of fingerprints&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculate the Tanimoto radius of a set of fingerprints"""</span>
     <span class="k">return</span> <span class="n">jt_isim_radius_from_sum</span><span class="p">(</span>
         <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
             <span class="p">(</span>
@@ -610,7 +610,7 @@
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the complement of the Tanimoto radius of a set of fingerprints&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculate the complement of the Tanimoto radius of a set of fingerprints"""</span>
     <span class="k">return</span> <span class="n">jt_isim_radius_compl_from_sum</span><span class="p">(</span>
         <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
             <span class="p">(</span>
@@ -629,7 +629,7 @@
 <div class="viewcode-block" id="jt_isim_radius_compl_from_sum">
 <a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.jt_isim_radius_compl_from_sum">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">jt_isim_radius_compl_from_sum</span><span class="p">(</span><span class="n">ls</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the complement of the Tanimoto radius of a set of fingerprints&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculate the complement of the Tanimoto radius of a set of fingerprints"""</span>
     <span class="c1">#  Calculates 1 - R = Rc</span>
     <span class="c1"># NOTE: Use uint64 sum since jt_isim_from_sum casts to uint64 internally</span>
     <span class="c1"># This prevents multiple casts</span>
@@ -645,7 +645,7 @@
 <div class="viewcode-block" id="jt_isim_radius_from_sum">
 <a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.jt_isim_radius_from_sum">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">jt_isim_radius_from_sum</span><span class="p">(</span><span class="n">ls</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the Tanimoto radius of a set of fingerprints&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculate the Tanimoto radius of a set of fingerprints"""</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">jt_isim_radius_compl_from_sum</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span></div>
 
 
@@ -653,9 +653,9 @@
 <div class="viewcode-block" id="jt_isim_diameter_from_sum">
 <a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.jt_isim_diameter_from_sum">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">jt_isim_diameter_from_sum</span><span class="p">(</span><span class="n">ls</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the Tanimoto diameter of a set of fingerprints.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculate the Tanimoto diameter of a set of fingerprints.</span>
 
-<span class="sd">    Equivalent to ``1 - jt_isim_from_sum(ls, n)``&quot;&quot;&quot;</span>
+<span class="sd">    Equivalent to ``1 - jt_isim_from_sum(ls, n)``"""</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">jt_isim_from_sum</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span></div>
 
 
@@ -667,12 +667,12 @@
     <span class="n">x</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
     <span class="n">y</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Tanimoto similarity between packed fingerprints</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Tanimoto similarity between packed fingerprints</span>
 
 <span class="sd">    Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or</span>
 <span class="sd">    one is an vector (F,) and the other an array of shape (N, F) (Numpy array of</span>
 <span class="sd">    shape (N,) is returned).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_jt_sim_arr_vec_packed</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -680,7 +680,7 @@
     <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_jt_sim_arr_vec_packed</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-        <span class="s2">&quot;Expected either two 1D vectors, or one 1D vector and one 2D array&quot;</span>
+        <span class="s2">"Expected either two 1D vectors, or one 1D vector and one 2D array"</span>
     <span class="p">)</span></div>
 
 
@@ -688,7 +688,7 @@
 <div class="viewcode-block" id="jt_sim_matrix_packed">
 <a class="viewcode-back" href="../../_api_autogen/bblean.similarity.html#bblean.similarity.jt_sim_matrix_packed">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">jt_sim_matrix_packed</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Tanimoto similarity matrix between all pairs of packed fps in arr&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Tanimoto similarity matrix between all pairs of packed fps in arr"""</span>
     <span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
         <span class="c1"># Set the similarities for each row</span>
@@ -706,13 +706,13 @@
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Estimate the std of all pairwise Tanimoto.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Estimate the std of all pairwise Tanimoto.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    std : float</span>
 <span class="sd">        The standard deviation of all pairwise Tanimoto among the sampled fingerprints.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">num_fps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">num_fps</span> <span class="o">&gt;</span> <span class="n">max_samples</span><span class="p">:</span>
         <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
@@ -751,7 +751,7 @@
     <span class="n">input_is_packed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Sample from a set of fingerprints according to their complementary similarity</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Sample from a set of fingerprints according to their complementary similarity</span>
 
 <span class="sd">    Given a group of fingerprints, calculate all complementary similarities, order, and</span>
 <span class="sd">    sample the first element from consecutive groups of length ``num_fps // n_samples +</span>
@@ -762,12 +762,12 @@
 <span class="sd">        This is not true statistical stratified sampling, it is not random, and the</span>
 <span class="sd">        strata are not homogeneous. It is meant as a reliable, deterministic method to</span>
 <span class="sd">        obtain a representative sample from a set of fingerprints.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Stratified sampling without replacement</span>
     <span class="k">if</span> <span class="n">n_samples</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">n_samples</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_samples must be &lt;= len(fps)&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"n_samples must be &lt;= len(fps)"</span><span class="p">)</span>
     <span class="c1"># Get the indices that would sort the complementary similarities</span>
     <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">jt_compl_isim</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">input_is_packed</span><span class="p">,</span> <span class="n">n_features</span><span class="p">))</span>
     <span class="c1"># Split into n_samples strata</span>

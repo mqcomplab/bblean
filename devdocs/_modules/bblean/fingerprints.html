@@ -378,7 +378,7 @@
                 <article class="bd-article">
                   
   <h1>Source code for bblean.fingerprints</h1><div class="highlight"><pre>
-<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Utilites for manipulating fingerprints and fingerprint files&quot;&quot;&quot;</span>
+<span></span><span class="sa">r</span><span class="sd">"""Utilites for manipulating fingerprints and fingerprint files"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
@@ -401,10 +401,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_num_avail_cpus</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;make_fake_fingerprints&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;fps_from_smiles&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;pack_fingerprints&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;unpack_fingerprints&quot;</span><span class="p">,</span>
+    <span class="s2">"make_fake_fingerprints"</span><span class="p">,</span>
+    <span class="s2">"fps_from_smiles"</span><span class="p">,</span>
+    <span class="s2">"pack_fingerprints"</span><span class="p">,</span>
+    <span class="s2">"unpack_fingerprints"</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -413,7 +413,7 @@
     <span class="n">linear_sum</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">],</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
     <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-        <span class="s2">&quot;Please use `bblean.similarity.centroid_from_sum(...)` instead&quot;</span><span class="p">,</span>
+        <span class="s2">"Please use `bblean.similarity.centroid_from_sum(...)` instead"</span><span class="p">,</span>
         <span class="ne">DeprecationWarning</span><span class="p">,</span>
         <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
     <span class="p">)</span>
@@ -432,7 +432,7 @@
 <div class="viewcode-block" id="pack_fingerprints">
 <a class="viewcode-back" href="../../_api_autogen/bblean.fingerprints.html#bblean.fingerprints.pack_fingerprints">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">pack_fingerprints</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Pack binary (only 0s and 1s) uint8 fingerprint arrays&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Pack binary (only 0s and 1s) uint8 fingerprint arrays"""</span>
     <span class="c1"># packbits may pad with zeros if n_features is not a multiple of 8</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">packbits</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
 
@@ -443,7 +443,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">unpack_fingerprints</span><span class="p">(</span>
     <span class="n">a</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Unpack packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Unpack packed uint8 arrays into binary uint8 arrays (with only 0s and 1s)</span>
 
 <span class="sd">    .. note::</span>
 
@@ -453,7 +453,7 @@
 <span class="sd">        common fingerprints feature sizes (2048, 1024, etc) are multiples of 8, but if</span>
 <span class="sd">        you are using a non-standard number of features you should pass ``n_features``</span>
 <span class="sd">        explicitly.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># n_features is required to discard padded zeros if it is not a multiple of 8</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unpackbits</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span></div>
 
@@ -468,17 +468,17 @@
     <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Make random fingerprints with statistics similar to (some) real databases&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Make random fingerprints with statistics similar to (some) real databases"""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span>  <span class="c1"># Hide this import since scipy is heavy</span>
 
     <span class="k">if</span> <span class="n">n_features</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">n_features</span> <span class="o">%</span> <span class="mi">8</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_features must be a multiple of 8, and greater than 0&quot;</span><span class="p">)</span>
-    <span class="c1"># Generate &quot;synthetic&quot; fingerprints with a popcount distribution</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"n_features must be a multiple of 8, and greater than 0"</span><span class="p">)</span>
+    <span class="c1"># Generate "synthetic" fingerprints with a popcount distribution</span>
     <span class="c1"># similar to one in a real smiles database</span>
     <span class="c1"># Fps are guaranteed to *not* be all zeros or all ones</span>
     <span class="k">if</span> <span class="n">pack</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only np.uint8 dtype is supported for packed input&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Only np.uint8 dtype is supported for packed input"</span><span class="p">)</span>
     <span class="n">loc</span> <span class="o">=</span> <span class="mi">750</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="mi">400</span>
     <span class="n">bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
@@ -504,27 +504,27 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_generator</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;rdkit&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"rdkit"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetRDKitFPGenerator</span><span class="p">(</span><span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;ecfp4&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"ecfp4"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetMorganGenerator</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;ecfp6&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"ecfp6"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetMorganGenerator</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;topological&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"topological"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetTopologicalTorsionGenerator</span><span class="p">(</span><span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;ap&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"ap"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">rdFingerprintGenerator</span><span class="o">.</span><span class="n">GetAtomPairGenerator</span><span class="p">(</span><span class="n">fpSize</span><span class="o">=</span><span class="n">n_features</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown kind </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">. Use &#39;rdkit|ecfp4|ecfp6|topological|ap&#39;&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown kind </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">. Use 'rdkit|ecfp4|ecfp6|topological|ap'"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_sanitize_flags</span><span class="p">(</span><span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">sanitize</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">sanitize</span> <span class="o">==</span> <span class="s2">"all"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">SanitizeFlags</span><span class="o">.</span><span class="n">SANITIZE_ALL</span>
-    <span class="k">elif</span> <span class="n">sanitize</span> <span class="o">==</span> <span class="s2">&quot;minimal&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">sanitize</span> <span class="o">==</span> <span class="s2">"minimal"</span><span class="p">:</span>
         <span class="n">flags</span> <span class="o">=</span> <span class="n">SanitizeFlags</span><span class="o">.</span><span class="n">SANITIZE_CLEANUP</span> <span class="o">|</span> <span class="n">SanitizeFlags</span><span class="o">.</span><span class="n">SANITIZE_SYMMRINGS</span>
         <span class="k">return</span> <span class="n">flags</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown &#39;sanitize&#39;, must be one of &#39;all&#39;, &#39;minimal&#39;&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Unknown 'sanitize', must be one of 'all', 'minimal'"</span><span class="p">)</span>
 
 
 <span class="nd">@tp</span><span class="o">.</span><span class="n">overload</span>
@@ -533,7 +533,7 @@
     <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
-    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"all"</span><span class="p">,</span>
     <span class="n">skip_invalid</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
@@ -546,7 +546,7 @@
     <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
-    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"all"</span><span class="p">,</span>
     <span class="n">skip_invalid</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]]:</span>
@@ -560,18 +560,18 @@
     <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
-    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"all"</span><span class="p">,</span>
     <span class="n">skip_invalid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert a sequence of smiles into chemical fingerprints&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Convert a sequence of smiles into chemical fingerprints"""</span>
     <span class="k">if</span> <span class="n">n_features</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">n_features</span> <span class="o">%</span> <span class="mi">8</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_features must be a multiple of 8, and greater than 0&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"n_features must be a multiple of 8, and greater than 0"</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">smiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">smiles</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">pack</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Packing only supported for uint8 dtype&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Packing only supported for uint8 dtype"</span><span class="p">)</span>
 
     <span class="n">fpg</span> <span class="o">=</span> <span class="n">_get_generator</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)</span>
 
@@ -588,7 +588,7 @@
                 <span class="n">invalid_idxs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
                 <span class="k">continue</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to parse smiles </span><span class="si">{</span><span class="n">smi</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unable to parse smiles </span><span class="si">{</span><span class="n">smi</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">SanitizeMol</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">sanitizeOps</span><span class="o">=</span><span class="n">sanitize_flags</span><span class="p">)</span>
             <span class="n">fps</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">fpg</span><span class="o">.</span><span class="n">GetFingerprintAsNumPy</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
@@ -611,25 +611,25 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_fps_file_num</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">major</span><span class="p">,</span> <span class="n">minor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">read_magic</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-        <span class="n">shape</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;read_array_header_</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">shape</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"read_array_header_</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">"</span><span class="p">)(</span><span class="n">f</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_fps_file_shape_and_dtype</span><span class="p">(</span>
     <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">raise_if_invalid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">major</span><span class="p">,</span> <span class="n">minor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">read_magic</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-        <span class="n">shape</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;read_array_header_</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)(</span>
+        <span class="n">shape</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"read_array_header_</span><span class="si">{</span><span class="n">major</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">minor</span><span class="si">}</span><span class="s2">"</span><span class="p">)(</span>
             <span class="n">f</span>
         <span class="p">)</span>
     <span class="n">shape_is_valid</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
     <span class="n">dtype_is_valid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">raise_if_invalid</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">shape_is_valid</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">dtype_is_valid</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Fingerprints file </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> is invalid. Shape: </span><span class="si">{</span><span class="n">shape</span><span class="si">}</span><span class="s2">, DType </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Fingerprints file </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> is invalid. Shape: </span><span class="si">{</span><span class="n">shape</span><span class="si">}</span><span class="s2">, DType </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">shape_is_valid</span><span class="p">,</span> <span class="n">dtype_is_valid</span>
 
@@ -639,32 +639,32 @@
         <span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">()</span>
     <span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">shape_is_valid</span><span class="p">,</span> <span class="n">dtype_is_valid</span> <span class="o">=</span> <span class="n">_get_fps_file_shape_and_dtype</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
-    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File: </span><span class="si">{</span><span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File: </span><span class="si">{</span><span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="n">has_nonzero</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">shape_is_valid</span> <span class="ow">and</span> <span class="n">dtype_is_valid</span><span class="p">:</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;    - [green]Valid fingerprint file[/green]&quot;</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">"    - [green]Valid fingerprint file[/green]"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">first_fp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">first_fp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">has_nonzero</span> <span class="o">=</span> <span class="p">(</span><span class="n">first_fp</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">has_nonzero</span><span class="p">:</span>
-                <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;    - Guessed format: [cyan]Packed[/cyan]&quot;</span><span class="p">)</span>
+                <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">"    - Guessed format: [cyan]Packed[/cyan]"</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;    - Guessed format: [magenta]Unpacked[/magenta]&quot;</span><span class="p">)</span>
+                <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">"    - Guessed format: [magenta]Unpacked[/magenta]"</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;    - Guessed format: [red]Unknown[/red]&quot;</span><span class="p">)</span>
+            <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">"    - Guessed format: [red]Unknown[/red]"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;    - [red]Invalid fingerprint file[/red]&quot;</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">"    - [red]Invalid fingerprint file[/red]"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">shape_is_valid</span><span class="p">:</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Num. fingerprints: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Num. fingerprints: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">has_nonzero</span><span class="p">:</span>
             <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;    - Num. features: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> (guessed unpacked: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">8</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">)&quot;</span>  <span class="c1"># noqa</span>
+                <span class="sa">f</span><span class="s2">"    - Num. features: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> (guessed unpacked: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">8</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">)"</span>  <span class="c1"># noqa</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Num. features: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Num. features: </span><span class="si">{</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - Shape: </span><span class="si">{</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - DType: [yellow]</span><span class="si">{</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">[/yellow]&quot;</span><span class="p">)</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Shape: </span><span class="si">{</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - DType: [yellow]</span><span class="si">{</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">[/yellow]"</span><span class="p">)</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
 
 
@@ -672,7 +672,7 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">files</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;At least 1 fingerprint file must be provided&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"At least 1 fingerprint file must be provided"</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
         <span class="k">return</span> <span class="n">_get_fingerprints_from_file_seq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_files</span><span class="p">,</span> <span class="n">idxs</span><span class="p">)</span>
@@ -691,10 +691,10 @@
     <span class="n">files</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">idxs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">]:</span>
     <span class="k">if</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">list</span><span class="p">(</span><span class="n">idxs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;idxs must be sorted&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"idxs must be sorted"</span><span class="p">)</span>
     <span class="c1"># Sequence of files is assumed to have indexes in an increasing order,</span>
     <span class="c1"># for example, if the first two files have 10k fingerprints, then the</span>
-    <span class="c1"># assoc. idxs are 0-9999 and 10000-19999. &#39;idxs&#39; will index this sequence of files</span>
+    <span class="c1"># assoc. idxs are 0-9999 and 10000-19999. 'idxs' will index this sequence of files</span>
     <span class="c1"># iter_idxs = iter(idxs)</span>
     <span class="n">n_features</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">local_file_idxs</span> <span class="o">=</span> <span class="p">[]</span>
@@ -716,11 +716,11 @@
             <span class="n">n_features</span> <span class="o">=</span> <span class="n">_n_features</span>
         <span class="k">elif</span> <span class="n">_n_features</span> <span class="o">!=</span> <span class="n">n_features</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Incompatible in fingerprint file </span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2">,&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; expected </span><span class="si">{</span><span class="n">n_features</span><span class="si">}</span><span class="s2">, found </span><span class="si">{</span><span class="n">_n_features</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Incompatible in fingerprint file </span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2">,"</span>
+                <span class="sa">f</span><span class="s2">" expected </span><span class="si">{</span><span class="n">n_features</span><span class="si">}</span><span class="s2">, found </span><span class="si">{</span><span class="n">_n_features</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">arr</span> <span class="ow">in</span> <span class="n">local_file_idxs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;idxs could not be extracted from files&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"idxs could not be extracted from files"</span><span class="p">)</span>
 
     <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">),</span> <span class="n">tp</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">n_features</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
     <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
@@ -728,7 +728,7 @@
         <span class="n">size</span> <span class="o">=</span> <span class="n">local_idxs</span><span class="o">.</span><span class="n">size</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">size</span><span class="p">:</span>
             <span class="k">continue</span>
-        <span class="n">arr</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)[</span><span class="n">local_idxs</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+        <span class="n">arr</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">size</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)[</span><span class="n">local_idxs</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span>
         <span class="p">)</span>
         <span class="n">i</span> <span class="o">+=</span> <span class="n">size</span>
@@ -765,7 +765,7 @@
                     <span class="n">invalid</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
                     <span class="k">continue</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to parse smiles </span><span class="si">{</span><span class="n">smi</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unable to parse smiles </span><span class="si">{</span><span class="n">smi</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">SanitizeMol</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">sanitizeOps</span><span class="o">=</span><span class="n">sanitize_flags</span><span class="p">)</span>  <span class="c1"># Raises if invalid</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -777,14 +777,14 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack</span><span class="p">:</span>
             <span class="n">fps</span> <span class="o">=</span> <span class="n">pack_fingerprints</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">digits</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">out_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">out_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">file_idx</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">digits</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">out_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">out_name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">file_idx</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">digits</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
             <span class="n">prev_num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
             <span class="n">fps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">fps</span><span class="p">,</span> <span class="n">invalid</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">new_num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fps</span><span class="p">)</span>
             <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">file_idx</span><span class="si">}</span><span class="s2">: Generated </span><span class="si">{</span><span class="n">new_num</span><span class="si">}</span><span class="s2"> fingerprints</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; File </span><span class="si">{</span><span class="n">file_idx</span><span class="si">}</span><span class="s2">: Skipped </span><span class="si">{</span><span class="n">prev_num</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">new_num</span><span class="si">}</span><span class="s2"> invalid smiles&quot;</span>
+                <span class="sa">f</span><span class="s2">"File </span><span class="si">{</span><span class="n">file_idx</span><span class="si">}</span><span class="s2">: Generated </span><span class="si">{</span><span class="n">new_num</span><span class="si">}</span><span class="s2"> fingerprints</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">" File </span><span class="si">{</span><span class="n">file_idx</span><span class="si">}</span><span class="s2">: Skipped </span><span class="si">{</span><span class="n">prev_num</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">new_num</span><span class="si">}</span><span class="s2"> invalid smiles"</span>
             <span class="p">)</span>
         <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">/</span> <span class="n">out_name</span><span class="p">,</span> <span class="n">fps</span><span class="p">)</span>
 
@@ -825,7 +825,7 @@
                     <span class="n">invalid_mask</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="k">continue</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to parse smiles </span><span class="si">{</span><span class="n">smi</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unable to parse smiles </span><span class="si">{</span><span class="n">smi</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">SanitizeMol</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">sanitizeOps</span><span class="o">=</span><span class="n">sanitize_flags</span><span class="p">)</span>  <span class="c1"># Raises if invalid</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -847,7 +847,7 @@
     <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
-    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"all"</span><span class="p">,</span>
     <span class="n">skip_invalid</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">num_ps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -864,7 +864,7 @@
     <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
-    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"all"</span><span class="p">,</span>
     <span class="n">skip_invalid</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">num_ps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -877,14 +877,14 @@
 
 <span class="c1"># NOTE: This function is proof of concept and kinda dangerous since it registers</span>
 <span class="c1"># a custom destructor for the numpy array</span>
-<span class="c1"># It is also *only usable if called inside an if __name__ == &quot;__main__&quot; guard*</span>
+<span class="c1"># It is also *only usable if called inside an if __name__ == "__main__" guard*</span>
 <span class="c1"># For now lets hide it</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">fps_from_smiles_parallel</span><span class="p">(</span>
     <span class="n">smiles</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">fp_kind</span><span class="p">,</span>
     <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULTS</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span>
-    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">sanitize</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"all"</span><span class="p">,</span>
     <span class="n">skip_invalid</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">pack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">num_ps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -892,9 +892,9 @@
     <span class="n">tab_separated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">mp_context</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tp</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:meta private:&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">""":meta private:"""</span>
     <span class="k">if</span> <span class="n">mp_context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">mp_context</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">get_context</span><span class="p">(</span><span class="s2">&quot;forkserver&quot;</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">mp_context</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">get_context</span><span class="p">(</span><span class="s2">"forkserver"</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">"linux"</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">smiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">smiles</span><span class="p">]</span>
     <span class="n">smiles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">smiles</span><span class="p">)</span>
