@@ -2637,4 +2637,4 @@ def test_std() -> None:
     std = estimate_jt_std(fps)
     sample = jt_stratified_sampling(fps, n_samples=50)
     matrix = jt_sim_matrix_packed(fps[sample])
-    assert (std == np.std(matrix[~np.eye(len(matrix), dtype=bool)]))
+    assert std == np.std(matrix[~np.eye(len(matrix), dtype=bool)])
