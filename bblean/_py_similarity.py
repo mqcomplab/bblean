@@ -186,11 +186,12 @@ def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:
 
 def jt_isim_packed(fps: NDArray[np.integer], n_features: int | None = None) -> float:
     # cast is slower
+    # mypy may have a bug associated with np.uint64 passed as a dtype to sum in np
     return jt_isim_from_sum(
         np.sum(
             unpack_fingerprints(fps, n_features),  # type: ignore
             axis=0,
-            dtype=np.uint64,
+            dtype=np.uint64,  # type: ignore [arg-type]
         ),
         len(fps),
     )
