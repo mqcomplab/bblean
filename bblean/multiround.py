@@ -223,7 +223,7 @@ class _InitialRound:
         _save_bufs_and_mol_idxs(self.out_dir, fps_bfs, mols_bfs, file_label, 1)
 
 
-class TreeMergingRound:
+class _TreeMergingRound:
     def __init__(
         self,
         branching_factor: int,
@@ -236,10 +236,6 @@ class TreeMergingRound:
         all_fp_paths: tp.Sequence[Path] = (),
         check_indices: bool = True,
     ) -> None:
-        r""":meta private:
-
-        This class is experimental, use under your own risk
-        """
         self.all_fp_paths = list(all_fp_paths)
         self.branching_factor = branching_factor
         self.threshold = threshold
@@ -280,7 +276,7 @@ class TreeMergingRound:
         )
 
 
-class FinalTreeMergingRound(TreeMergingRound):
+class _FinalTreeMergingRound(_TreeMergingRound):
     def __init__(
         self,
         branching_factor: int,
@@ -292,10 +288,6 @@ class FinalTreeMergingRound(TreeMergingRound):
         save_centroids: bool,
         check_indices: bool = True,
     ) -> None:
-        r""":meta private:
-
-        This class is experimental, use under your own risk
-        """
         super().__init__(
             branching_factor,
             threshold,
@@ -464,7 +456,7 @@ def run_multiround_bitbirch(
 
         file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
         batches = _chunk_file_pairs_in_batches(file_pairs, bin_size, console)
-        merging_fn = TreeMergingRound(
+        merging_fn = _TreeMergingRound(
             round_idx=round_idx,
             all_fp_paths=input_files,
             split_largest_cluster=split_largest_after_each_midsection_round,
@@ -498,7 +490,7 @@ def run_multiround_bitbirch(
     console.print(f"(Final) Round {round_idx}: Final round of clustering")
     file_pairs = _get_prev_round_buf_and_mol_idxs_files(out_dir, round_idx, console)
 
-    final_fn = FinalTreeMergingRound(
+    final_fn = _FinalTreeMergingRound(
         save_tree=save_tree,
         save_centroids=save_centroids,
         merge_criterion=final_merge_criterion,
