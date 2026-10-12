@@ -47,6 +47,7 @@
 # program. This copy can be located at the root of this repository, under
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 r"""Multi-round BitBirch workflow for clustering huge datasets in parallel"""
+
 import sys
 import math
 import pickle
@@ -233,6 +234,7 @@ class _TreeMergingRound:
         split_largest_cluster: bool,
         merge_criterion: str,
         all_fp_paths: tp.Sequence[Path] = (),
+        check_indices: bool = True,
     ) -> None:
         self.all_fp_paths = list(all_fp_paths)
         self.branching_factor = branching_factor
@@ -242,6 +244,7 @@ class _TreeMergingRound:
         self.out_dir = Path(out_dir)
         self.split_largest_cluster = split_largest_cluster
         self.merge_criterion = merge_criterion
+        self.check_indices = check_indices
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_label, batch_path_pairs = batch_info
@@ -256,7 +259,9 @@ class _TreeMergingRound:
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs)
+            tree._fit_buffers(
+                buf_path, reinsert_index_seqs=mol_idxs, check_indices=self.check_indices
+            )
             del mol_idxs
 
         # Either do a refinement step, or fetch and save the bufs and idxs for the next
@@ -281,6 +286,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         out_dir: Path | str,
         save_tree: bool,
         save_centroids: bool,
+        check_indices: bool = True,
     ) -> None:
         super().__init__(
             branching_factor,
@@ -291,6 +297,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             False,
             merge_criterion,
             (),
+            check_indices,
         )
         self.save_tree = save_tree
         self.save_centroids = save_centroids
@@ -308,7 +315,9 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(buf_path, reinsert_index_seqs=mol_idxs)
+            tree._fit_buffers(
+                buf_path, reinsert_index_seqs=mol_idxs, check_indices=self.check_indices
+            )
             del mol_idxs
 
         # Save clusters and exit
