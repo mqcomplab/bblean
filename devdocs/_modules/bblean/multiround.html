@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=64daa5a7"></script>
+    <script src="../../_static/documentation_options.js?v=07195ff8"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -427,6 +427,7 @@
 <span class="c1"># program. This copy can be located at the root of this repository, under</span>
 <span class="c1"># ./LICENSES/GPL-3.0-only.txt.  If not, see &lt;http://www.gnu.org/licenses/gpl-3.0.html&gt;.</span>
 <span class="sa">r</span><span class="sd">"""Multi-round BitBirch workflow for clustering huge datasets in parallel"""</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
@@ -613,6 +614,7 @@
         <span class="n">split_largest_cluster</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">merge_criterion</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">all_fp_paths</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+        <span class="n">check_indices</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">all_fp_paths</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">all_fp_paths</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span>
@@ -622,6 +624,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">out_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">split_largest_cluster</span> <span class="o">=</span> <span class="n">split_largest_cluster</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="o">=</span> <span class="n">merge_criterion</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span> <span class="o">=</span> <span class="n">check_indices</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">batch_label</span><span class="p">,</span> <span class="n">batch_path_pairs</span> <span class="o">=</span> <span class="n">batch_info</span>
@@ -636,7 +639,9 @@
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span>
+                <span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span> <span class="n">check_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span>
+            <span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
 
         <span class="c1"># Either do a refinement step, or fetch and save the bufs and idxs for the next</span>
@@ -661,6 +666,7 @@
         <span class="n">out_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">save_tree</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">save_centroids</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">check_indices</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">branching_factor</span><span class="p">,</span>
@@ -671,6 +677,7 @@
             <span class="kc">False</span><span class="p">,</span>
             <span class="n">merge_criterion</span><span class="p">,</span>
             <span class="p">(),</span>
+            <span class="n">check_indices</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_tree</span> <span class="o">=</span> <span class="n">save_tree</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_centroids</span> <span class="o">=</span> <span class="n">save_centroids</span>
@@ -688,7 +695,9 @@
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">)</span>
+            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span>
+                <span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span> <span class="n">check_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span>
+            <span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
 
         <span class="c1"># Save clusters and exit</span>
