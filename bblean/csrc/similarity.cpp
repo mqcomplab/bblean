@@ -13,7 +13,7 @@
 #include <vector>
 
 // Scalar popcount intrinsics:
-#if defined(__SSE_4_2__) || defined(_M_SSE4_2)
+#if defined(__SSE4_2__) || defined(_M_SSE4_2)
 // Compiler-portable, but *not available in systems that do not have SSE*
 // (which should be almost no CPUs nowadays)
 // Not actually vector instructions, they just live in the SSE header
@@ -41,101 +41,312 @@
 #error "Popcount not supported in target architecture"
 #endif
 
-// TODO: See if worth it to use vector popcount intrinsics (AVX-512, only some
-// CPU) like jt_sim_packed
+// Vector (SIMD) popcount kernels, selected at *compile time* from the flags
+// the extension is built with. If no flag enables them (e.g. default build,
+// MSVC, ARM / Apple Silicon) the portable scalar kernel is used instead:
+// - AVX-512: needs AVX512F + AVX512BW + AVX512VPOPCNTDQ (Ice Lake+, Zen 4+)
+//   (e.g. -march=native in a supporting CPU, or -mavx512f -mavx512bw
+//   -mavx512vpopcntdq)
+// - AVX2: Mula's nibble-lookup popcount (Haswell+, Zen+) (e.g. -mavx2)
+// NOTE: An extension compiled with these flags will crash with "illegal
+// instruction" in CPUs that don't support them
+// TODO: Add NEON kernel (vcntq_u8) for ARM
+#if defined(__x86_64__) || defined(_M_X64)
+#if defined(__AVX512F__) && defined(__AVX512BW__) && \
+    defined(__AVX512VPOPCNTDQ__)
+#define BBLEAN_SIMD_AVX512 1
+#include <immintrin.h>
+#elif defined(__AVX2__)
+#define BBLEAN_SIMD_AVX2 1
+#include <immintrin.h>
+#endif
+#endif
+
 namespace py = pybind11;
 
 template <typename T>
 using CArrayForcecast =
     py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-auto is_8byte_aligned(const py::array_t<uint8_t>& a) -> bool {
-    // Convert between ptr and integer requires reinterpret
-    return reinterpret_cast<std::uintptr_t>(a.data()) % alignof(uint64_t) == 0;
-}
-
-auto print_8byte_alignment_check(const py::array_t<uint8_t>& arr) -> void {
-    py::print("arr buf addr: ", reinterpret_cast<std::uintptr_t>(arr.data()));
-    py::print("uint64_t alignment requirement: ", alignof(uint64_t));
-    py::print("Is 8-byte aligned: ", is_8byte_aligned(arr));
-}
-
-uint32_t _popcount_1d(const py::array_t<uint8_t>& arr) {
-    if (arr.ndim() != 1) {
-        throw std::runtime_error("Input array must be 1-dimensional");
-    }
-#ifdef DEBUG_LOGS
-    print_8byte_alignment_check(arr);
+#if defined(BBLEAN_SIMD_AVX512)
+constexpr const char* SIMD_BACKEND = "avx512";
+#elif defined(BBLEAN_SIMD_AVX2)
+constexpr const char* SIMD_BACKEND = "avx2";
+#else
+constexpr const char* SIMD_BACKEND = "scalar";
 #endif
-    uint32_t count{0};  // Output scalar
-    py::ssize_t steps = arr.shape(0);
-    if (is_8byte_aligned(arr) && (steps % 64 == 0)) {
-#ifdef DEBUG_LOGS
-        py::print("DEBUG: _popcount_1d fn triggered uint64 + popcount 64");
-#endif
-        // Aligned to 64-bit boundary, interpret as uint64_t
-        steps /= sizeof(uint64_t);
-        auto in_cptr = static_cast<const uint64_t*>(arr.request().ptr);
-        for (py::ssize_t i{0}; i != steps; ++i) {  // not auto-vec by GCC
-            count += POPCOUNT_64(in_cptr[i]);
+
+// All popcount kernels compute popcount(a) if AND is false, and
+// popcount(a & b) if AND is true (b is ignored if AND is false). They work for
+// any n_bytes and have no alignment requirements.
+
+// Portable scalar kernel, processes 8 bytes at a time
+template <bool AND>
+inline uint64_t _popcount_scalar(const uint8_t* a, const uint8_t* b,
+                                 py::ssize_t n_bytes) {
+    uint64_t count{0};
+    py::ssize_t i{0};
+    for (; i + 8 <= n_bytes; i += 8) {
+        // memcpy is the portable way of doing an unaligned load, it compiles
+        // to a single mov
+        uint64_t x;
+        std::memcpy(&x, a + i, sizeof(uint64_t));
+        if constexpr (AND) {
+            uint64_t y;
+            std::memcpy(&y, b + i, sizeof(uint64_t));
+            x &= y;
         }
-        return count;
+        count += POPCOUNT_64(x);
     }
-
-#ifdef DEBUG_LOGS
-    py::print("DEBUG: _popcount_1d fn triggered uint8 + popcount 32");
-#endif
-    // Misaligned, loop over bytes
-    auto in_cptr = arr.data();
-    for (py::ssize_t i{0}; i != steps; ++i) {  // not auto-vec by GCC
-        count += POPCOUNT_32(in_cptr[i]);      // uint8 promoted to uint32
+    for (; i != n_bytes; ++i) {
+        if constexpr (AND) {
+            count += POPCOUNT_32(a[i] & b[i]);
+        } else {
+            count += POPCOUNT_32(a[i]);  // uint8 promoted to uint32
+        }
     }
     return count;
 }
 
-// TODO: Currently this is pretty slow unless hitting the "uint64_t" branch,
-// maybe two pass approach? first compute all popcounts, then sum (Numpy does
-// this). Maybe the additions could be auto-vec?
+#if defined(BBLEAN_SIMD_AVX512)
+// Native 64-bit lane popcount (vpopcntq), 64 bytes per iteration. The tail is
+// handled with a masked load (masked-out bytes are never read)
+template <bool AND>
+inline uint64_t _popcount_avx512(const uint8_t* a, const uint8_t* b,
+                                 py::ssize_t n_bytes) {
+    __m512i acc = _mm512_setzero_si512();
+    py::ssize_t i{0};
+    for (; i + 64 <= n_bytes; i += 64) {
+        __m512i v = _mm512_loadu_si512(a + i);
+        if constexpr (AND) {
+            v = _mm512_and_si512(v, _mm512_loadu_si512(b + i));
+        }
+        acc = _mm512_add_epi64(acc, _mm512_popcnt_epi64(v));
+    }
+    if (i != n_bytes) {
+        const __mmask64 mask = ~uint64_t{0} >> (64 - (n_bytes - i));
+        __m512i v = _mm512_maskz_loadu_epi8(mask, a + i);
+        if constexpr (AND) {
+            v = _mm512_and_si512(v, _mm512_maskz_loadu_epi8(mask, b + i));
+        }
+        acc = _mm512_add_epi64(acc, _mm512_popcnt_epi64(v));
+    }
+    return _mm512_reduce_add_epi64(acc);
+}
+#endif
+
+#if defined(BBLEAN_SIMD_AVX2)
+// Mula's algorithm: each nibble's popcount is looked up in a 16-entry table
+// with vpshufb, per-byte counts are accumulated in uint8 lanes, and
+// periodically reduced to uint64 lanes with vpsadbw. 32 bytes per iteration,
+// the tail (< 32 bytes) is handled by the scalar kernel
+// See: Mula, Kurz, Lemire, "Faster Population Counts Using AVX2 Instructions"
+template <bool AND>
+inline uint64_t _popcount_avx2(const uint8_t* a, const uint8_t* b,
+                               py::ssize_t n_bytes) {
+    const __m256i lookup =
+        _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,  //
+                         0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+    const __m256i low_mask = _mm256_set1_epi8(0x0f);
+    const __m256i zero = _mm256_setzero_si256();
+    __m256i acc = _mm256_setzero_si256();  // 4 x uint64 lanes
+    py::ssize_t i{0};
+    const py::ssize_t n_vec_bytes = n_bytes - n_bytes % 32;
+    while (i != n_vec_bytes) {
+        // Each iteration adds at most 8 to each uint8 lane, so at most 31
+        // iterations (31 * 8 = 248) can be done before uint8 overflow
+        const py::ssize_t block_end =
+            std::min<py::ssize_t>(i + 31 * 32, n_vec_bytes);
+        __m256i acc8 = _mm256_setzero_si256();  // 32 x uint8 lanes
+        for (; i != block_end; i += 32) {
+            __m256i v = _mm256_loadu_si256(
+                reinterpret_cast<const __m256i*>(a + i));
+            if constexpr (AND) {
+                v = _mm256_and_si256(v, _mm256_loadu_si256(
+                                            reinterpret_cast<const __m256i*>(
+                                                b + i)));
+            }
+            const __m256i lo = _mm256_and_si256(v, low_mask);
+            const __m256i hi =
+                _mm256_and_si256(_mm256_srli_epi16(v, 4), low_mask);
+            acc8 = _mm256_add_epi8(acc8, _mm256_shuffle_epi8(lookup, lo));
+            acc8 = _mm256_add_epi8(acc8, _mm256_shuffle_epi8(lookup, hi));
+        }
+        acc = _mm256_add_epi64(acc, _mm256_sad_epu8(acc8, zero));
+    }
+    uint64_t count = static_cast<uint64_t>(_mm256_extract_epi64(acc, 0)) +
+                     static_cast<uint64_t>(_mm256_extract_epi64(acc, 1)) +
+                     static_cast<uint64_t>(_mm256_extract_epi64(acc, 2)) +
+                     static_cast<uint64_t>(_mm256_extract_epi64(acc, 3));
+    return count +
+           _popcount_scalar<AND>(a + i, AND ? b + i : b, n_bytes - i);
+}
+#endif
+
+// Dispatch to the best kernel available at compile time
+template <bool AND>
+inline uint64_t _popcount_bytes(const uint8_t* a, const uint8_t* b,
+                                py::ssize_t n_bytes) {
+#if defined(BBLEAN_SIMD_AVX512)
+    return _popcount_avx512<AND>(a, b, n_bytes);
+#elif defined(BBLEAN_SIMD_AVX2)
+    return _popcount_avx2<AND>(a, b, n_bytes);
+#else
+    return _popcount_scalar<AND>(a, b, n_bytes);
+#endif
+}
+
+inline uint64_t popcount_bytes(const uint8_t* a, py::ssize_t n_bytes) {
+    return _popcount_bytes<false>(a, nullptr, n_bytes);
+}
+
+inline uint64_t popcount_and_bytes(const uint8_t* a, const uint8_t* b,
+                                   py::ssize_t n_bytes) {
+    return _popcount_bytes<true>(a, b, n_bytes);
+}
+
+// Fused kernels: compute popcount(a) and popcount(a & b) in a single pass,
+// loading each byte of a and b only once
+struct CardAndIntersection {
+    uint64_t card{0};
+    uint64_t intersection{0};
+};
+
+inline CardAndIntersection _card_and_intersection_scalar(const uint8_t* a,
+                                                         const uint8_t* b,
+                                                         py::ssize_t n_bytes) {
+    CardAndIntersection out;
+    py::ssize_t i{0};
+    for (; i + 8 <= n_bytes; i += 8) {
+        uint64_t x, y;
+        std::memcpy(&x, a + i, sizeof(uint64_t));
+        std::memcpy(&y, b + i, sizeof(uint64_t));
+        out.card += POPCOUNT_64(x);
+        out.intersection += POPCOUNT_64(x & y);
+    }
+    for (; i != n_bytes; ++i) {
+        out.card += POPCOUNT_32(a[i]);
+        out.intersection += POPCOUNT_32(a[i] & b[i]);
+    }
+    return out;
+}
+
+#if defined(BBLEAN_SIMD_AVX512)
+inline CardAndIntersection _card_and_intersection_avx512(const uint8_t* a,
+                                                         const uint8_t* b,
+                                                         py::ssize_t n_bytes) {
+    __m512i acc_card = _mm512_setzero_si512();
+    __m512i acc_inter = _mm512_setzero_si512();
+    py::ssize_t i{0};
+    for (; i + 64 <= n_bytes; i += 64) {
+        const __m512i v = _mm512_loadu_si512(a + i);
+        const __m512i w = _mm512_loadu_si512(b + i);
+        acc_card = _mm512_add_epi64(acc_card, _mm512_popcnt_epi64(v));
+        acc_inter = _mm512_add_epi64(
+            acc_inter, _mm512_popcnt_epi64(_mm512_and_si512(v, w)));
+    }
+    if (i != n_bytes) {
+        const __mmask64 mask = ~uint64_t{0} >> (64 - (n_bytes - i));
+        const __m512i v = _mm512_maskz_loadu_epi8(mask, a + i);
+        const __m512i w = _mm512_maskz_loadu_epi8(mask, b + i);
+        acc_card = _mm512_add_epi64(acc_card, _mm512_popcnt_epi64(v));
+        acc_inter = _mm512_add_epi64(
+            acc_inter, _mm512_popcnt_epi64(_mm512_and_si512(v, w)));
+    }
+    return {static_cast<uint64_t>(_mm512_reduce_add_epi64(acc_card)),
+            static_cast<uint64_t>(_mm512_reduce_add_epi64(acc_inter))};
+}
+#endif
+
+#if defined(BBLEAN_SIMD_AVX2)
+inline uint64_t _hsum_epi64_avx2(__m256i v) {
+    return static_cast<uint64_t>(_mm256_extract_epi64(v, 0)) +
+           static_cast<uint64_t>(_mm256_extract_epi64(v, 1)) +
+           static_cast<uint64_t>(_mm256_extract_epi64(v, 2)) +
+           static_cast<uint64_t>(_mm256_extract_epi64(v, 3));
+}
+
+// Same algorithm as _popcount_avx2, with one accumulator per count
+inline CardAndIntersection _card_and_intersection_avx2(const uint8_t* a,
+                                                       const uint8_t* b,
+                                                       py::ssize_t n_bytes) {
+    const __m256i lookup =
+        _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,  //
+                         0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+    const __m256i low_mask = _mm256_set1_epi8(0x0f);
+    const __m256i zero = _mm256_setzero_si256();
+    auto byte_popcounts = [&](__m256i v) {
+        const __m256i lo = _mm256_and_si256(v, low_mask);
+        const __m256i hi = _mm256_and_si256(_mm256_srli_epi16(v, 4), low_mask);
+        return _mm256_add_epi8(_mm256_shuffle_epi8(lookup, lo),
+                               _mm256_shuffle_epi8(lookup, hi));
+    };
+    __m256i acc_card = _mm256_setzero_si256();   // 4 x uint64 lanes
+    __m256i acc_inter = _mm256_setzero_si256();  // 4 x uint64 lanes
+    py::ssize_t i{0};
+    const py::ssize_t n_vec_bytes = n_bytes - n_bytes % 32;
+    while (i != n_vec_bytes) {
+        // See _popcount_avx2 for the reason of the 31 iteration blocks
+        const py::ssize_t block_end =
+            std::min<py::ssize_t>(i + 31 * 32, n_vec_bytes);
+        __m256i acc8_card = _mm256_setzero_si256();   // 32 x uint8 lanes
+        __m256i acc8_inter = _mm256_setzero_si256();  // 32 x uint8 lanes
+        for (; i != block_end; i += 32) {
+            const __m256i v =
+                _mm256_loadu_si256(reinterpret_cast<const __m256i*>(a + i));
+            const __m256i w =
+                _mm256_loadu_si256(reinterpret_cast<const __m256i*>(b + i));
+            acc8_card = _mm256_add_epi8(acc8_card, byte_popcounts(v));
+            acc8_inter = _mm256_add_epi8(acc8_inter,
+                                         byte_popcounts(_mm256_and_si256(v, w)));
+        }
+        acc_card = _mm256_add_epi64(acc_card, _mm256_sad_epu8(acc8_card, zero));
+        acc_inter =
+            _mm256_add_epi64(acc_inter, _mm256_sad_epu8(acc8_inter, zero));
+    }
+    auto tail = _card_and_intersection_scalar(a + i, b + i, n_bytes - i);
+    return {_hsum_epi64_avx2(acc_card) + tail.card,
+            _hsum_epi64_avx2(acc_inter) + tail.intersection};
+}
+#endif
+
+inline CardAndIntersection card_and_intersection(const uint8_t* a,
+                                                 const uint8_t* b,
+                                                 py::ssize_t n_bytes) {
+#if defined(BBLEAN_SIMD_AVX512)
+    return _card_and_intersection_avx512(a, b, n_bytes);
+#elif defined(BBLEAN_SIMD_AVX2)
+    return _card_and_intersection_avx2(a, b, n_bytes);
+#else
+    return _card_and_intersection_scalar(a, b, n_bytes);
+#endif
+}
+
+uint32_t _popcount_1d(const CArrayForcecast<uint8_t>& arr) {
+    if (arr.ndim() != 1) {
+        throw std::runtime_error("Input array must be 1-dimensional");
+    }
+#ifdef DEBUG_LOGS
+    py::print("DEBUG: _popcount_1d fn triggered simd backend:", SIMD_BACKEND);
+#endif
+    return static_cast<uint32_t>(popcount_bytes(arr.data(), arr.shape(0)));
+}
+
 py::array_t<uint32_t> _popcount_2d(const CArrayForcecast<uint8_t>& arr) {
     if (arr.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
+#ifdef DEBUG_LOGS
+    py::print("DEBUG: _popcount_2d fn triggered simd backend:", SIMD_BACKEND);
+#endif
     const py::ssize_t n_samples = arr.shape(0);
-
+    const py::ssize_t n_bytes = arr.shape(1);
     auto out = py::array_t<uint32_t>(n_samples);
     auto out_ptr = out.mutable_data();
-    std::memset(out_ptr, 0, out.nbytes());
-
-#ifdef DEBUG_LOGS
-    print_8byte_alignment_check(arr);
-#endif
-    py::ssize_t steps = arr.shape(1);
-    if (is_8byte_aligned(arr) && (steps % 64 == 0)) {
-#ifdef DEBUG_LOGS
-        py::print("DEBUG: _popcount_2d fn triggered uint64 + popcount 64");
-#endif
-        // Aligned to 64-bit boundary, interpret as uint64_t
-        steps /= sizeof(uint64_t);
-        auto in_cptr = static_cast<const uint64_t*>(arr.request().ptr);
-        for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-            const uint64_t* row_cptr = in_cptr + i * steps;
-            for (py::ssize_t j{0}; j != steps; ++j) {  // not auto-vec by GCC
-                out_ptr[i] += POPCOUNT_64(row_cptr[j]);
-            }
-        }
-        return out;
-    }
-
-#ifdef DEBUG_LOGS
-    py::print("DEBUG: _popcount_2d fn triggered uint8 + popcount 32");
-#endif
-    // Misaligned, loop over bytes
     auto in_cptr = arr.data();
-    for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-        const uint8_t* row_cptr = in_cptr + i * steps;
-        for (py::ssize_t j{0}; j != steps; ++j) {  // not auto-vec by GCC
-            out_ptr[i] += POPCOUNT_32(row_cptr[j]);
-        }
+    for (py::ssize_t i{0}; i != n_samples; ++i) {
+        out_ptr[i] =
+            static_cast<uint32_t>(popcount_bytes(in_cptr + i * n_bytes, n_bytes));
     }
     return out;
 }
@@ -369,80 +580,71 @@ py::array_t<double> jt_compl_isim(
     return _nochecks_jt_compl_isim_unpacked_u8(fps);
 }
 
-// Contraint: T must be uint64_t or uint8_t
-template <typename T>
-void _calc_arr_vec_jt(const py::array_t<uint8_t>& arr,
-                      const py::array_t<uint8_t>& vec,
-                      const py::ssize_t n_samples, const py::ssize_t n_features,
-                      const uint32_t vec_popcount,
-                      const py::array_t<uint32_t>& cardinalities,
-                      py::array_t<double>& out) {
-    const py::ssize_t steps = n_features / sizeof(T);
-    auto arr_cptr = static_cast<const T*>(arr.request().ptr);
-    auto vec_cptr = static_cast<const T*>(vec.request().ptr);
-    auto card_cptr = cardinalities.data();
-    auto out_ptr = out.mutable_data();
+inline double _jt_from_counts(uint64_t intersection, uint64_t card_a,
+                               uint64_t card_b) {
+    auto denominator = card_a + card_b - intersection;
+    // Cast is technically unnecessary since std::max promotes to double,
+    // but added here for clarity (should compile to nop)
+    return intersection / std::max(static_cast<double>(denominator), 1.0);
+}
 
-    for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-        const T* arr_row_cptr = arr_cptr + i * steps;
-        uint32_t intersection{0};
-        for (py::ssize_t j{0}; j != steps; ++j) {  // not auto-vec by GCC
-            if constexpr (std::is_same_v<T, uint64_t>) {
-                intersection += POPCOUNT_64(arr_row_cptr[j] & vec_cptr[j]);
-            } else {
-                intersection += POPCOUNT_32(arr_row_cptr[j] & vec_cptr[j]);
-            }
-        }
-        auto denominator = card_cptr[i] + vec_popcount - intersection;
-        // Cast is technically unnecessary since std::max promotes to double,
-        // but added here for clarity (should compile to nop)
-        out_ptr[i] =
-            intersection / std::max(static_cast<double>(denominator), 1.0);
+void _check_arr_vec_shapes(const CArrayForcecast<uint8_t>& arr,
+                           const CArrayForcecast<uint8_t>& vec) {
+    if (arr.ndim() != 2 || vec.ndim() != 1) {
+        throw std::runtime_error("arr must be 2D, vec must be 1D");
+    }
+    if (arr.shape(1) != vec.shape(0)) {
+        throw std::runtime_error(
+            "Shapes should be (N, F) for arr and (F,) for vec");
     }
 }
 
 // # NOTE: This function is the bottleneck for bb compute calculations
-// In this function, _popcount_2d takes around ~25% of the time, _popcount_1d
-// around 5%. The internal loop with the popcounts is also quite heavy.
-// TODO: Investigate simple SIMD vectorization of these loops
-// TODO: Does this function return a copy?
 py::array_t<double> jt_sim_packed_precalc_cardinalities(
-    const py::array_t<uint8_t>& arr, const py::array_t<uint8_t>& vec,
+    const CArrayForcecast<uint8_t>& arr, const CArrayForcecast<uint8_t>& vec,
     const py::array_t<uint32_t>& cardinalities) {
-    py::ssize_t n_samples = arr.shape(0);
-    py::ssize_t n_features = arr.shape(1);
-    if (arr.ndim() != 2 || vec.ndim() != 1) {
-        throw std::runtime_error("arr must be 2D, vec must be 1D");
-    }
-    if (n_features != vec.shape(0)) {
-        throw std::runtime_error(
-            "Shapes should be (N, F) for arr and (F,) for vec");
-    }
+    _check_arr_vec_shapes(arr, vec);
+#ifdef DEBUG_LOGS
+    py::print("DEBUG: jt_sim_packed fn triggered simd backend:", SIMD_BACKEND);
+#endif
+    const py::ssize_t n_samples = arr.shape(0);
+    const py::ssize_t n_bytes = arr.shape(1);
     auto out = py::array_t<double>(n_samples);
-
-    if (is_8byte_aligned(arr) && is_8byte_aligned(vec) &&
-        (n_features % 64 == 0)) {
-#ifdef DEBUG_LOGS
-        py::print("DEBUG: jt_sim_packed fn triggered uint64 + popcount 64");
-#endif
-        // Aligned to 64-bit boundary, interpret as uint64_t
-        _calc_arr_vec_jt<uint64_t>(arr, vec, n_samples, n_features,
-                                   _popcount_1d(vec), cardinalities, out);
-        return out;
+    auto out_ptr = out.mutable_data();
+    auto arr_cptr = arr.data();
+    auto vec_cptr = vec.data();
+    auto card_cptr = cardinalities.data();
+    const uint64_t vec_popcount = popcount_bytes(vec_cptr, n_bytes);
+    for (py::ssize_t i{0}; i != n_samples; ++i) {
+        const uint64_t intersection =
+            popcount_and_bytes(arr_cptr + i * n_bytes, vec_cptr, n_bytes);
+        out_ptr[i] = _jt_from_counts(intersection, card_cptr[i], vec_popcount);
     }
-
-#ifdef DEBUG_LOGS
-    py::print("DEBUG: jt_sim_packed fn triggered uint8 + popcount 32");
-#endif
-    // Misaligned, loop over bytes
-    _calc_arr_vec_jt<uint8_t>(arr, vec, n_samples, n_features,
-                              _popcount_1d(vec), cardinalities, out);
     return out;
 }
 
-py::array_t<double> _jt_sim_arr_vec_packed(const py::array_t<uint8_t>& arr,
-                                           const py::array_t<uint8_t>& vec) {
-    return jt_sim_packed_precalc_cardinalities(arr, vec, _popcount_2d(arr));
+// Computes the cardinalities and intersections in a single pass over arr,
+// instead of a separate pass to calculate the cardinalities
+py::array_t<double> _jt_sim_arr_vec_packed(
+    const CArrayForcecast<uint8_t>& arr, const CArrayForcecast<uint8_t>& vec) {
+    _check_arr_vec_shapes(arr, vec);
+#ifdef DEBUG_LOGS
+    py::print("DEBUG: jt_sim_packed fn triggered simd backend:", SIMD_BACKEND);
+#endif
+    const py::ssize_t n_samples = arr.shape(0);
+    const py::ssize_t n_bytes = arr.shape(1);
+    auto out = py::array_t<double>(n_samples);
+    auto out_ptr = out.mutable_data();
+    auto arr_cptr = arr.data();
+    auto vec_cptr = vec.data();
+    const uint64_t vec_popcount = popcount_bytes(vec_cptr, n_bytes);
+    for (py::ssize_t i{0}; i != n_samples; ++i) {
+        const auto counts =
+            card_and_intersection(arr_cptr + i * n_bytes, vec_cptr, n_bytes);
+        out_ptr[i] =
+            _jt_from_counts(counts.intersection, counts.card, vec_popcount);
+    }
+    return out;
 }
 
 double jt_isim_unpacked_u8(const CArrayForcecast<uint8_t>& arr) {
@@ -498,7 +700,7 @@ py::tuple jt_most_dissimilar_packed(
     py::ssize_t fp1_idx = std::distance(
         sims_cent_ptr,
         std::min_element(sims_cent_ptr, sims_cent_ptr + n_samples));
-    auto fp1_packed = py::array_t<uint8_t>(
+    auto fp1_packed = CArrayForcecast<uint8_t>(
         n_features_packed, fps_packed_cptr + fp1_idx * n_features_packed);
 
     auto sims_fp1 = jt_sim_packed_precalc_cardinalities(fps_packed, fp1_packed,
@@ -508,7 +710,7 @@ py::tuple jt_most_dissimilar_packed(
     // argmin
     py::ssize_t fp2_idx = std::distance(
         sims_fp1_ptr, std::min_element(sims_fp1_ptr, sims_fp1_ptr + n_samples));
-    auto fp2_packed = py::array_t<uint8_t>(
+    auto fp2_packed = CArrayForcecast<uint8_t>(
         n_features_packed, fps_packed_cptr + fp2_idx * n_features_packed);
 
     auto sims_fp2 = jt_sim_packed_precalc_cardinalities(fps_packed, fp2_packed,
@@ -519,6 +721,8 @@ py::tuple jt_most_dissimilar_packed(
 
 PYBIND11_MODULE(_cpp_similarity, m) {
     m.doc() = "Optimized molecular similarity calculators (C++ extensions)";
+    // Popcount kernel selected at compile time ("avx512", "avx2" or "scalar")
+    m.attr("_simd_backend") = SIMD_BACKEND;
 
     // Only bound for debugging purposes
     m.def("_nochecks_unpack_fingerprints_2d", &_nochecks_unpack_fingerprints_2d,
