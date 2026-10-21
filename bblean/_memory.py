@@ -5,6 +5,7 @@ import mmap
 import warnings
 from enum import Enum
 import ctypes
+import functools
 import dataclasses
 from pathlib import Path
 import sys
@@ -36,13 +37,20 @@ class Madv(Enum):
 
 
 # Get handle to the system's libc
+@functools.cache
 def _get_libc() -> tp.Any:
     if sys.platform == "linux":
-        return ctypes.CDLL("libc.so.6", use_errno=True)
+        libc = ctypes.CDLL("libc.so.6", use_errno=True)
     elif sys.platform == "darwin":
-        return ctypes.CDLL("libc.dylib", use_errno=True)
-    # For now, do nothing in Windows
-    return
+        libc = ctypes.CDLL("libc.dylib", use_errno=True)
+    else:
+        # For now, do nothing in Windows
+        return None
+    # Without explicit argtypes ctypes passes python ints as 32-bit C ints, which
+    # truncates sizes >= 2 GiB
+    libc.madvise.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
+    libc.madvise.restype = ctypes.c_int
+    return libc
 
 
 # This reduces memory usage around 40%, since the kernel can release
@@ -62,7 +70,7 @@ def _madvise(page_start: int, size: int, opt: Madv) -> None:
     libc = _get_libc()
     if libc is None:
         return
-    if libc.madvise(ctypes.c_void_p(page_start), size, opt.value) != 0:
+    if libc.madvise(page_start, size, opt.value) != 0:
         errno = ctypes.get_errno()
         warnings.warn(f"{opt} failed with error code {errno}")
 
@@ -119,9 +127,6 @@ def _mmap_file_and_madvise_sequential(
     # This is required since madvise needs a page-aligned address (address must
     # be a multiple of mmap.PAGESIZE (portable) == os.sysconf("SC_PAGE_SIZE")
     # (mac|linux), typically 4096 B).
-    #
-    # TODO: In some cases, for some reason, this fails with errno 22
-    # failure is harmless, but could incurr in a slight perf penalty
     _madvise_sequential(arr.ctypes.data - arr.offset, arr.nbytes)
     return arr
 
@@ -132,7 +137,7 @@ def system_mem_gib() -> tuple[int, int] | tuple[None, None]:
 
 
 def get_peak_memory_gib(out_dir: Path) -> float | None:
-    file = out_dir / "max-rss.txt"
+    file = out_dir / "max-rss.json"
     if not file.exists():
         return None
     with open(file, mode="r", encoding="utf-8") as f:
@@ -174,7 +179,7 @@ def monitor_rss_process(
             os.fsync(f.fileno())
         if total_rss_gib > max_rss_gib:
             max_rss_gib = total_rss_gib
-            with open(file.parent / "max-rss.txt", mode="w", encoding="utf-8") as f:
+            with open(file.parent / "max-rss.json", mode="w", encoding="utf-8") as f:
                 f.write(f"{max_rss_gib}\n")
                 f.flush()
                 os.fsync(f.fileno())

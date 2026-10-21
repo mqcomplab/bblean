@@ -1,18 +1,23 @@
-from numpy.typing import NDArray
+import typing as tp
+
 import numpy as np
+from numpy.typing import NDArray
+from inline_snapshot import snapshot
 
 from legacy_merges import (  # type: ignore
     merge_radius,
     merge_diameter,
     merge_tolerance,
 )
-from bblean._merges import (
+from bblean import BitBirch
+from bblean.merges import (
     NeverMerge,
     RadiusMerge,
     DiameterMerge,
-    ToleranceMerge,
+    ToleranceLegacyMerge,
     ToleranceDiameterMerge,
     ToleranceRadiusMerge,
+    DiscardSubcluster,
 )
 from bblean.fingerprints import make_fake_fingerprints
 from bblean.similarity import centroid_from_sum
@@ -77,7 +82,7 @@ def test_non_tolerance() -> None:
                 val_expect = fn_expect(
                     thresh, new_ls, cent, new_n, old_ls, nom_ls, old_n, nom_n
                 )
-                val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+                val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, [], [])
                 assert val == val_expect
 
 
@@ -113,7 +118,7 @@ def test_tolerance_radius() -> None:
             nom_n = len(nom)
             new_n = old_n + nom_n
             fn = ToleranceRadiusMerge(tolerance=tol)
-            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, [], [])
             assert val == expect[idx]
             idx += 1
 
@@ -133,7 +138,7 @@ def test_never_merge() -> None:
             nom_n = len(nom)
             new_n = old_n + nom_n
             fn = NeverMerge(tolerance=tol)
-            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, [], [])
             assert not val
 
 
@@ -169,7 +174,7 @@ def test_tolerance_diameter() -> None:
             nom_n = len(nom)
             new_n = old_n + nom_n
             fn = ToleranceDiameterMerge(tolerance=tol)
-            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+            val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, [], [])
             assert val == expect[idx]
             idx += 1
 
@@ -184,8 +189,8 @@ def test_tolerance() -> None:
         merge_tolerance,
     )
     oop_fns = (
-        ToleranceMerge,
-        ToleranceMerge,
+        ToleranceLegacyMerge,
+        ToleranceLegacyMerge,
     )
     thresholds = (0.2, 0.2, 0.2, 0.2)
     tolerances = (0.05, 0.05, 0.90, 0.90)
@@ -205,5 +210,104 @@ def test_tolerance() -> None:
                 val_expect = fn_expect(
                     thresh, new_ls, cent, new_n, old_ls, nom_ls, old_n, nom_n, tol
                 )
-                val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n)
+                val = fn(thresh, new_ls, new_n, old_ls, nom_ls, old_n, nom_n, [], [])
                 assert val == val_expect
+
+
+def test_custom_merge() -> None:
+    class TrackingDiameterMerge(DiameterMerge):
+        def __init__(self, max_cluster_size: int) -> None:
+            self.max_cluster_size = max_cluster_size
+            self.redundant_mol_idxs: list[int] = []
+
+        def on_check_merge_end(
+            self,
+            accepted: bool,
+            old_idxs: tp.Sequence[int],
+            nominee_idxs: tp.Sequence[int],
+        ) -> None:
+            if accepted and len(old_idxs) >= self.max_cluster_size:
+                self.redundant_mol_idxs.extend(nominee_idxs)
+                raise DiscardSubcluster
+
+    merge_fn = TrackingDiameterMerge(max_cluster_size=32)
+
+    fps = make_fake_fingerprints(
+        1000, n_features=2048, seed=12620509540149709235, pack=False
+    )
+    tree = BitBirch(threshold=0.3, merge_criterion=merge_fn)
+    tree.fit(fps)
+    assert merge_fn.redundant_mol_idxs == snapshot(
+        [
+            610,
+            611,
+            612,
+            613,
+            614,
+            615,
+            616,
+            617,
+            618,
+            620,
+            621,
+            622,
+            623,
+            625,
+            627,
+            628,
+            629,
+            646,
+            658,
+            679,
+            681,
+            682,
+            685,
+            688,
+            695,
+            696,
+            708,
+            713,
+            714,
+            716,
+            719,
+            720,
+            722,
+            733,
+            734,
+            735,
+            737,
+            740,
+            741,
+            742,
+            743,
+            744,
+            745,
+            746,
+            747,
+            748,
+            749,
+            750,
+            751,
+            752,
+            753,
+            756,
+            757,
+            758,
+            759,
+            761,
+            765,
+            766,
+            767,
+            774,
+            775,
+            777,
+            778,
+            781,
+            786,
+            790,
+            794,
+            795,
+            797,
+        ]
+    )
+    assert sum(tree.get_assignments() == 0) == snapshot(69)

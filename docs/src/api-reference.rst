@@ -18,3 +18,4 @@ API Reference
    multiround
    analysis
    plotting
+   merges

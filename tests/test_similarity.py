@@ -6,6 +6,7 @@ from inline_snapshot import snapshot
 
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
 # _cpp_similarity are tested independently
+import bblean.similarity
 import bblean._py_similarity as pysim
 
 try:
@@ -290,6 +291,6 @@ def test_jt_isim_medoid() -> None:
     fps = make_fake_fingerprints(
         30, n_features=8, seed=17408390758220920002, pack=False
     )
-    idx, m = pysim.jt_isim_medoid(fps)
+    idx, m = bblean.similarity.jt_isim_medoid(fps)
     assert idx == snapshot(26)
     assert m.tolist() == snapshot([1, 1, 0, 1, 1, 1, 1, 1])
