@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from inline_snapshot import snapshot
+from legacy_fns import calculate_medoid  # type: ignore
 
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
 # _cpp_similarity are tested independently
@@ -294,3 +295,4 @@ def test_jt_isim_medoid() -> None:
     idx, m = bblean.similarity.jt_isim_medoid(fps)
     assert idx == snapshot(26)
     assert m.tolist() == snapshot([1, 1, 0, 1, 1, 1, 1, 1])
+    assert calculate_medoid(fps).tolist() == [1, 1, 0, 1, 1, 1, 1, 1]
