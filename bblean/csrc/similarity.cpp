@@ -13,7 +13,7 @@
 #include <vector>
 
 // Scalar popcount intrinsics:
-#if defined(__SSE_4_2__) || defined(_M_SSE4_2)
+#if defined(__SSE4_2__) || defined(_M_SSE4_2)
 // Compiler-portable, but *not available in systems that do not have SSE*
 // (which should be almost no CPUs nowadays)
 // Not actually vector instructions, they just live in the SSE header
