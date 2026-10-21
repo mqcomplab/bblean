@@ -1,8 +1,8 @@
 r"""Misc. utility functions"""
 
+import os
 from pathlib import Path
 import itertools
-import numpy as np
 import typing as tp
 import sys
 import subprocess
@@ -10,8 +10,14 @@ import platform
 import importlib
 
 import psutil
+import numpy as np
 
-__all__ = ["batched", "min_safe_uint"]
+__all__ = [
+    "batched",
+    "min_safe_uint",
+    "cpp_extensions_are_enabled",
+    "cpp_extensions_are_installed",
+]
 
 _T = tp.TypeVar("_T")
 
@@ -45,7 +51,7 @@ def batched(iterable: tp.Iterable[_T], n: int) -> tp.Iterator[tuple[_T, ...]]:
 def _import_bitbirch_variant(
     variant: str = "lean",
 ) -> tuple[tp.Any, tp.Callable[..., None]]:
-    if variant not in ("lean", "int64_dense", "uint8"):
+    if variant not in ("lean", "int64", "uint8"):
         raise ValueError(f"Unknown variant {variant}")
     if variant == "lean":
         # Most up-to-date bb variant
@@ -53,9 +59,9 @@ def _import_bitbirch_variant(
     elif variant == "uint8":
         # Legacy variant of bb that uses uint8 and supports packing, but no extra optim
         module = importlib.import_module("bblean._legacy.bb_uint8")
-    elif variant == "int64_dense":
+    elif variant == "int64":
         # Legacy variant of bb that uses int64 fps (dense only)
-        module = importlib.import_module("bblean._legacy.bb_int64_dense")
+        module = importlib.import_module("bblean._legacy.bb_int64")
 
     Cls = getattr(module, "BitBirch")
     fn = getattr(module, "set_merge")
@@ -63,6 +69,9 @@ def _import_bitbirch_variant(
 
 
 def _num_avail_cpus() -> int:
+    if sys.platform == "darwin":
+        # macOS doesn't expose cpu affinity, so assume all cpu's are available
+        return os.cpu_count()
     return len(psutil.Process().cpu_affinity())
 
 
@@ -97,3 +106,25 @@ def _has_files_or_valid_symlinks(path: Path) -> bool:
         if p.is_file():
             has_files = True
     return has_files
+
+
+def cpp_extensions_are_enabled() -> bool:
+    r"""Query whether the C++ BitBRICH extensions are currently enabled"""
+    if os.getenv("BITBIRCH_NO_EXTENSIONS"):
+        return False
+    try:
+        from bblean._cpp_similarity import jt_isim_from_sum  # noqa
+
+        return True
+    except ImportError:
+        return False
+
+
+def cpp_extensions_are_installed() -> bool:
+    r"""Query whether the C++ BitBRICH extensions are currently installed"""
+    try:
+        from bblean._cpp_similarity import jt_isim_from_sum  # noqa
+
+        return True
+    except ImportError:
+        return False

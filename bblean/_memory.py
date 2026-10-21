@@ -5,6 +5,7 @@ import mmap
 import warnings
 from enum import Enum
 import ctypes
+import functools
 import dataclasses
 from pathlib import Path
 import sys
@@ -17,13 +18,6 @@ import psutil
 import numpy as np
 from numpy.typing import NDArray
 from rich.console import Console
-
-try:
-    import resource
-except Exception:
-    # resource is only available on Unix systems
-    pass
-
 
 _BYTES_TO_GIB = 1 / 1024**3
 
@@ -43,13 +37,20 @@ class Madv(Enum):
 
 
 # Get handle to the system's libc
+@functools.cache
 def _get_libc() -> tp.Any:
     if sys.platform == "linux":
-        return ctypes.CDLL("libc.so.6", use_errno=True)
+        libc = ctypes.CDLL("libc.so.6", use_errno=True)
     elif sys.platform == "darwin":
-        return ctypes.CDLL("libc.dylib", use_errno=True)
-    # For now, do nothing in Windows
-    return
+        libc = ctypes.CDLL("libc.dylib", use_errno=True)
+    else:
+        # For now, do nothing in Windows
+        return None
+    # Without explicit argtypes ctypes passes python ints as 32-bit C ints, which
+    # truncates sizes >= 2 GiB
+    libc.madvise.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
+    libc.madvise.restype = ctypes.c_int
+    return libc
 
 
 # This reduces memory usage around 40%, since the kernel can release
@@ -69,7 +70,7 @@ def _madvise(page_start: int, size: int, opt: Madv) -> None:
     libc = _get_libc()
     if libc is None:
         return
-    if libc.madvise(ctypes.c_void_p(page_start), size, opt.value) != 0:
+    if libc.madvise(page_start, size, opt.value) != 0:
         errno = ctypes.get_errno()
         warnings.warn(f"{opt} failed with error code {errno}")
 
@@ -135,61 +136,53 @@ def system_mem_gib() -> tuple[int, int] | tuple[None, None]:
     return mem.total * _BYTES_TO_GIB, mem.available * _BYTES_TO_GIB
 
 
-@dataclasses.dataclass
-class PeakMemoryStats:
-    self_gib: float
-    child_gib: float | None
-
-    @property
-    def children_were_tracked(self) -> bool:
-        if mp.get_start_method() == "forkserver":
-            return False
-        return True
-
-
-def get_peak_memory(num_processes: int) -> PeakMemoryStats | None:
-    # Can't track peak memory in non-unix systems
-    if "resource" not in sys.modules:
+def get_peak_memory_gib(out_dir: Path) -> float | None:
+    file = out_dir / "max-rss.json"
+    if not file.exists():
         return None
-    max_mem_bytes_self = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    max_mem_bytes_child = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-    if sys.platform == "linux":
-        # In linux these are returned kiB, not bytes
-        max_mem_bytes_self *= 1024
-        max_mem_bytes_child *= 1024
-    max_mem_gib_self = max_mem_bytes_self * _BYTES_TO_GIB
-    max_mem_gib_child = max_mem_bytes_child * _BYTES_TO_GIB
-
-    if num_processes == 1:
-        return PeakMemoryStats(max_mem_gib_self, None)
-    return PeakMemoryStats(max_mem_gib_self, max_mem_gib_child)
+    with open(file, mode="r", encoding="utf-8") as f:
+        peak_mem_gib = float(f.read().strip())
+    return peak_mem_gib
 
 
-def monitor_rss_process(file: Path | str, interval_s: float, start_time: float) -> None:
+def monitor_rss_process(
+    file: Path | str, interval_s: float, start_time: float, parent_pid: int
+) -> None:
+    file = Path(file)
+    this_pid = os.getpid()
+    ps = psutil.Process(parent_pid)
+
     def total_rss() -> float:
-        total_rss = 0.0
-        for proc in psutil.process_iter(["pid", "name", "cmdline", "memory_info"]):
-            info = proc.info
-            cmdline = info["cmdline"]
-            if cmdline is None:
+        total_rss = ps.memory_info().rss
+        for proc in ps.children(recursive=True):
+            if proc.pid == this_pid:
                 continue
-            if Path(__file__).name in cmdline:
-                total_rss += info["memory_info"].rss
+            try:
+                total_rss += proc.memory_info().rss
+            except psutil.NoSuchProcess:
+                # Prevent race condition since process may have finished before it can
+                # be polled
+                continue
         return total_rss
 
-    t = start_time
     with open(file, mode="w", encoding="utf-8") as f:
         f.write("rss_gib,time_s\n")
         f.flush()
         os.fsync(f.fileno())
 
+    max_rss_gib = 0.0
     while True:
         total_rss_gib = total_rss() * _BYTES_TO_GIB
-        t = time.perf_counter() - start_time
         with open(file, mode="a", encoding="utf-8") as f:
-            f.write(f"{total_rss_gib},{t}\n")
+            f.write(f"{total_rss_gib},{time.perf_counter() - start_time}\n")
             f.flush()
             os.fsync(f.fileno())
+        if total_rss_gib > max_rss_gib:
+            max_rss_gib = total_rss_gib
+            with open(file.parent / "max-rss.json", mode="w", encoding="utf-8") as f:
+                f.write(f"{max_rss_gib}\n")
+                f.flush()
+                os.fsync(f.fileno())
         time.sleep(interval_s)
 
 
@@ -204,6 +197,7 @@ def launch_monitor_rss_daemon(
             file=out_file,
             interval_s=interval_s,
             start_time=time.perf_counter(),
+            parent_pid=os.getpid(),
         ),
         daemon=True,
     ).start()

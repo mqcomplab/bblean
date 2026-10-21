@@ -1,47 +1,42 @@
 r"""Utilites for manipulating fingerprints and fingerprint files"""
 
+import sys
+import math
+import weakref
+import warnings
 import dataclasses
 from pathlib import Path
 from numpy.typing import NDArray, DTypeLike
 import numpy as np
 import typing as tp
+import multiprocessing as mp
+import multiprocessing.shared_memory as shmem
 
 from rich.console import Console
-from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles
+from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles, SanitizeFlags, SanitizeMol
 
 from bblean._config import DEFAULTS
+from bblean._console import get_console
+from bblean.smiles import _iter_ranges_and_smiles_batches
+from bblean.utils import _num_avail_cpus
 
 __all__ = [
     "make_fake_fingerprints",
     "fps_from_smiles",
     "pack_fingerprints",
     "unpack_fingerprints",
-    "calc_centroid",
 ]
 
 
+# Deprecated
 def calc_centroid(
     linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
 ) -> NDArray[np.uint8]:
-    """Calculates centroid
-
-    Parameters
-    ----------
-
-    linear_sum : np.ndarray
-                 Sum of the elements column-wise
-    n_samples : int
-                Number of samples
-    pack : bool
-        Whether to pack the resulting fingerprints
-
-    Returns
-    -------
-    centroid : np.ndarray[np.uint8]
-               Centroid fingerprints of the given set
-    """
-    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
-    # so this view is fully safe
+    warnings.warn(
+        "Please use `bblean.similarity.centroid_from_sum(...)` instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if n_samples <= 1:
         centroid = linear_sum.astype(np.uint8, copy=False)
     else:
@@ -49,6 +44,9 @@ def calc_centroid(
     if pack:
         return np.packbits(centroid, axis=-1)
     return centroid
+
+
+centroid_from_sum = calc_centroid
 
 
 def pack_fingerprints(a: NDArray[np.uint8]) -> NDArray[np.uint8]:
@@ -64,11 +62,11 @@ def unpack_fingerprints(
 
     .. note::
 
-        If `n_features` is not passed, unpacking will only recover the correct number of
-        features if it is a multiple of 8, otherwise fingerprints will be padded with
+        If ``n_features`` is not passed, unpacking will only recover the correct number
+        of features if it is a multiple of 8, otherwise fingerprints will be padded with
         zeros to the closest multiple of 8. This is generally not an issue since most
         common fingerprints feature sizes (2048, 1024, etc) are multiples of 8, but if
-        you are using a non-standard number of features you should pass `n_features`
+        you are using a non-standard number of features you should pass ``n_features``
         explicitly.
     """
     # n_features is required to discard padded zeros if it is not a multiple of 8
@@ -123,7 +121,47 @@ def _get_generator(kind: str, n_features: int) -> tp.Any:
         return rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=n_features)
     elif kind == "ecfp6":
         return rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=n_features)
-    raise ValueError(f"Unknonw kind {kind}. Should be one of 'rdkit|ecfp4|ecfp6'")
+    elif kind == "topological":
+        return rdFingerprintGenerator.GetTopologicalTorsionGenerator(fpSize=n_features)
+    elif kind == "ap":
+        return rdFingerprintGenerator.GetAtomPairGenerator(fpSize=n_features)
+    raise ValueError(f"Unknown kind {kind}. Use 'rdkit|ecfp4|ecfp6|topological|ap'")
+
+
+def _get_sanitize_flags(sanitize: str) -> tp.Any:
+    if sanitize == "all":
+        return SanitizeFlags.SANITIZE_ALL
+    elif sanitize == "minimal":
+        flags = SanitizeFlags.SANITIZE_CLEANUP | SanitizeFlags.SANITIZE_SYMMRINGS
+        return flags
+    else:
+        raise ValueError("Unknown 'sanitize', must be one of 'all', 'minimal'")
+
+
+@tp.overload
+def fps_from_smiles(
+    smiles: tp.Iterable[str],
+    kind: str = DEFAULTS.fp_kind,
+    n_features: int = DEFAULTS.n_features,
+    dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: tp.Literal[False] = False,
+    pack: bool = True,
+) -> NDArray[np.uint8]:
+    pass
+
+
+@tp.overload
+def fps_from_smiles(
+    smiles: tp.Iterable[str],
+    kind: str = DEFAULTS.fp_kind,
+    n_features: int = DEFAULTS.n_features,
+    dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: tp.Literal[True] = True,
+    pack: bool = True,
+) -> tuple[NDArray[np.uint8], NDArray[np.int64]]:
+    pass
 
 
 def fps_from_smiles(
@@ -131,8 +169,10 @@ def fps_from_smiles(
     kind: str = DEFAULTS.fp_kind,
     n_features: int = DEFAULTS.n_features,
     dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: bool = False,
     pack: bool = True,
-) -> NDArray[np.uint8]:
+) -> tp.Union[NDArray[np.uint8], tuple[NDArray[np.uint8], NDArray[np.int64]]]:
     r"""Convert a sequence of smiles into chemical fingerprints"""
     if n_features < 1 or n_features % 8 != 0:
         raise ValueError("n_features must be a multiple of 8, and greater than 0")
@@ -144,20 +184,37 @@ def fps_from_smiles(
 
     fpg = _get_generator(kind, n_features)
 
-    mols = []
-    for smi in smiles:
-        mol = MolFromSmiles(smi)
-        if mol is None:
-            raise ValueError(f"Could not parse smiles {smi}")
-        mols.append(mol)
+    sanitize_flags = _get_sanitize_flags(sanitize)
 
-    fps = np.empty((len(mols), n_features), dtype=dtype)
-    # This is significantly faster than getting the fps in a batch with
-    # GetFingerprints(mols) and then using ConvertToNumpyArray.
-    for i, mol in enumerate(mols):
-        fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
+    smiles = list(smiles)
+    fps = np.empty((len(smiles), n_features), dtype=dtype)
+
+    invalid_idxs = []
+    for i, smi in enumerate(smiles):
+        mol = MolFromSmiles(smi, sanitize=False)
+        if mol is None:
+            if skip_invalid:
+                invalid_idxs.append(i)
+                continue
+            else:
+                raise ValueError(f"Unable to parse smiles {smi}")
+        try:
+            SanitizeMol(mol, sanitizeOps=sanitize_flags)
+            fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
+        except Exception:
+            if skip_invalid:
+                invalid_idxs.append(i)
+                continue
+            raise
+
+    if invalid_idxs:
+        fps = np.delete(fps, invalid_idxs, axis=0)
     if pack:
+        if skip_invalid:
+            return pack_fingerprints(fps), np.array(invalid_idxs, dtype=np.int64)
         return pack_fingerprints(fps)
+    if skip_invalid:
+        return fps, np.array(invalid_idxs, dtype=np.int64)
     return fps
 
 
@@ -191,13 +248,28 @@ def _print_fps_file_info(path: Path, console: Console | None = None) -> None:
     shape, dtype, shape_is_valid, dtype_is_valid = _get_fps_file_shape_and_dtype(path)
 
     console.print(f"File: {path.resolve()}")
+    has_nonzero = None
     if shape_is_valid and dtype_is_valid:
         console.print("    - [green]Valid fingerprint file[/green]")
+        if shape[0] > 0:
+            first_fp = np.load(path, mmap_mode="r")[0]
+            has_nonzero = (first_fp > 1).any()
+            if has_nonzero:
+                console.print("    - Guessed format: [cyan]Packed[/cyan]")
+            else:
+                console.print("    - Guessed format: [magenta]Unpacked[/magenta]")
+        else:
+            console.print("    - Guessed format: [red]Unknown[/red]")
     else:
         console.print("    - [red]Invalid fingerprint file[/red]")
     if shape_is_valid:
         console.print(f"    - Num. fingerprints: {shape[0]:,}")
-        console.print(f"    - Num. features: {shape[1]:,}")
+        if has_nonzero:
+            console.print(
+                f"    - Num. features: {shape[1]:,} (guessed unpacked: {shape[1] * 8:,})"  # noqa
+            )
+        else:
+            console.print(f"    - Num. features: {shape[1]:,}")
     else:
         console.print(f"    - Shape: {shape}")
     console.print(f"    - DType: [yellow]{dtype.name}[/yellow]")
@@ -271,6 +343,7 @@ def _get_fingerprints_from_file_seq(
     return arr
 
 
+# TODO: Skipping invalid smiles is a bit inefficient
 # NOTE: Mostly convenient for usage in multiprocessing workflows
 @dataclasses.dataclass
 class _FingerprintFileCreator:
@@ -281,19 +354,205 @@ class _FingerprintFileCreator:
     pack: bool
     kind: str
     n_features: int
+    sanitize: str
+    skip_invalid: bool
+    verbose: bool
 
     def __call__(self, input_: tuple[int, tp.Sequence[str]]) -> None:
+        console = get_console(self.verbose)
         fpg = _get_generator(self.kind, self.n_features)
         file_idx, batch = input_
         fps = np.empty((len(batch), self.n_features), dtype=self.dtype)
         out_name = self.out_name
+        sanitize_flags = _get_sanitize_flags(self.sanitize)
+        invalid = []
         for i, smi in enumerate(batch):
-            mol = MolFromSmiles(smi)
+            mol = MolFromSmiles(smi, sanitize=False)
             if mol is None:
-                raise ValueError(f"Could not parse smile {smi}")
+                if self.skip_invalid:
+                    invalid.append(i)
+                    continue
+                else:
+                    raise ValueError(f"Unable to parse smiles {smi}")
+            try:
+                SanitizeMol(mol, sanitizeOps=sanitize_flags)  # Raises if invalid
+            except Exception:
+                if self.skip_invalid:
+                    invalid.append(i)
+                    continue
+                raise
             fps[i, :] = fpg.GetFingerprintAsNumPy(mol)
         if self.pack:
             fps = pack_fingerprints(fps)
         if self.digits is not None:
             out_name = f"{out_name}.{str(file_idx).zfill(self.digits)}"
+        if invalid:
+            prev_num = len(fps)
+            fps = np.delete(fps, invalid, axis=0)
+            new_num = len(fps)
+            console.print(
+                f"File {file_idx}: Generated {new_num} fingerprints\n"
+                f" File {file_idx}: Skipped {prev_num - new_num} invalid smiles"
+            )
         np.save(self.out_dir / out_name, fps)
+
+
+@dataclasses.dataclass
+class _FingerprintArrayFiller:
+    invalid_mask_shmem_name: str
+    shmem_name: str
+    kind: str
+    fp_size: int
+    pack: bool
+    dtype: str
+    num_smiles: int
+    sanitize: str
+    skip_invalid: bool
+
+    def __call__(self, idx_range: tuple[int, int], batch: tp.Sequence[str]) -> None:
+        fpg = _get_generator(self.kind, self.fp_size)
+        (idx0, idx1) = idx_range
+        fps_shmem = shmem.SharedMemory(name=self.shmem_name)
+        invalid_mask_shmem = shmem.SharedMemory(name=self.invalid_mask_shmem_name)
+        sanitize_flags = _get_sanitize_flags(self.sanitize)
+
+        if self.pack:
+            out_dim = (self.fp_size + 7) // 8
+        else:
+            out_dim = self.fp_size
+        fps = np.ndarray(
+            (self.num_smiles, out_dim), dtype=self.dtype, buffer=fps_shmem.buf
+        )
+        invalid_mask = np.ndarray(
+            (self.num_smiles,), dtype=np.bool, buffer=invalid_mask_shmem.buf
+        )
+        for i, smi in zip(range(idx0, idx1), batch):
+            mol = MolFromSmiles(smi, sanitize=False)
+            if mol is None:
+                if self.skip_invalid:
+                    invalid_mask[i] = True
+                    continue
+                else:
+                    raise ValueError(f"Unable to parse smiles {smi}")
+            try:
+                SanitizeMol(mol, sanitizeOps=sanitize_flags)  # Raises if invalid
+            except Exception:
+                if self.skip_invalid:
+                    invalid_mask[i] = True
+                    continue
+                raise
+            fp = fpg.GetFingerprintAsNumPy(mol)
+            if self.pack:
+                fp = pack_fingerprints(fp)
+            fps[i, :] = fp
+        fps_shmem.close()
+        invalid_mask_shmem.close()
+
+
+@tp.overload
+def fps_from_smiles_parallel(
+    smiles: tp.Iterable[str],
+    kind: str = DEFAULTS.fp_kind,
+    n_features: int = DEFAULTS.n_features,
+    dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: tp.Literal[False] = False,
+    pack: bool = True,
+    num_ps: int = 1,
+    replace_dummy_atoms: bool = False,
+    tab_separated: bool = False,
+    mp_context: tp.Any = None,
+) -> NDArray[np.uint8]:
+    pass
+
+
+@tp.overload
+def fps_from_smiles_parallel(
+    smiles: tp.Iterable[str],
+    kind: str = DEFAULTS.fp_kind,
+    n_features: int = DEFAULTS.n_features,
+    dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: tp.Literal[True] = True,
+    pack: bool = True,
+    num_ps: int = 1,
+    replace_dummy_atoms: bool = False,
+    tab_separated: bool = False,
+    mp_context: tp.Any = None,
+) -> tp.Union[NDArray[np.uint8], tuple[NDArray[np.uint8], NDArray[np.int64]]]:
+    pass
+
+
+# NOTE: This function is proof of concept and kinda dangerous since it registers
+# a custom destructor for the numpy array
+# It is also *only usable if called inside an if __name__ == "__main__" guard*
+# For now lets hide it
+def fps_from_smiles_parallel(
+    smiles: tp.Iterable[str],
+    kind: str = DEFAULTS.fp_kind,
+    n_features: int = DEFAULTS.n_features,
+    dtype: DTypeLike = np.uint8,
+    sanitize: str = "all",
+    skip_invalid: bool = False,
+    pack: bool = True,
+    num_ps: int | None = None,
+    replace_dummy_atoms: bool = False,
+    tab_separated: bool = False,
+    mp_context: tp.Any = None,
+) -> tp.Union[NDArray[np.uint8], tuple[NDArray[np.uint8], NDArray[np.int64]]]:
+    r""":meta private:"""
+    if mp_context is None:
+        mp_context = mp.get_context("forkserver" if sys.platform == "linux" else None)
+    if isinstance(smiles, str):
+        smiles = [smiles]
+    smiles = list(smiles)
+    smiles_num = len(smiles)
+    if num_ps is None:
+        num_ps = _num_avail_cpus()
+
+    if pack:
+        out_dim = (n_features + 7) // 8
+    else:
+        out_dim = n_features
+    shmem_size = smiles_num * out_dim * np.dtype(dtype).itemsize
+    fps_shmem = shmem.SharedMemory(create=True, size=shmem_size)
+    invalid_mask_shmem = shmem.SharedMemory(create=True, size=smiles_num)
+    fps_array_filler = _FingerprintArrayFiller(
+        shmem_name=fps_shmem.name,
+        invalid_mask_shmem_name=invalid_mask_shmem.name,
+        kind=kind,
+        fp_size=n_features,
+        num_smiles=smiles_num,
+        dtype=np.dtype(dtype).name,
+        pack=pack,
+        sanitize=sanitize,
+        skip_invalid=skip_invalid,
+    )
+    num_per_batch = math.ceil(smiles_num / num_ps)
+    with mp_context.Pool(processes=num_ps) as pool:
+        pool.starmap(
+            fps_array_filler,
+            _iter_ranges_and_smiles_batches(
+                smiles,
+                num_per_batch,
+                tab_separated,
+                replace_dummy_atoms,
+                assume_paths=False,
+            ),
+        )
+    fps = np.ndarray((smiles_num, out_dim), dtype=dtype, buffer=fps_shmem.buf)
+    mask = np.ndarray((smiles_num,), dtype=np.bool, buffer=invalid_mask_shmem.buf)
+    if skip_invalid:
+        fps = np.delete(fps, mask, axis=0)
+        weakref.finalize(mask, invalid_mask_shmem.close)
+        weakref.finalize(mask, invalid_mask_shmem.unlink)
+        weakref.finalize(fps, fps_shmem.close)
+        weakref.finalize(fps, fps_shmem.unlink)
+        return fps, mask
+
+    del mask
+    invalid_mask_shmem.close()
+    invalid_mask_shmem.unlink()
+    weakref.finalize(fps, fps_shmem.close)
+    weakref.finalize(fps, fps_shmem.unlink)
+    return fps

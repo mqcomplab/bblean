@@ -115,7 +115,7 @@ def set_merge(merge_criterion, tolerance=0.05):
                         jt_radius >= threshold
                     )
 
-    elif merge_criterion == "tolerance":
+    elif merge_criterion in ["tolerance", "tolerance-legacy"]:
 
         def merge_accept(
             threshold, new_ls, new_centroid, new_n, old_ls, nom_ls, old_n, nom_n
@@ -628,11 +628,12 @@ class BitBirch:
             Fitted estimator.
         """
         if isinstance(X, Path):
-            fps = np.load(file, mmap_mode="r")[max_fps:]
+            X = np.load(X, mmap_mode="r")[:max_fps]
         else:
-            X = X[max_fps:]
+            X = X[:max_fps]
         threshold = self.threshold
         branching_factor = self.branching_factor
+
         n_features = _validate_n_features(X, input_is_packed, n_features)
         d_type = X.dtype
 
@@ -718,6 +719,7 @@ class BitBirch:
         """
         threshold = self.threshold
         branching_factor = self.branching_factor
+
         n_features = _validate_n_features(X, input_is_packed, n_features)
         d_type = X.dtype
 

@@ -23,6 +23,7 @@ eggs/
 *.egg-info/
 *.egg
 wheels/
+wheelhouse/
 share/python-wheels/
 
 # Coverage
@@ -35,7 +36,8 @@ coverage.json
 .pytest_cache/
 
 # Sphinx documentation
-docs/_build
+docs/build
+docs/src/_api_autogen/
 
 # Mypy
 .mypy_cache/
@@ -61,7 +63,7 @@ nohup.out
 
 # py-spy profile files
 profile.svg
-profile_output.*
+profile_output*
 
 # Outputs / inputs
 *.npy
@@ -70,6 +72,7 @@ peak-rss*.json
 cluster-mol-ids*.json
 config*.json
 timings*.json
+max-rss.txt
 
 # Pickle
 *.pkl
@@ -77,7 +80,10 @@ timings*.json
 
 # Shell and python scripts
 *.script.sh
+*.script.bash
 *.script.py
+script.py
+script.sh
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
@@ -85,3 +91,5 @@ timings*.json
 # Outputs from examples
 examples/*.png
 examples/*.csv
+!examples/biogen_logS.csv
+*.pdf

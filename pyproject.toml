@@ -8,10 +8,12 @@ authors = [
     {name = "Kenneth Lopez Perez", email = "klopezperez@chem.ufl.edu"},
     {name = "Miroslav Lzicar", email= "miroslav.lzicar@deepmedchem.com"},
 ]
+license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 description = "BitBirch-Lean Python package"
 requires-python = ">=3.11"
-dynamic = ["version", "readme"]
+dynamic = ["version"]
+readme = "README.md"
 dependencies = [
     "scipy",
     "rdkit",
@@ -20,10 +22,15 @@ dependencies = [
     "psutil",
     "matplotlib",
     "colorcet",
-    "opentsne",
+    "seaborn",
     "scikit-learn",
     "rich",
     "typer",
+    "typing_extensions",
+    # Dimensionality reduction
+    "opentsne",
+    "umap-learn",
+    "pynndescent",  # makes umap faster
 ]
 classifiers=[
   "Intended Audience :: Science/Research",
@@ -32,23 +39,19 @@ classifiers=[
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",
   "Development Status :: 4 - Beta",
-  "Operating System :: Microsoft :: Windows",
+  #"Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Operating System :: Unix",
   "Operating System :: MacOS",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 
-[tool.setuptools.dynamic]
-readme = {file = ["README.md"]}
-
 [build-system]
-requires = ["setuptools>=75.6", "setuptools-scm>=9", "pybind11"]
+requires = ["setuptools>=75.6", "setuptools-scm>=9", "pybind11", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]

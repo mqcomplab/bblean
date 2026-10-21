@@ -6,7 +6,78 @@ from numpy.typing import NDArray
 import numpy as np
 
 from bblean.utils import min_safe_uint
-from bblean.fingerprints import unpack_fingerprints, calc_centroid
+from bblean.fingerprints import unpack_fingerprints
+
+
+def centroid_from_sum(
+    linear_sum: NDArray[np.integer], n_samples: int, *, pack: bool = True
+) -> NDArray[np.uint8]:
+    r"""Calculates the majority vote centroid from a sum of fingerprint values
+
+    The majority vote centroid is an good approximation of the Tanimoto centroid.
+
+    Parameters
+    ----------
+
+    linear_sum : np.ndarray
+                 Sum of the elements column-wise
+    n_samples : int
+                Number of samples
+    pack : bool
+        Whether to pack the resulting fingerprints
+
+    Returns
+    -------
+    centroid : np.ndarray[np.uint8]
+               Centroid fingerprints of the given set
+    """
+    # NOTE: Numpy guarantees bools are stored as 0xFF -> True and 0x00 -> False,
+    # so this view is fully safe
+    if n_samples <= 1:
+        centroid = linear_sum.astype(np.uint8, copy=False)
+    else:
+        centroid = (linear_sum >= n_samples * 0.5).view(np.uint8)
+    if pack:
+        return np.packbits(centroid, axis=-1)
+    return centroid
+
+
+def centroid(
+    fps: NDArray[np.uint8],
+    input_is_packed: bool = True,
+    n_features: int | None = None,
+    *,
+    pack: bool = True,
+) -> NDArray[np.uint8]:
+    r"""Calculates the majority vote centroid from a set of fingerprints
+
+    The majority vote centroid is an good approximation of the Tanimoto centroid.
+    """
+    if input_is_packed:
+        fps = unpack_fingerprints(fps, n_features)
+    return centroid_from_sum(
+        np.sum(fps, axis=0, dtype=np.uint64),  # type: ignore
+        len(fps),
+        pack=pack,
+    )
+
+
+def jt_compl_isim(
+    fps: NDArray[np.uint8], input_is_packed: bool = True, n_features: int | None = None
+) -> NDArray[np.float64]:
+    """Get all complementary (Tanimoto) similarities of a set of fps, using iSIM"""
+    if input_is_packed:
+        fps = unpack_fingerprints(fps, n_features)
+    # Vectorized calculation of all compl isim
+    # For all compl isim N is N_total - 1
+    n_objects = len(fps) - 1
+    if n_objects < 2:
+        msg = "Invalid fps. len(fps) must be >= 3"
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
+        return np.full(len(fps), fill_value=np.nan, dtype=np.float64)
+    linear_sum = np.sum(fps, axis=0)
+    comp_sims = [jt_isim_from_sum(linear_sum - fp, n_objects) for fp in fps]
+    return np.array(comp_sims, dtype=np.float64)
 
 
 # Requires numpy >= 2.0
@@ -53,7 +124,7 @@ def jt_most_dissimilar_packed(
     Y_unpacked = unpack_fingerprints(Y, n_features)
     # np.sum() automatically promotes to uint64 unless forced to a smaller dtype
     linear_sum = np.sum(Y_unpacked, axis=0, dtype=min_safe_uint(n_samples))
-    packed_centroid = calc_centroid(linear_sum, n_samples, pack=True)
+    packed_centroid = centroid_from_sum(linear_sum, n_samples, pack=True)
 
     cardinalities = _popcount(Y)
 
@@ -70,24 +141,31 @@ def jt_most_dissimilar_packed(
     return fp_1, fp_2, sims_fp_1, sims_fp_2
 
 
-def jt_sim_packed(
-    arr: NDArray[np.uint8],
-    vec: NDArray[np.uint8],
+def _jt_sim_arr_vec_packed(
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
 ) -> NDArray[np.float64]:
-    r"""Tanimoto similarity between a matrix of packed fps and a single packed fp"""
-    return _jt_sim_packed_precalc_cardinalities(arr, vec, _popcount(arr))
+    r"""Tanimoto similarity between packed fingerprints
+
+    Either both inputs are vectors of shape (F,) (Numpy scalar is returned), or one is
+    an vector (F,) and the other an array of shape (N, F) (Numpy array of shape (N,) is
+    returned).
+    """
+    if x.ndim != 2 or y.ndim != 1:
+        raise ValueError("Expected a 2D array and a 1D vector as inputs")
+    return _jt_sim_packed_precalc_cardinalities(x, y, _popcount(x))
 
 
 def _jt_sim_packed_precalc_cardinalities(
-    arr: NDArray[np.uint8],
-    vec: NDArray[np.uint8],
+    x: NDArray[np.uint8],
+    y: NDArray[np.uint8],
     cardinalities: NDArray[np.integer],
 ) -> NDArray[np.float64]:
     # _cardinalities must be the result of calling _popcount(arr)
 
     # Maximum value in the denominator sum is the 2 * n_features (which is typically
     # uint16, but we use uint32 for safety)
-    intersection = _popcount(np.bitwise_and(arr, vec))
+    intersection = _popcount(np.bitwise_and(x, y))
 
     # Return value requires an out-of-place operation since it casts uints to f64
     #
@@ -96,14 +174,40 @@ def _jt_sim_packed_precalc_cardinalities(
     #
     # In these cases the fps are equal so the similarity *should be 1*, so we
     # clamp the denominator, which is A | B (zero only if A & B is zero too).
-    return intersection / np.maximum(cardinalities + _popcount(vec) - intersection, 1)
+    return intersection / np.maximum(cardinalities + _popcount(y) - intersection, 1)
 
 
-def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
-    r"""iSIM Tanimoto calculation
+def jt_isim_unpacked(arr: NDArray[np.integer]) -> float:
+    # cast is slower
+    return jt_isim_from_sum(
+        np.sum(arr, axis=0, dtype=np.uint64), len(arr)  # type: ignore
+    )
+
+
+def jt_isim_packed(fps: NDArray[np.integer], n_features: int | None = None) -> float:
+    # cast is slower
+    # mypy may have a bug associated with np.uint64 passed as a dtype to sum in np
+    return jt_isim_from_sum(
+        np.sum(
+            unpack_fingerprints(fps, n_features),  # type: ignore
+            axis=0,
+            dtype=np.uint64,  # type: ignore [arg-type]
+        ),
+        len(fps),
+    )
+
+
+def jt_isim_from_sum(linear_sum: NDArray[np.integer], n_objects: int) -> float:
+    r"""iSIM Tanimoto, from sum of rows of a fingerprint array and number of rows
 
     iSIM Tanimoto was first propsed in:
     https://pubs.rsc.org/en/content/articlelanding/2024/dd/d4dd00041b
+
+    :math:`iSIM_{JT}(X)` is an excellent :math:`O(N)` approximation of the average
+    Tanimoto similarity of a set of fingerprints.
+
+    Also equivalent to the complement of the Tanimoto diameter
+    :math:`iSIM_{JT}(X) = 1 - D_{JT}(X)`.
 
     Parameters
     ----------
@@ -124,10 +228,11 @@ def jt_isim(c_total: NDArray[np.integer], n_objects: int) -> float:
         warnings.warn(
             f"Invalid n_objects = {n_objects} in isim. Expected n_objects >= 2",
             RuntimeWarning,
+            stacklevel=2,
         )
         return np.nan
 
-    x = c_total.astype(np.uint64, copy=False)
+    x = linear_sum.astype(np.uint64, copy=False)
     sum_kq = np.sum(x)
     # isim of fingerprints that are all zeros should be 1 (they are all equal)
     if sum_kq == 0:

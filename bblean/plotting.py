@@ -1,10 +1,15 @@
 r"""Plotting and visualization convenience functions"""
 
+import warnings
+from pathlib import Path
+import pickle
+import random
 import typing as tp
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import seaborn as sns
 from rdkit import Chem
 from rdkit.Chem import Draw
 import colorcet
@@ -12,14 +17,147 @@ from sklearn.preprocessing import StandardScaler, normalize as normalize_feature
 from sklearn.decomposition import PCA
 from openTSNE.sklearn import TSNE
 from openTSNE.affinity import Multiscale
+import umap
 
-from bblean.utils import batched, _num_avail_cpus
-from bblean.analysis import ClusterAnalysis
+from bblean.utils import batched, _num_avail_cpus, _has_files_or_valid_symlinks
+from bblean.analysis import ClusterAnalysis, cluster_analysis
 from bblean._config import TSNE_SEED
 
-__all__ = ["summary_plot", "tsne_plot", "dump_mol_images"]
+__all__ = [
+    "summary_plot",
+    "tsne_plot",
+    "umap_plot",
+    "pops_plot",
+    "pca_plot",
+    "dump_mol_images",
+]
 
-# TODO: Mol relocation plots?
+
+def isim_size_ordered_plot(
+    c: ClusterAnalysis,
+    /,
+    threshold: float | None = None,
+    title: str | None = None,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""iSIMs of clusters ordered by size"""
+    fig, axs = plt.subplots(1, 2, figsize=(6.4, 3), sharex=True, sharey=True)
+
+    # ordered by size by default, note that this generates some NaNs
+    cluster_isims = c.isims
+    seq_idxs = np.arange(1, len(cluster_isims) + 1)
+    axs[0].set_ylim(0, 1.0)
+    axs[0].scatter(seq_idxs, cluster_isims, color="tab:green", s=1.5, alpha=0.5)
+    pad = 5
+    kernel = np.ones(11) / 11
+    padded = np.pad(cluster_isims, (pad, pad), mode="edge")
+    moving_average = np.convolve(padded, kernel, mode="valid")
+    moving_average_sq = np.convolve(
+        padded**2,
+        kernel,
+        mode="valid",
+    )
+    moving_std = np.sqrt(moving_average_sq - moving_average**2)
+    axs[1].plot(
+        seq_idxs,
+        moving_average,
+        color="darkgreen",
+        linewidth=1,
+        linestyle="solid",
+        label="Moving average",
+    )
+    axs[1].fill_between(
+        seq_idxs,
+        moving_average - moving_std,
+        moving_average + moving_std,
+        color="tab:gray",
+        alpha=0.4,
+        label="Moving std.",
+    )
+    axs[1].legend()
+    axs[0].set_xlabel("Cluster label")
+    axs[1].set_xlabel("Cluster label")
+    axs[0].set_ylabel("Cluster iSIM")
+    msg = f"iSIM for top {c.clusters_num} largest clusters, ordered by size"
+    if threshold is not None:
+        for ax in axs:
+            ax.axhline(threshold, linestyle="dashed", linewidth=0.5, color="k")
+            ax.text(
+                0.02,
+                threshold - 0.03,
+                f"threshold = {threshold:.2f}",
+                transform=ax.get_yaxis_transform(),  # x in axes, y in data coords
+                fontsize=5,
+            )
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (axs[0], axs[1])
+
+
+def isim_dist_plot(
+    c: ClusterAnalysis,
+    /,
+    threshold: float | None = None,
+    title: str | None = None,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Distribution of cluster populations using KDE"""
+    fig, ax = plt.subplots()
+    cluster_isims = c.isims
+    sns.kdeplot(
+        ax=ax,
+        data=cluster_isims,
+        color="tab:green",
+        bw_adjust=0.25,
+        gridsize=len(cluster_isims) // 5,
+        fill=True,
+        warn_singular=False,
+    )
+    ax.set_ylabel("Density")
+    ax.set_xlim(0, 1.0)
+    ax.set_xlabel("Cluster iSIM")
+    msg = f"iSIM distribution for top {c.clusters_num} largest clusters"
+    if threshold is not None:
+        ax.axvline(threshold, linestyle="dashed", linewidth=0.5, color="k")
+        ax.text(
+            threshold - 0.03,
+            0.3,
+            f"threshold = {threshold:.2f}",
+            transform=ax.get_xaxis_transform(),  # x in axes, y in data coords
+            rotation=90,
+            fontsize=5,
+        )
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
+
+
+def pops_plot(
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Distribution of cluster populations using KDE"""
+    fig, ax = plt.subplots()
+    cluster_sizes = c.sizes
+    sns.kdeplot(
+        ax=ax,
+        data=cluster_sizes,
+        color="tab:purple",
+        bw_adjust=0.25,
+        gridsize=len(cluster_sizes) // 5,
+        fill=True,
+        warn_singular=False,
+    )
+    ax.set_ylabel("Density")
+    ax.set_xlabel("Cluster size")
+    msg = f"Populations for top {c.clusters_num} largest clusters"
+    if c.min_size is not None:
+        msg = f"{msg} (min. size = {c.min_size})"
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
 
 
 # Similar to "init_plot" in the original bitbirch
@@ -27,15 +165,14 @@ def summary_plot(
     c: ClusterAnalysis,
     /,
     title: str | None = None,
+    counts_ylim: int | None = None,
     annotate: bool = True,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
-    r"""Create a summary plot from a cluster analysis.
+    r"""Create a summary plot from a cluster analysis
 
     If the analysis contains scaffolds, a scaffold analysis is added to the plot"""
     orange = "tab:orange"
     blue = "tab:blue"
-    df = c.df
-    num_clusters = c.num_clusters
     if mpl.rcParamsDefault["font.size"] == plt.rcParams["font.size"]:
         plt.rcParams["font.size"] = 8
     if annotate:
@@ -44,16 +181,17 @@ def summary_plot(
         fig, ax = plt.subplots()
 
     # Plot and annotate the number of molecules
-    label_strs = df["label"].astype(str)  # TODO: Is this necessary?
+    label_strs = c.labels.astype(str)  # TODO: Is this necessary?
     ax.bar(
         label_strs,
-        df["mol_num"],
+        c.sizes,
         color=blue,
         label="Num. molecules",
         zorder=0,
     )
+    ax.set_ylim(0, counts_ylim)
     if annotate:
-        for i, mol in enumerate(df["mol_num"]):
+        for i, mol in enumerate(c.sizes):
             plt.text(
                 i,
                 mol,
@@ -68,13 +206,13 @@ def summary_plot(
         # Plot and annotate the number of unique scaffolds
         plt.bar(
             label_strs,
-            df["unique_scaffolds_num"],
+            c.unique_scaffolds_num,
             color=orange,
             label="Num. unique scaffolds",
             zorder=1,
         )
         if annotate:
-            for i, s in enumerate(df["unique_scaffolds_num"]):
+            for i, s in enumerate(c.unique_scaffolds_num):
                 plt.text(
                     i,
                     s,
@@ -88,46 +226,171 @@ def summary_plot(
     # Labels
     ax.set_xlabel("Cluster label")
     ax.set_ylabel("Num. molecules")
-    ax.set_xticks(range(num_clusters))
+    ax.set_xticks(range(c.clusters_num))
 
     # Plot iSIM
-    ax_isim = ax.twinx()
-    ax_isim.plot(
-        df["label"] - 1,
-        df["isim"],
-        color="tab:green",
-        linestyle="dashed",
-        linewidth=1.5,
-        zorder=5,
-        alpha=0.6,
-    )
-    ax_isim.scatter(
-        df["label"] - 1,
-        df["isim"],
-        color="tab:green",
-        marker="o",
-        s=15,
-        label="Tanimoto iSIM",
-        edgecolor="darkgreen",
-        zorder=100,
-        alpha=0.6,
-    )
-    ax_isim.set_ylabel("Tanimoto iSIM (average similarity)")
-    ax_isim.set_yticks(np.arange(0, 1.1, 0.1))
-    ax_isim.set_ylim(0, 1)
-    ax_isim.spines["right"].set_color("tab:green")
-    ax_isim.tick_params(colors="tab:green")
-    ax_isim.yaxis.label.set_color("tab:green")
+    if c.has_fps:
+        ax_isim = ax.twinx()
+        ax_isim.plot(
+            c.labels - 1,
+            c.isims,
+            color="tab:green",
+            linestyle="dashed",
+            linewidth=1.5,
+            zorder=5,
+            alpha=0.6,
+        )
+        ax_isim.scatter(
+            c.labels - 1,
+            c.isims,
+            color="tab:green",
+            marker="o",
+            s=15,
+            label="Tanimoto iSIM",
+            edgecolor="darkgreen",
+            zorder=100,
+            alpha=0.6,
+        )
+        ax_isim.set_ylabel("Tanimoto iSIM (average similarity)")
+        ax_isim.set_yticks(np.arange(0, 1.1, 0.1))
+        ax_isim.set_ylim(0, 1)
+        ax_isim.spines["right"].set_color("tab:green")
+        ax_isim.tick_params(colors="tab:green")
+        ax_isim.yaxis.label.set_color("tab:green")
     bbox = ax.get_position()
     fig.legend(
-        loc="center right",
-        bbox_to_anchor=(bbox.x0 + 0.95 * bbox.width, bbox.y0 + 0.5 * bbox.height),
+        loc="upper right",
+        bbox_to_anchor=(bbox.x0 + 0.95 * bbox.width, bbox.y0 + 0.95 * bbox.height),
     )
-    msg = f"Metrics for top {num_clusters} largest clusters"
+    if c.has_all_clusters:
+        msg = "Metrics of all clusters"
+    else:
+        msg = f"Metrics of top {c.clusters_num} largest clusters"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
+    if not c.has_fps:
+        return fig, (ax,)
     return fig, (ax, ax_isim)
+
+
+def umap_plot(
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+    scaling: str = "normalize",
+    n_neighbors: int = 15,
+    min_dist: float = 0.1,
+    metric: str = "euclidean",
+    densmap: bool = False,
+    workers: int | None = None,
+    deterministic: bool = False,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Create a UMAP plot from a cluster analysis"""
+    color_labels: list[int] = []
+    for num, label in zip(c.sizes, c.labels):
+        color_labels.extend([label - 1] * num)  # color labels start with 0
+    num_top = c.clusters_num
+    if workers is None:
+        workers = _num_avail_cpus()
+
+    # I don't think these should be transformed, like this, only normalized
+    if scaling == "normalize":
+        fps_scaled = normalize_features(c.top_unpacked_fps)
+    elif scaling == "std":
+        scaler = StandardScaler()
+        fps_scaled = scaler.fit_transform(c.top_unpacked_fps)
+    elif scaling == "none":
+        fps_scaled = c.top_unpacked_fps
+    else:
+        raise ValueError(f"Unknown scaling {scaling}")
+    fps_umap = umap.UMAP(
+        densmap=densmap,
+        random_state=42 if deterministic else None,
+        n_components=2,
+        n_jobs=workers,
+        n_neighbors=n_neighbors,
+        min_dist=min_dist,
+        metric=metric,
+    ).fit_transform(fps_scaled)
+    fig, ax = plt.subplots(dpi=250, figsize=(4, 3.5))
+    scatter = ax.scatter(
+        fps_umap[:, 0],
+        fps_umap[:, 1],
+        c=color_labels,
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_top]),
+        edgecolors="none",
+        alpha=0.5,
+        s=2,
+    )
+    # t-SNE plots *must be square*
+    ax.set_aspect("equal", adjustable="box")
+    cbar = plt.colorbar(scatter, label="Cluster label")
+    cbar.set_ticks(list(range(num_top)))
+    cbar.set_ticklabels(list(map(str, range(1, num_top + 1))))
+    ax.set_xlabel("UMAP component 1")
+    ax.set_ylabel("UMAP component 2")
+    if c.has_all_clusters:
+        msg = "UMAP of all clusters"
+    else:
+        msg = f"UMAP of top {num_top} largest clusters"
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
+
+
+def pca_plot(
+    c: ClusterAnalysis,
+    /,
+    title: str | None = None,
+    scaling: str = "normalize",
+    whiten: bool = False,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    r"""Create a t-SNE plot from a cluster analysis"""
+    color_labels: list[int] = []
+    for num, label in zip(c.sizes, c.labels):
+        color_labels.extend([label - 1] * num)  # color labels start with 0
+    num_top = c.clusters_num
+
+    # I don't think these should be transformed, like this, only normalized
+    if scaling == "normalize":
+        fps_scaled = normalize_features(c.top_unpacked_fps)
+    elif scaling == "std":
+        scaler = StandardScaler()
+        fps_scaled = scaler.fit_transform(c.top_unpacked_fps)
+    elif scaling == "none":
+        fps_scaled = c.top_unpacked_fps
+    else:
+        raise ValueError(f"Unknown scaling {scaling}")
+    fps_pca = PCA(n_components=2, whiten=whiten, random_state=1234).fit_transform(
+        fps_scaled
+    )
+    fig, ax = plt.subplots(dpi=250, figsize=(4, 3.5))
+    scatter = ax.scatter(
+        fps_pca[:, 0],
+        fps_pca[:, 1],
+        c=color_labels,
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_top]),
+        edgecolors="none",
+        alpha=0.5,
+        s=2,
+    )
+    # t-SNE plots *must be square*
+    ax.set_aspect("equal", adjustable="box")
+    cbar = plt.colorbar(scatter, label="Cluster label")
+    cbar.set_ticks(list(range(num_top)))
+    cbar.set_ticklabels(list(map(str, range(1, num_top + 1))))
+    ax.set_xlabel("PCA component 1")
+    ax.set_ylabel("PCA component 2")
+    if c.has_all_clusters:
+        msg = "PCA of all clusters"
+    else:
+        msg = f"PCA of top {num_top} largest clusters"
+    if title is not None:
+        msg = f"{msg} for {title}"
+    fig.suptitle(msg)
+    return fig, (ax,)
 
 
 def tsne_plot(
@@ -142,25 +405,25 @@ def tsne_plot(
     do_pca_init: bool = True,
     multiscale: bool = False,
     pca_reduce: int | None = None,
+    metric: str = "euclidean",
     dof: float = 1.0,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Create a t-SNE plot from a cluster analysis"""
     if workers is None:
         workers = _num_avail_cpus()
-    df = c.df
     color_labels: list[int] = []
-    for num, label in zip(df["mol_num"], df["label"]):
+    for num, label in zip(c.sizes, c.labels):
         color_labels.extend([label - 1] * num)  # color labels start with 0
-    num_clusters = c.num_clusters
+    num_top = c.clusters_num
 
     # I don't think these should be transformed, like this, only normalized
     if scaling == "normalize":
-        fps_scaled = normalize_features(c.unpacked_fps)
+        fps_scaled = normalize_features(c.top_unpacked_fps)
     elif scaling == "std":
         scaler = StandardScaler()
-        fps_scaled = scaler.fit_transform(c.unpacked_fps)
+        fps_scaled = scaler.fit_transform(c.top_unpacked_fps)
     elif scaling == "none":
-        fps_scaled = c.unpacked_fps
+        fps_scaled = c.top_unpacked_fps
     else:
         raise ValueError(f"Unknown scaling {scaling}")
     if pca_reduce is not None:
@@ -208,7 +471,7 @@ def tsne_plot(
         fps_tsne[:, 0],
         fps_tsne[:, 1],
         c=color_labels,
-        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_clusters]),
+        cmap=mpl.colors.ListedColormap(colorcet.glasbey_bw_minc_20[:num_top]),
         edgecolors="none",
         alpha=0.5,
         s=2,
@@ -216,11 +479,14 @@ def tsne_plot(
     # t-SNE plots *must be square*
     ax.set_aspect("equal", adjustable="box")
     cbar = plt.colorbar(scatter, label="Cluster label")
-    cbar.set_ticks(list(range(num_clusters)))
-    cbar.set_ticklabels(list(map(str, range(1, num_clusters + 1))))
+    cbar.set_ticks(list(range(num_top)))
+    cbar.set_ticklabels(list(map(str, range(1, num_top + 1))))
     ax.set_xlabel("t-SNE component 1")
     ax.set_ylabel("t-SNE component 2")
-    msg = f"t-SNE of top {num_clusters} largest clusters"
+    if c.has_all_clusters:
+        msg = "t-SNE of all clusters"
+    else:
+        msg = f"t-SNE of top {num_top} largest clusters"
     if title is not None:
         msg = f"{msg} for {title}"
     fig.suptitle(msg)
@@ -232,13 +498,17 @@ def dump_mol_images(
     clusters: list[list[int]],
     cluster_idx: int = 0,
     batch_size: int = 30,
+    limit: int = -1,
 ) -> None:
-    r"""Dump smiles associated with a specific cluster as *.png image files"""
+    r"""Dump smiles associated with a specific cluster as ``*.png`` image files"""
     if isinstance(smiles, str):
         smiles = [smiles]
     smiles = np.asarray(smiles)
     idxs = clusters[cluster_idx]
+    num = 0
     for i, idx_seq in enumerate(batched(idxs, batch_size)):
+        if num + len(idx_seq) > limit:
+            idx_seq = idx_seq[: num + len(idx_seq) - limit]
         mols = []
         for smi in smiles[list(idx_seq)]:
             mol = Chem.MolFromSmiles(smi)
@@ -248,3 +518,73 @@ def dump_mol_images(
         img = Draw.MolsToGridImage(mols, molsPerRow=5)
         with open(f"cluster_{cluster_idx}_{i}.png", "wb") as f:
             f.write(img.data)
+        num += len(idx_seq)
+        if num >= limit:
+            break
+
+
+# For internal use, dispatches a visualization workflow and optionally saves
+# plot to disk and/or displays it using mpl
+def _dispatch_visualization(
+    clusters_path: Path,
+    fn_name: str,
+    fn: tp.Callable[..., tp.Any],
+    fn_kwargs: tp.Any,
+    min_size: int = 0,
+    smiles: tp.Iterable[str] = (),
+    top: int | None = None,
+    n_features: int | None = None,
+    input_is_packed: bool = True,
+    fps_path: Path | None = None,
+    title: str | None = None,
+    filename: str | None = None,
+    verbose: bool = True,
+    save: bool = True,
+    show: bool = True,
+    warn_nan: bool = True,
+) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
+    if clusters_path.is_dir():
+        clusters_path = clusters_path / "clusters.pkl"
+    with open(clusters_path, mode="rb") as f:
+        clusters = pickle.load(f)
+    if fps_path is None:
+        input_fps_path = clusters_path.parent / "input-fps"
+        if input_fps_path.is_dir() and _has_files_or_valid_symlinks(input_fps_path):
+            fps_path = input_fps_path
+        else:
+            if fn_name != "summary":
+                msg = "Could not find input fingerprints. Please use --fps-path"
+                raise RuntimeError(msg)
+            else:
+                msg = (
+                    "Could not find input fingerprints. Please use --fps-path."
+                    " Summary plot without fingerprints doesn't include isim values"
+                )
+                warnings.warn(msg)
+    if fps_path is None:
+        fps_paths = None
+    elif fps_path.is_dir():
+        fps_paths = sorted(
+            f for f in fps_path.glob("*.npy") if not f.stem.endswith(".indices")
+        )
+    else:
+        fps_paths = [fps_path]
+    ca = cluster_analysis(
+        clusters,
+        fps_paths,
+        smiles=smiles,
+        top=top,
+        n_features=n_features,
+        input_is_packed=input_is_packed,
+        min_size=min_size,
+        warn_nan=warn_nan,
+    )
+    out = fn(ca, title=title, **fn_kwargs)
+    if save:
+        if filename is None:
+            unique_id = format(random.getrandbits(32), "08x")
+            filename = f"{fn_name}-{unique_id}.pdf"
+        plt.savefig(Path.cwd() / filename)
+    if show:
+        plt.show()
+    return out

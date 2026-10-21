@@ -12,14 +12,20 @@ import os
 import numpy as np
 
 from bblean._memory import system_mem_gib
-from bblean.utils import _cpu_name
+from bblean.utils import (
+    _cpu_name,
+    cpp_extensions_are_enabled,
+    cpp_extensions_are_installed,
+)
 
 
 @dataclasses.dataclass(slots=True)
 class BitBirchConfig:
-    threshold: float = 0.65
+    threshold: float = 0.30
     branching_factor: int = 254
     merge_criterion: str = "diameter"
+    refine_merge_criterion: str = "tolerance-diameter"
+    refine_threshold_change: float = 0.0
     tolerance: float = 0.05
     n_features: int = 2048
     fp_kind: str = "ecfp4"
@@ -37,6 +43,8 @@ def collect_system_specs_and_dump_config(
     config_path = Path(config["out_dir"]) / "config.json"
     total_mem, avail_mem = system_mem_gib()
     # System info
+    config["cpp_extensions_enabled"] = cpp_extensions_are_enabled()
+    config["cpp_extensions_installed"] = cpp_extensions_are_installed()
     config["total_memory_gib"] = total_mem
     config["initial_available_memory_gib"] = avail_mem
     config["platform"] = sys.platform

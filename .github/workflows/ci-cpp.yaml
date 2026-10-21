@@ -6,13 +6,18 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 0 * * *'
 
 env:
   PYTHON_VERSION: '3.11'
 
 jobs:
   cpp-tests:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: checkout-repo
         uses: actions/checkout@v5
@@ -25,18 +30,41 @@ jobs:
       - name: install-repo
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-subtests
-          BITBIRCH_BUILD_CPP=1 pip install --verbose .
+          pip install pytest pytest-subtests inline-snapshot
+          BITBIRCH_BUILD_NATIVE=1 BITBIRCH_BUILD_CPP=1 pip install --verbose .
 
       - name: run-pytest
         run: BITBIRCH_CANT_SKIP_CPP_TESTS=1 pytest -s ./tests/test_similarity.py
+
+  cpp-tests-win:
+    runs-on: windows-latest
+    steps:
+      - name: checkout-repo
+        uses: actions/checkout@v5
+
+      - name: setup-python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: install-repo
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-subtests inline-snapshot
+          $env:BITBIRCH_BUILD_CPP="1"
+          pip install --verbose .
+
+      - name: run-pytest
+        run: |
+          $env:BITBIRCH_CANT_SKIP_CPP_TESTS="1"
+          pytest -s ./tests/test_similarity.py
 
 
   # Ubuntu 24.04 for reproducibility in regression tests only
   # coverage makes tests slightly slower, so regression tests should not run with
   # coverage
   # skip these for pushes to main since they are slower
-  regression-tests:
+  cpp-regression-tests:
     runs-on: ubuntu-24.04
     if: github.ref != 'refs/heads/main'
     steps:
@@ -51,8 +79,8 @@ jobs:
       - name: install-repo
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-subtests
-          BITBIRCH_BUILD_CPP=1 pip install --verbose .
+          pip install pytest pytest-subtests inline-snapshot
+          BITBIRCH_BUILD_NATIVE=1 BITBIRCH_BUILD_CPP=1 pip install --verbose .
 
       - name: run-pytest
         run: BITBIRCH_CANT_SKIP_CPP_TESTS=1 pytest -s ./tests/test_regression.py
