@@ -77,6 +77,10 @@ def _main(
     pass
 
 
+def _int_or_none(value: str) -> int | None:
+    return None if value.lower() == "none" else int(value)
+
+
 @app.command("compare", rich_help_panel="Analysis", hidden=True)
 def _compare(
     clusters_a_path: Annotated[Path, Argument()],
@@ -90,8 +94,8 @@ def _compare(
         Option("--ami/--no-ami", help="Adjusted mutual information (slow)"),
     ] = True,
     top: Annotated[
-        int,
-        Option("-t", "--top"),
+        int | None,
+        Option("-t", "--top", parser=_int_or_none),
     ] = 30,
     use_first_clustering_indices: Annotated[
         bool,
