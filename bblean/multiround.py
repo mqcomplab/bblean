@@ -287,6 +287,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         save_tree: bool,
         save_centroids: bool,
         check_indices: bool = True,
+        dump_to_files_and_discard_tree: bool = True,
     ) -> None:
         super().__init__(
             branching_factor,
@@ -301,6 +302,16 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         )
         self.save_tree = save_tree
         self.save_centroids = save_centroids
+        self._dump_to_files_and_discard_tree = dump_to_files_and_discard_tree
+        self._tree: BitBirch | None = None
+
+    @property
+    def tree(self) -> BitBirch:
+        if not self._dump_to_files_and_discard_tree:
+            raise ValueError("Class discards final tree")
+        if self._tree is None:
+            raise ValueError("Tree has not been fitted yet")
+        return self._tree
 
     def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
         batch_path_pairs = batch_info[1]
@@ -325,6 +336,10 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             # TODO: Find alternative solution
             tree.save(self.out_dir / "bitbirch.pkl")
         tree.delete_internal_nodes()
+        if not self._dump_to_files_and_discard_tree:
+            self._tree = tree
+            return
+
         if self.save_centroids:
             output = tree.get_centroids_mol_ids()
             with open(self.out_dir / "clusters.pkl", mode="wb") as f:
