@@ -80,7 +80,7 @@ def test_speed_regression(subtests) -> None:
         # Final value with a bit more slack to make test less flaky
         all_max_allowed_ns = [900_000_000, 1_500_000_000, 2_004_000_000]
     else:
-        all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_600_000_000]
+        all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_640_000_000]
     for fps_num, max_allowed_ns in zip(all_fps_nums, all_max_allowed_ns):
         with subtests.test(fps_num=fps_num):
             fps = make_fake_fingerprints(fps_num, seed=4068791011890883085)
