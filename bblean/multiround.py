@@ -307,7 +307,7 @@ class _FinalTreeMergingRound(_TreeMergingRound):
 
     @property
     def tree(self) -> BitBirch:
-        if not self._dump_to_files_and_discard_tree:
+        if self._dump_to_files_and_discard_tree:
             raise ValueError("Class discards final tree")
         if self._tree is None:
             raise ValueError("Tree has not been fitted yet")
