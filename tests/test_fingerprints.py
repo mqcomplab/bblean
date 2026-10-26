@@ -31,9 +31,7 @@ def test_fps_from_smiles_invalid() -> None:
 
 def test_fps_from_smiles_invalid_ids() -> None:
     smiles = load_smiles(Path(__file__).parent / "chembl-sample-bad.smi")
-    fps_raw, invalid_idxs = fps_from_smiles(
-        smiles, skip_invalid=True, sanitize="all"
-    )
+    fps_raw, invalid_idxs = fps_from_smiles(smiles, skip_invalid=True, sanitize="all")
     actual = invalid_idxs.tolist()
     expect = [0, 1]
     assert actual == expect
