@@ -47,6 +47,7 @@
 # ./LICENSES/GPL-3.0-only.txt.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 r"""BitBirch 'Lean' class for fast, memory-efficient O(N) clustering"""
 from __future__ import annotations  # Stringize type annotations for no runtime overhead
+from array import array
 import itertools
 import pickle
 import sys
@@ -478,7 +479,8 @@ class _BFSubcluster:
         # IMPORTANT: To mutate instances of this class, *always* use the public API
         # given by replace|add_to_n_samples_and_linear_sum(...)
         self._buffer = buffer
-        self.mol_indices = list(mol_indices)
+        self.mol_indices = (array("Q", mol_indices) if isinstance(mol_indices, array)
+                            and mol_indices.typecode == "Q" else list(mol_indices))
         if packed_centroid is not None:
             self.packed_centroid = packed_centroid
         else:
@@ -565,6 +567,9 @@ class _BFSubcluster:
         )
 
     def update(self, subcluster: "_BFSubcluster") -> None:
+        # Split-node summaries inherit compact storage from their children.
+        if not self.mol_indices and isinstance(subcluster.mol_indices, array):
+            self.mol_indices = array("Q")
         self.add_to_n_samples_and_linear_sum(
             subcluster.n_samples, subcluster.linear_sum
         )
@@ -677,7 +682,10 @@ class BitBirch:
         branching_factor: int = 50,
         merge_criterion: str | MergeAcceptFunction | None = None,
         tolerance: float | None = None,
+        compact_memberships: bool = False,
     ):
+        # Opt-in uint64 IDs avoid Python-int/list overhead at billion scale.
+        self.compact_memberships = compact_memberships
         # Criterion for merges
         self.threshold = threshold
         self.branching_factor = branching_factor
@@ -854,6 +862,8 @@ class BitBirch:
         arr_idx = 0
         for idx, fp in iterable:
             subcluster = _BFSubcluster.from_fingerprint(fp, idx, next(it_weights))
+            if getattr(self, "compact_memberships", False):
+                subcluster.mol_indices = array("Q", subcluster.mol_indices)
             try:
                 split = self._root.insert_bf_subcluster(
                     subcluster, merge_accept_fn, threshold
@@ -935,6 +945,8 @@ class BitBirch:
 
         for idxs, buf in zip(idx_provider, arr_iterable):
             subcluster = _BFSubcluster(buf, idxs, check_indices=check_indices)
+            if getattr(self, "compact_memberships", False):
+                subcluster.mol_indices = array("Q", subcluster.mol_indices)
             try:
                 split = self._root.insert_bf_subcluster(
                     subcluster, merge_accept_fn, threshold

@@ -244,3 +244,21 @@ then clone your fork (`git clone git@github.com:<user>/bblean`. We recommend you
 before you push to your branch. After you have finished work on your branch, [open a
 pull
 request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
+
+### Packed streams and compact membership storage
+
+Successive `fit()` calls append to the same tree, retaining input order and
+continuing molecule IDs. Packed batches from `rdfp.iter_packed_batches` can be
+passed directly to `fit(batch.fps)`; skip empty batches if all inputs were invalid.
+
+For large runs, `BitBirch(compact_memberships=True)` uses compact unsigned 64-bit
+membership arrays in leaves and internal summaries. This is opt-in: the default
+continues to use Python lists. Membership results in compact mode are sequences
+of integers backed by `array('Q')`, including IDs above the 32-bit limit. The
+clustering and merge calculations are unchanged. Negative or out-of-range IDs
+cannot be stored in compact mode.
+
+Input streaming does not make the tree constant-memory: memberships and tree
+summaries still grow. Saving a tree may have a substantial temporary memory cost.
+A restart must restore the tree and its committed input position together;
+replaying a batch into a previously updated tree duplicates those inputs.
