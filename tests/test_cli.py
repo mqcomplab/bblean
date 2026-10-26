@@ -1,7 +1,6 @@
 import pickle
 import numpy as np
 from pathlib import Path
-import tempfile
 
 import pytest
 from typer.testing import CliRunner
@@ -10,227 +9,216 @@ from bblean.cli import app
 from bblean.fingerprints import make_fake_fingerprints
 
 
-def test_umap(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_umap(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d:
-        Path
-        dir = Path(d).resolve()
-        monkeypatch.chdir(dir)
-        fps = make_fake_fingerprints(
-            50, n_features=512, seed=12620509540149709235, pack=True
-        )
-        np.save(dir / "fingerprints.npy", fps)
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                str(dir),
-                "-o",
-                str(out_dir),
-                "-b",
-                "50",
-                "-t",
-                "0.3",
-                "--no-monitor-mem",
-            ],
-        )
-        assert result.exit_code == 0
-        result = runner.invoke(
-            app,
-            [
-                "plot-umap",
-                str(out_dir),
-                "-f",
-                str(dir / "fingerprints.npy"),
-                "--no-show",
-                "--top",
-                "1",
-                "--no-verbose",
-            ],
-        )
+    dir = tmp_path.resolve()
+    monkeypatch.chdir(dir)
+    fps = make_fake_fingerprints(
+        50, n_features=512, seed=12620509540149709235, pack=True
+    )
+    np.save(dir / "fingerprints.npy", fps)
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            str(dir),
+            "-o",
+            str(out_dir),
+            "-b",
+            "50",
+            "-t",
+            "0.3",
+            "--no-monitor-mem",
+        ],
+    )
+    assert result.exit_code == 0
+    result = runner.invoke(
+        app,
+        [
+            "plot-umap",
+            str(out_dir),
+            "-f",
+            str(dir / "fingerprints.npy"),
+            "--no-show",
+            "--top",
+            "1",
+            "--no-verbose",
+        ],
+    )
     assert result.exit_code == 0
 
 
-def test_pops(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pops(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d:
-        Path
-        dir = Path(d).resolve()
-        monkeypatch.chdir(dir)
-        fps = make_fake_fingerprints(
-            250, n_features=512, seed=12620509540149709235, pack=True
-        )
-        np.save(dir / "fingerprints.npy", fps)
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                str(dir),
-                "-o",
-                str(out_dir),
-                "-b",
-                "50",
-                "-t",
-                "0.3",
-                "--no-monitor-mem",
-            ],
-        )
-        assert result.exit_code == 0
-        result = runner.invoke(
-            app,
-            [
-                "plot-pops",
-                str(out_dir),
-                "-f",
-                str(dir / "fingerprints.npy"),
-                "--min-size",
-                "1",
-                "--top",
-                "2",
-                "--no-show",
-            ],
-        )
-        assert result.exit_code == 0
-
-
-def test_pca(monkeypatch: pytest.MonkeyPatch) -> None:
-    runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d:
-        Path
-        dir = Path(d).resolve()
-        monkeypatch.chdir(dir)
-        fps = make_fake_fingerprints(
-            250, n_features=512, seed=12620509540149709235, pack=True
-        )
-        np.save(dir / "fingerprints.npy", fps)
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                str(dir),
-                "-o",
-                str(out_dir),
-                "-b",
-                "50",
-                "-t",
-                "0.3",
-                "--no-monitor-mem",
-            ],
-        )
-        assert result.exit_code == 0
-        result = runner.invoke(
-            app,
-            [
-                "plot-pca",
-                str(out_dir),
-                "-f",
-                str(dir / "fingerprints.npy"),
-                "--no-show",
-                "--top",
-                "5",
-                "--no-verbose",
-            ],
-        )
+    dir = tmp_path.resolve()
+    monkeypatch.chdir(dir)
+    fps = make_fake_fingerprints(
+        250, n_features=512, seed=12620509540149709235, pack=True
+    )
+    np.save(dir / "fingerprints.npy", fps)
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            str(dir),
+            "-o",
+            str(out_dir),
+            "-b",
+            "50",
+            "-t",
+            "0.3",
+            "--no-monitor-mem",
+        ],
+    )
+    assert result.exit_code == 0
+    result = runner.invoke(
+        app,
+        [
+            "plot-pops",
+            str(out_dir),
+            "-f",
+            str(dir / "fingerprints.npy"),
+            "--min-size",
+            "1",
+            "--top",
+            "2",
+            "--no-show",
+        ],
+    )
     assert result.exit_code == 0
 
 
-def test_tsne(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pca(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d:
-        Path
-        dir = Path(d).resolve()
-        monkeypatch.chdir(dir)
-        fps = make_fake_fingerprints(
-            250, n_features=512, seed=12620509540149709235, pack=True
-        )
-        np.save(dir / "fingerprints.npy", fps)
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                str(dir),
-                "-o",
-                str(out_dir),
-                "-b",
-                "50",
-                "-t",
-                "0.3",
-                "--no-monitor-mem",
-            ],
-        )
-        assert result.exit_code == 0
-        result = runner.invoke(
-            app,
-            [
-                "plot-tsne",
-                str(out_dir),
-                "-f",
-                str(dir / "fingerprints.npy"),
-                "--no-show",
-                "--top",
-                "2",
-                "--no-verbose",
-            ],
-        )
+    dir = tmp_path.resolve()
+    monkeypatch.chdir(dir)
+    fps = make_fake_fingerprints(
+        250, n_features=512, seed=12620509540149709235, pack=True
+    )
+    np.save(dir / "fingerprints.npy", fps)
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            str(dir),
+            "-o",
+            str(out_dir),
+            "-b",
+            "50",
+            "-t",
+            "0.3",
+            "--no-monitor-mem",
+        ],
+    )
+    assert result.exit_code == 0
+    result = runner.invoke(
+        app,
+        [
+            "plot-pca",
+            str(out_dir),
+            "-f",
+            str(dir / "fingerprints.npy"),
+            "--no-show",
+            "--top",
+            "5",
+            "--no-verbose",
+        ],
+    )
     assert result.exit_code == 0
 
 
-def test_summary(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_tsne(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d:
-        Path
-        dir = Path(d).resolve()
-        monkeypatch.chdir(dir)
-        fps = make_fake_fingerprints(
-            500, n_features=2048, seed=12620509540149709235, pack=True
-        )
-        np.save(dir / "fingerprints.npy", fps)
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                str(dir),
-                "-o",
-                str(out_dir),
-                "-b",
-                "50",
-                "-t",
-                "0.1",
-                "--no-monitor-mem",
-            ],
-        )
-        assert result.exit_code == 0
-        result = runner.invoke(
-            app,
-            [
-                "plot-summary",
-                str(out_dir),
-                "-f",
-                str(dir / "fingerprints.npy"),
-                "--no-show",
-                "--no-verbose",
-            ],
-        )
+    dir = tmp_path.resolve()
+    monkeypatch.chdir(dir)
+    fps = make_fake_fingerprints(
+        250, n_features=512, seed=12620509540149709235, pack=True
+    )
+    np.save(dir / "fingerprints.npy", fps)
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            str(dir),
+            "-o",
+            str(out_dir),
+            "-b",
+            "50",
+            "-t",
+            "0.3",
+            "--no-monitor-mem",
+        ],
+    )
+    assert result.exit_code == 0
+    result = runner.invoke(
+        app,
+        [
+            "plot-tsne",
+            str(out_dir),
+            "-f",
+            str(dir / "fingerprints.npy"),
+            "--no-show",
+            "--top",
+            "2",
+            "--no-verbose",
+        ],
+    )
     assert result.exit_code == 0
 
 
-def test_fps_from_smiles() -> None:
+def test_summary(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    runner = CliRunner()
+    dir = tmp_path.resolve()
+    monkeypatch.chdir(dir)
+    fps = make_fake_fingerprints(
+        500, n_features=2048, seed=12620509540149709235, pack=True
+    )
+    np.save(dir / "fingerprints.npy", fps)
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            str(dir),
+            "-o",
+            str(out_dir),
+            "-b",
+            "50",
+            "-t",
+            "0.1",
+            "--no-monitor-mem",
+        ],
+    )
+    assert result.exit_code == 0
+    result = runner.invoke(
+        app,
+        [
+            "plot-summary",
+            str(out_dir),
+            "-f",
+            str(dir / "fingerprints.npy"),
+            "--no-show",
+            "--no-verbose",
+        ],
+    )
+    assert result.exit_code == 0
+
+
+def test_fps_from_smiles(tmp_path: Path) -> None:
     runner = CliRunner()
     smiles_path = Path(__file__).parent / "chembl-sample-3k.smi"
-    with tempfile.TemporaryDirectory() as d:
-        dir = Path(d).resolve()
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app, ["fps-from-smiles", str(smiles_path), "-o", str(out_dir)]
-        )
-        assert result.exit_code == 0
-        file = list(out_dir.glob("*.npy"))[0]
-        fps_raw = np.load(file).reshape(-1)
+    dir = tmp_path.resolve()
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app, ["fps-from-smiles", str(smiles_path), "-o", str(out_dir)]
+    )
+    assert result.exit_code == 0
+    file = list(out_dir.glob("*.npy"))[0]
+    fps_raw = np.load(file).reshape(-1)
     nonzero = fps_raw.nonzero()[0].reshape(-1)
     actual = fps_raw[nonzero][:19].tolist()
     expect = [4, 128, 2, 16, 8, 16, 4, 16, 128, 16, 1, 128, 1, 64, 1, 1, 128, 32, 32]
@@ -238,42 +226,40 @@ def test_fps_from_smiles() -> None:
 
 
 # NOTE: This is an acceptance test only
-def test_fps_from_smiles_invalid() -> None:
+def test_fps_from_smiles_invalid(tmp_path: Path) -> None:
     runner = CliRunner()
     smiles_path = Path(__file__).parent / "chembl-sample-bad.smi"
-    with tempfile.TemporaryDirectory() as d:
-        dir = Path(d).resolve()
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app,
-            [
-                "fps-from-smiles",
-                str(smiles_path),
-                "-o",
-                str(out_dir),
-                "--sanitize",
-                "minimal",
-                "--skip-invalid",
-            ],
-        )
-        assert result.exit_code == 0
-        file = list(out_dir.glob("*fps*.npy"))[0]
-        fps_raw = np.load(file).reshape(-1)
+    dir = tmp_path.resolve()
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app,
+        [
+            "fps-from-smiles",
+            str(smiles_path),
+            "-o",
+            str(out_dir),
+            "--sanitize",
+            "minimal",
+            "--skip-invalid",
+        ],
+    )
+    assert result.exit_code == 0
+    file = list(out_dir.glob("*fps*.npy"))[0]
+    fps_raw = np.load(file).reshape(-1)
     nonzero = fps_raw.nonzero()[0].reshape(-1)
     actual = fps_raw[nonzero][:19].tolist()
     expect = [2, 4, 32, 1, 2, 128, 4, 128, 32, 32, 80, 128, 64, 128, 1, 16, 64, 4, 16]
     assert actual == expect
 
 
-def test_info() -> None:
+def test_info(tmp_path: Path) -> None:
     runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d:
-        dir = Path(d).resolve()
-        fps = make_fake_fingerprints(
-            3000, n_features=2048, seed=12620509540149709235, pack=True
-        )
-        np.save(dir / "fingerprints.npy", fps)
-        result = runner.invoke(app, ["fps-info", str(dir)])
+    dir = tmp_path.resolve()
+    fps = make_fake_fingerprints(
+        3000, n_features=2048, seed=12620509540149709235, pack=True
+    )
+    np.save(dir / "fingerprints.npy", fps)
+    result = runner.invoke(app, ["fps-info", str(dir)])
     if isinstance(result.output, bytes):
         out = result.output.decode("utf-8")
     else:
@@ -291,41 +277,40 @@ def test_help() -> None:
     assert "CLI tool for serial or parallel fast clustering" in result.output
 
 
-def test_multiround() -> None:
+def test_multiround(tmp_path: Path) -> None:
     runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d:
-        dir = Path(d).resolve()
-        for seed in range(1, 21, 2):
-            fps = make_fake_fingerprints(100, seed=seed)
-            np.save(dir / f"fps.{str(seed).zfill(4)}.npy", fps)
-        out_dir = dir / "output"
-        out_dir.mkdir()
-        result = runner.invoke(
-            app,
-            [
-                "multiround",
-                str(dir),
-                "-o",
-                str(out_dir),
-                "-t",
-                "0.65",
-                "--bin-size",
-                "2",
-                "--ps",
-                "1",
-                "--no-verbose",
-                "--set-mid-merge",
-                "tolerance-legacy",
-                "--no-monitor-mem",
-            ],
-        )
-        with open(out_dir / "clusters.pkl", mode="rb") as f:
-            obj = pickle.load(f)
+    dir = tmp_path.resolve()
+    for seed in range(1, 21, 2):
+        fps = make_fake_fingerprints(100, seed=seed)
+        np.save(dir / f"fps.{str(seed).zfill(4)}.npy", fps)
+    out_dir = dir / "output"
+    out_dir.mkdir()
+    result = runner.invoke(
+        app,
+        [
+            "multiround",
+            str(dir),
+            "-o",
+            str(out_dir),
+            "-t",
+            "0.65",
+            "--bin-size",
+            "2",
+            "--ps",
+            "1",
+            "--no-verbose",
+            "--set-mid-merge",
+            "tolerance-legacy",
+            "--no-monitor-mem",
+        ],
+    )
+    with open(out_dir / "clusters.pkl", mode="rb") as f:
+        obj = pickle.load(f)
     assert result.exit_code == 0
     assert EXPECT_MULTIROUND_CLUSTERS == obj[: len(EXPECT_MULTIROUND_CLUSTERS)]
 
 
-def test_run() -> None:
+def test_run(tmp_path: Path) -> None:
     runner = CliRunner()
     ids_expect = [
         [2195, 2196, 2378, 2440, 2443, 2454, 2463, 2464, 2465, 2467, 2527, 2544],
@@ -342,32 +327,30 @@ def test_run() -> None:
         [1219, 1226],
         [614, 637],
     ]
-    with tempfile.TemporaryDirectory() as d:
-        Path
-        dir = Path(d).resolve()
-        fps = make_fake_fingerprints(
-            3000, n_features=2048, seed=12620509540149709235, pack=True
-        )
-        np.save(dir / "fingerprints.npy", fps)
-        out_dir = dir / "output"
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                str(dir),
-                "-o",
-                str(out_dir),
-                "-b",
-                "50",
-                "-t",
-                "0.65",
-                "--no-monitor-mem",
-            ],
-        )
-        with open(out_dir / "clusters.pkl", mode="rb") as f:
-            obj = pickle.load(f)
-        assert result.exit_code == 0
-        assert obj[:13] == ids_expect
+    dir = tmp_path.resolve()
+    fps = make_fake_fingerprints(
+        3000, n_features=2048, seed=12620509540149709235, pack=True
+    )
+    np.save(dir / "fingerprints.npy", fps)
+    out_dir = dir / "output"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            str(dir),
+            "-o",
+            str(out_dir),
+            "-b",
+            "50",
+            "-t",
+            "0.65",
+            "--no-monitor-mem",
+        ],
+    )
+    with open(out_dir / "clusters.pkl", mode="rb") as f:
+        obj = pickle.load(f)
+    assert result.exit_code == 0
+    assert obj[:13] == ids_expect
 
 
 EXPECT_MULTIROUND_CLUSTERS = [
