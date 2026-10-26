@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=7e4fa1ad"></script>
+    <script src="../../_static/documentation_options.js?v=9a8b458d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -467,36 +467,48 @@
             <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">tofile</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
 
+<span class="n">BufPath</span> <span class="o">=</span> <span class="n">Path</span>
+<span class="c1"># Buffers split into (raw-fps, weights) files</span>
+<span class="n">SplitBufPath</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]</span>
+
+
 <span class="c1"># Glob and sort by uint bits and label, if a console is passed then the number of output</span>
 <span class="c1"># files is printed</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_prev_round_buf_and_mol_idxs_files</span><span class="p">(</span>
     <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">round_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">console</span><span class="p">:</span> <span class="n">Console</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]:</span>
     <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
     <span class="c1"># TODO: Important: What should be the logic for batching? currently there doesn't</span>
     <span class="c1"># seem to be much logic for grouping the files</span>
+    <span class="n">buf_files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BufPath</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">SplitBufPath</span><span class="p">]</span>
     <span class="n">buf_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-bufs*.npy"</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">buf_files</span><span class="p">:</span>
+        <span class="n">raw_fps_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-raw-fps*.npy"</span><span class="p">))</span>
+        <span class="n">weights_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-weights*.npy"</span><span class="p">))</span>
+        <span class="n">buf_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">raw_fps_files</span><span class="p">,</span> <span class="n">weights_files</span><span class="p">))</span>
     <span class="n">idx_files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"round-</span><span class="si">{</span><span class="n">round_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">-idxs*.pkl"</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">console</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"    - Collected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">buf_files</span><span class="p">)</span><span class="si">}</span><span class="s2"> buffer-index file pairs"</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">buf_files</span><span class="p">,</span> <span class="n">idx_files</span><span class="p">))</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_sort_batch</span><span class="p">(</span><span class="n">b</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span> <span class="o">...</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
-        <span class="nb">sorted</span><span class="p">(</span>
-            <span class="n">b</span><span class="p">,</span>
-            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"uint"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span>
-            <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_uint_bits</span><span class="p">(</span><span class="n">buf_path</span><span class="p">:</span> <span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">buf_path</span> <span class="o">=</span> <span class="n">buf_path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">buf_path</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"uint"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sort_batch</span><span class="p">(</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">,</span> <span class="n">Path</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">_uint_bits</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_chunk_file_pairs_in_batches</span><span class="p">(</span>
-    <span class="n">file_pairs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]],</span>
+    <span class="n">file_pairs</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">,</span> <span class="n">Path</span><span class="p">]],</span>
     <span class="n">bin_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">console</span><span class="p">:</span> <span class="n">Console</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span> <span class="o">...</span><span class="p">]]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span> <span class="o">...</span><span class="p">]]]:</span>
     <span class="n">z</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">file_pairs</span><span class="p">)</span> <span class="o">/</span> <span class="n">bin_size</span><span class="p">)))</span>
     <span class="c1"># Within each batch, sort the files by starting with the uint16 files, followed by</span>
     <span class="c1"># uint8 files, this helps that (approximately) the largest clusters are fitted first</span>
@@ -615,6 +627,7 @@
         <span class="n">merge_criterion</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">all_fp_paths</span><span class="p">:</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
         <span class="n">check_indices</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">all_fp_paths</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">all_fp_paths</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span> <span class="o">=</span> <span class="n">branching_factor</span>
@@ -625,8 +638,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">split_largest_cluster</span> <span class="o">=</span> <span class="n">split_largest_cluster</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">merge_criterion</span> <span class="o">=</span> <span class="n">merge_criterion</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span> <span class="o">=</span> <span class="n">check_indices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_features</span> <span class="o">=</span> <span class="n">n_features</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">batch_label</span><span class="p">,</span> <span class="n">batch_path_pairs</span> <span class="o">=</span> <span class="n">batch_info</span>
         <span class="n">tree</span> <span class="o">=</span> <span class="n">BitBirch</span><span class="p">(</span>
             <span class="n">branching_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span><span class="p">,</span>
@@ -639,9 +655,23 @@
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span>
-                <span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span> <span class="n">check_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">raw_fps_path</span><span class="p">,</span> <span class="n">weights_path</span> <span class="o">=</span> <span class="n">buf_path</span>
+                <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">weights_path</span><span class="p">)</span>
+                <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                    <span class="n">raw_fps_path</span><span class="p">,</span>
+                    <span class="n">reinsert_indices</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span>
+                    <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">n_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
+                    <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">del</span> <span class="n">weights</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span>
+                    <span class="n">buf_path</span><span class="p">,</span>
+                    <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span>
+                    <span class="n">check_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
 
         <span class="c1"># Either do a refinement step, or fetch and save the bufs and idxs for the next</span>
@@ -668,6 +698,7 @@
         <span class="n">save_centroids</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">check_indices</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">dump_to_files_and_discard_tree</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">branching_factor</span><span class="p">,</span>
@@ -679,6 +710,7 @@
             <span class="n">merge_criterion</span><span class="p">,</span>
             <span class="p">(),</span>
             <span class="n">check_indices</span><span class="p">,</span>
+            <span class="n">n_features</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_tree</span> <span class="o">=</span> <span class="n">save_tree</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">save_centroids</span> <span class="o">=</span> <span class="n">save_centroids</span>
@@ -693,7 +725,9 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Tree has not been fitted yet"</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tree</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">tp</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">BufPath</span> <span class="o">|</span> <span class="n">SplitBufPath</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">batch_path_pairs</span> <span class="o">=</span> <span class="n">batch_info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">tree</span> <span class="o">=</span> <span class="n">BitBirch</span><span class="p">(</span>
             <span class="n">branching_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">branching_factor</span><span class="p">,</span>
@@ -706,9 +740,23 @@
         <span class="k">for</span> <span class="n">buf_path</span><span class="p">,</span> <span class="n">idx_path</span> <span class="ow">in</span> <span class="n">batch_path_pairs</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">idx_path</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">mol_idxs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-            <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span>
-                <span class="n">buf_path</span><span class="p">,</span> <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span> <span class="n">check_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">buf_path</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">raw_fps_path</span><span class="p">,</span> <span class="n">weights_path</span> <span class="o">=</span> <span class="n">buf_path</span>
+                <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">weights_path</span><span class="p">)</span>
+                <span class="n">tree</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                    <span class="n">raw_fps_path</span><span class="p">,</span>
+                    <span class="n">reinsert_indices</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span>
+                    <span class="n">input_is_packed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">n_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_features</span><span class="p">,</span>
+                    <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">del</span> <span class="n">weights</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tree</span><span class="o">.</span><span class="n">_fit_buffers</span><span class="p">(</span>
+                    <span class="n">buf_path</span><span class="p">,</span>
+                    <span class="n">reinsert_index_seqs</span><span class="o">=</span><span class="n">mol_idxs</span><span class="p">,</span>
+                    <span class="n">check_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_indices</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="k">del</span> <span class="n">mol_idxs</span>
 
         <span class="c1"># Save clusters and exit</span>
@@ -806,6 +854,7 @@
         <span class="n">branching_factor</span><span class="o">=</span><span class="n">branching_factor</span><span class="p">,</span>
         <span class="n">tolerance</span><span class="o">=</span><span class="n">tolerance</span><span class="p">,</span>
         <span class="n">out_dir</span><span class="o">=</span><span class="n">out_dir</span><span class="p">,</span>
+        <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">()</span>
     <span class="n">timer</span><span class="o">.</span><span class="n">init_timing</span><span class="p">(</span><span class="s2">"total"</span><span class="p">)</span>
@@ -820,7 +869,6 @@
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"(Initial) Round </span><span class="si">{</span><span class="n">round_idx</span><span class="si">}</span><span class="s2">: Cluster initial batch of fingerprints"</span><span class="p">)</span>
 
     <span class="n">initial_fn</span> <span class="o">=</span> <span class="n">_InitialRound</span><span class="p">(</span>
-        <span class="n">n_features</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
         <span class="n">refinement_before_midsection</span><span class="o">=</span><span class="n">refinement_before_midsection</span><span class="p">,</span>
         <span class="n">max_fps</span><span class="o">=</span><span class="n">max_fps</span><span class="p">,</span>
         <span class="n">merge_criterion</span><span class="o">=</span><span class="n">initial_merge_criterion</span><span class="p">,</span>
