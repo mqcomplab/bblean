@@ -2,17 +2,20 @@ import pickle
 import numpy as np
 from pathlib import Path
 import tempfile
+
+import pytest
 from typer.testing import CliRunner
 
 from bblean.cli import app
 from bblean.fingerprints import make_fake_fingerprints
 
 
-def test_umap() -> None:
+def test_umap(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         Path
         dir = Path(d).resolve()
+        monkeypatch.chdir(dir)
         fps = make_fake_fingerprints(
             50, n_features=512, seed=12620509540149709235, pack=True
         )
@@ -49,11 +52,12 @@ def test_umap() -> None:
     assert result.exit_code == 0
 
 
-def test_pops() -> None:
+def test_pops(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         Path
         dir = Path(d).resolve()
+        monkeypatch.chdir(dir)
         fps = make_fake_fingerprints(
             250, n_features=512, seed=12620509540149709235, pack=True
         )
@@ -91,11 +95,12 @@ def test_pops() -> None:
         assert result.exit_code == 0
 
 
-def test_pca() -> None:
+def test_pca(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         Path
         dir = Path(d).resolve()
+        monkeypatch.chdir(dir)
         fps = make_fake_fingerprints(
             250, n_features=512, seed=12620509540149709235, pack=True
         )
@@ -132,11 +137,12 @@ def test_pca() -> None:
     assert result.exit_code == 0
 
 
-def test_tsne() -> None:
+def test_tsne(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         Path
         dir = Path(d).resolve()
+        monkeypatch.chdir(dir)
         fps = make_fake_fingerprints(
             250, n_features=512, seed=12620509540149709235, pack=True
         )
@@ -173,11 +179,12 @@ def test_tsne() -> None:
     assert result.exit_code == 0
 
 
-def test_summary() -> None:
+def test_summary(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         Path
         dir = Path(d).resolve()
+        monkeypatch.chdir(dir)
         fps = make_fake_fingerprints(
             500, n_features=2048, seed=12620509540149709235, pack=True
         )
