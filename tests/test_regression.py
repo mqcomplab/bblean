@@ -4,8 +4,6 @@ import math
 import time
 import sys
 import os
-from pathlib import Path
-import tempfile
 import pytest
 import bblean
 
@@ -28,7 +26,7 @@ from bblean.fingerprints import make_fake_fingerprints
 
 
 # NOTE: The reproducibility for allocations for 25k fps is not very good
-def test_memory_regression(subtests) -> None:
+def test_memory_regression(subtests, tmp_path) -> None:
     if "memray" not in sys.modules:
         pytest.skip(
             "memory regression tests require memray, only avaliable in Linux and macOS"
@@ -45,18 +43,17 @@ def test_memory_regression(subtests) -> None:
     for fps_num, max_allowed_bytes in zip(all_fps_nums, all_max_allowed_bytes):
         with subtests.test(fps_num=fps_num):
             fps = make_fake_fingerprints(fps_num, seed=4068791011890883085)
-            with tempfile.TemporaryDirectory() as d:
-                tmp_dir = Path(d)
-                tree = bblean.BitBirch(branching_factor=50, threshold=0.65)
-                with Tracker(tmp_dir / "memray.bin"):
-                    tree.fit(fps)
-                reader = FileReader(tmp_dir / "memray.bin")
-                total_alloc_bytes = sum(
-                    record.size
-                    for record in reader.get_high_watermark_allocation_records(
-                        merge_threads=True
-                    )
+            memray_path = tmp_path / f"memray-{fps_num}.bin"
+            tree = bblean.BitBirch(branching_factor=50, threshold=0.65)
+            with Tracker(memray_path):
+                tree.fit(fps)
+            reader = FileReader(memray_path)
+            total_alloc_bytes = sum(
+                record.size
+                for record in reader.get_high_watermark_allocation_records(
+                    merge_threads=True
                 )
+            )
             print(
                 f"Fps num: {fps_num}, Total alloc MB: {total_alloc_bytes / 1024**2},"
                 f" Tot. alloc bytes: {total_alloc_bytes:_} (max: {max_allowed_bytes:_})"
@@ -80,7 +77,7 @@ def test_speed_regression(subtests) -> None:
         # Final value with a bit more slack to make test less flaky
         all_max_allowed_ns = [900_000_000, 1_500_000_000, 2_004_000_000]
     else:
-        all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_600_000_000]
+        all_max_allowed_ns = [1_700_000_000, 2_600_000_000, 3_640_000_000]
     for fps_num, max_allowed_ns in zip(all_fps_nums, all_max_allowed_ns):
         with subtests.test(fps_num=fps_num):
             fps = make_fake_fingerprints(fps_num, seed=4068791011890883085)

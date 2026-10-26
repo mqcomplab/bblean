@@ -1,51 +1,48 @@
 import pickle
 from pathlib import Path
-import tempfile
 import numpy as np
 from bblean.multiround import run_multiround_bitbirch
 from bblean.fingerprints import make_fake_fingerprints
 
 
-def test_multiround_bitbirch_parallel() -> None:
-    with tempfile.TemporaryDirectory() as d:
-        dir = Path(d).resolve()
-        for seed in range(1, 21, 2):
-            fps = make_fake_fingerprints(100, seed=seed)
-            np.save(dir / f"fps.{str(seed).zfill(4)}.npy", fps)
-        out_dir = dir / "output"
-        out_dir.mkdir()
-        run_multiround_bitbirch(
-            sorted(dir.glob("*.npy")),
-            out_dir,
-            num_initial_processes=10,
-            bin_size=2,
-            threshold=0.65,
-            midsection_merge_criterion="tolerance-legacy",
-        )
-        with open(out_dir / "clusters.pkl", mode="rb") as f:
-            clusters = pickle.load(f)
-        assert EXPECT_CLUSTERS == clusters[: len(EXPECT_CLUSTERS)]
+def test_multiround_bitbirch_parallel(tmp_path: Path) -> None:
+    dir = tmp_path.resolve()
+    for seed in range(1, 21, 2):
+        fps = make_fake_fingerprints(100, seed=seed)
+        np.save(dir / f"fps.{str(seed).zfill(4)}.npy", fps)
+    out_dir = dir / "output"
+    out_dir.mkdir()
+    run_multiround_bitbirch(
+        sorted(dir.glob("*.npy")),
+        out_dir,
+        num_initial_processes=10,
+        bin_size=2,
+        threshold=0.65,
+        midsection_merge_criterion="tolerance-legacy",
+    )
+    with open(out_dir / "clusters.pkl", mode="rb") as f:
+        clusters = pickle.load(f)
+    assert EXPECT_CLUSTERS == clusters[: len(EXPECT_CLUSTERS)]
 
 
-def test_multiround_bitbirch() -> None:
-    with tempfile.TemporaryDirectory() as d:
-        dir = Path(d).resolve()
-        for seed in range(1, 21, 2):
-            fps = make_fake_fingerprints(100, seed=seed)
-            np.save(dir / f"fps.{str(seed).zfill(4)}.npy", fps)
-        out_dir = dir / "output"
-        out_dir.mkdir()
-        run_multiround_bitbirch(
-            sorted(dir.glob("*.npy")),
-            out_dir,
-            num_initial_processes=1,
-            bin_size=2,
-            threshold=0.65,
-            midsection_merge_criterion="tolerance-legacy",
-        )
-        with open(out_dir / "clusters.pkl", mode="rb") as f:
-            clusters = pickle.load(f)
-        assert EXPECT_CLUSTERS == clusters[: len(EXPECT_CLUSTERS)]
+def test_multiround_bitbirch(tmp_path: Path) -> None:
+    dir = tmp_path.resolve()
+    for seed in range(1, 21, 2):
+        fps = make_fake_fingerprints(100, seed=seed)
+        np.save(dir / f"fps.{str(seed).zfill(4)}.npy", fps)
+    out_dir = dir / "output"
+    out_dir.mkdir()
+    run_multiround_bitbirch(
+        sorted(dir.glob("*.npy")),
+        out_dir,
+        num_initial_processes=1,
+        bin_size=2,
+        threshold=0.65,
+        midsection_merge_criterion="tolerance-legacy",
+    )
+    with open(out_dir / "clusters.pkl", mode="rb") as f:
+        clusters = pickle.load(f)
+    assert EXPECT_CLUSTERS == clusters[: len(EXPECT_CLUSTERS)]
 
 
 EXPECT_CLUSTERS = [
