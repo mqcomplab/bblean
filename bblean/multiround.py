@@ -87,36 +87,48 @@ def _numpy_streaming_save(
             np.ascontiguousarray(arr).tofile(f)
 
 
+BufPath = Path
+# Buffers split into (raw-fps, weights) files
+SplitBufPath = tuple[Path, Path]
+
+
 # Glob and sort by uint bits and label, if a console is passed then the number of output
 # files is printed
 def _get_prev_round_buf_and_mol_idxs_files(
     path: Path, round_idx: int, console: Console | None = None
-) -> list[tuple[Path, Path]]:
+) -> list[tuple[BufPath | SplitBufPath, Path]]:
     path = Path(path)
     # TODO: Important: What should be the logic for batching? currently there doesn't
     # seem to be much logic for grouping the files
+    buf_files: list[BufPath] | list[SplitBufPath]
     buf_files = sorted(path.glob(f"round-{round_idx - 1}-bufs*.npy"))
+    if not buf_files:
+        raw_fps_files = sorted(path.glob(f"round-{round_idx - 1}-raw-fps*.npy"))
+        weights_files = sorted(path.glob(f"round-{round_idx - 1}-weights*.npy"))
+        buf_files = list(zip(raw_fps_files, weights_files))
     idx_files = sorted(path.glob(f"round-{round_idx - 1}-idxs*.pkl"))
     if console is not None:
         console.print(f"    - Collected {len(buf_files)} buffer-index file pairs")
     return list(zip(buf_files, idx_files))
 
 
-def _sort_batch(b: tp.Sequence[tuple[Path, Path]]) -> tuple[tuple[Path, Path], ...]:
-    return tuple(
-        sorted(
-            b,
-            key=lambda b: int(b[0].name.split("uint")[-1].split(".")[0]),
-            reverse=True,
-        )
-    )
+def _uint_bits(buf_path: BufPath | SplitBufPath) -> int:
+    if isinstance(buf_path, tuple):
+        buf_path = buf_path[0]
+    return int(buf_path.name.split("uint")[-1].split(".")[0])
+
+
+def _sort_batch(
+    b: tp.Sequence[tuple[BufPath | SplitBufPath, Path]],
+) -> tuple[tuple[BufPath | SplitBufPath, Path], ...]:
+    return tuple(sorted(b, key=lambda b: _uint_bits(b[0]), reverse=True))
 
 
 def _chunk_file_pairs_in_batches(
-    file_pairs: tp.Sequence[tuple[Path, Path]],
+    file_pairs: tp.Sequence[tuple[BufPath | SplitBufPath, Path]],
     bin_size: int,
     console: Console | None = None,
-) -> list[tuple[str, tuple[tuple[Path, Path], ...]]]:
+) -> list[tuple[str, tuple[tuple[BufPath | SplitBufPath, Path], ...]]]:
     z = len(str(math.ceil(len(file_pairs) / bin_size)))
     # Within each batch, sort the files by starting with the uint16 files, followed by
     # uint8 files, this helps that (approximately) the largest clusters are fitted first
@@ -235,6 +247,7 @@ class _TreeMergingRound:
         merge_criterion: str,
         all_fp_paths: tp.Sequence[Path] = (),
         check_indices: bool = True,
+        n_features: int | None = None,
     ) -> None:
         self.all_fp_paths = list(all_fp_paths)
         self.branching_factor = branching_factor
@@ -245,8 +258,11 @@ class _TreeMergingRound:
         self.split_largest_cluster = split_largest_cluster
         self.merge_criterion = merge_criterion
         self.check_indices = check_indices
+        self.n_features = n_features
 
-    def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
+    def __call__(
+        self, batch_info: tuple[str, tp.Sequence[tuple[BufPath | SplitBufPath, Path]]]
+    ) -> None:
         batch_label, batch_path_pairs = batch_info
         tree = BitBirch(
             branching_factor=self.branching_factor,
@@ -259,9 +275,23 @@ class _TreeMergingRound:
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(
-                buf_path, reinsert_index_seqs=mol_idxs, check_indices=self.check_indices
-            )
+            if isinstance(buf_path, tuple):
+                raw_fps_path, weights_path = buf_path
+                weights = np.load(weights_path)
+                tree.fit(
+                    raw_fps_path,
+                    reinsert_indices=mol_idxs,
+                    input_is_packed=True,
+                    n_features=self.n_features,
+                    weights=weights,
+                )
+                del weights
+            else:
+                tree._fit_buffers(
+                    buf_path,
+                    reinsert_index_seqs=mol_idxs,
+                    check_indices=self.check_indices,
+                )
             del mol_idxs
 
         # Either do a refinement step, or fetch and save the bufs and idxs for the next
@@ -287,6 +317,8 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         save_tree: bool,
         save_centroids: bool,
         check_indices: bool = True,
+        dump_to_files_and_discard_tree: bool = True,
+        n_features: int | None = None,
     ) -> None:
         super().__init__(
             branching_factor,
@@ -298,11 +330,24 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             merge_criterion,
             (),
             check_indices,
+            n_features,
         )
         self.save_tree = save_tree
         self.save_centroids = save_centroids
+        self._dump_to_files_and_discard_tree = dump_to_files_and_discard_tree
+        self._tree: BitBirch | None = None
 
-    def __call__(self, batch_info: tuple[str, tp.Sequence[tuple[Path, Path]]]) -> None:
+    @property
+    def tree(self) -> BitBirch:
+        if self._dump_to_files_and_discard_tree:
+            raise ValueError("Class discards final tree")
+        if self._tree is None:
+            raise ValueError("Tree has not been fitted yet")
+        return self._tree
+
+    def __call__(
+        self, batch_info: tuple[str, tp.Sequence[tuple[BufPath | SplitBufPath, Path]]]
+    ) -> None:
         batch_path_pairs = batch_info[1]
         tree = BitBirch(
             branching_factor=self.branching_factor,
@@ -315,9 +360,23 @@ class _FinalTreeMergingRound(_TreeMergingRound):
         for buf_path, idx_path in batch_path_pairs:
             with open(idx_path, "rb") as f:
                 mol_idxs = pickle.load(f)
-            tree._fit_buffers(
-                buf_path, reinsert_index_seqs=mol_idxs, check_indices=self.check_indices
-            )
+            if isinstance(buf_path, tuple):
+                raw_fps_path, weights_path = buf_path
+                weights = np.load(weights_path)
+                tree.fit(
+                    raw_fps_path,
+                    reinsert_indices=mol_idxs,
+                    input_is_packed=True,
+                    n_features=self.n_features,
+                    weights=weights,
+                )
+                del weights
+            else:
+                tree._fit_buffers(
+                    buf_path,
+                    reinsert_index_seqs=mol_idxs,
+                    check_indices=self.check_indices,
+                )
             del mol_idxs
 
         # Save clusters and exit
@@ -325,6 +384,10 @@ class _FinalTreeMergingRound(_TreeMergingRound):
             # TODO: Find alternative solution
             tree.save(self.out_dir / "bitbirch.pkl")
         tree.delete_internal_nodes()
+        if not self._dump_to_files_and_discard_tree:
+            self._tree = tree
+            return
+
         if self.save_centroids:
             output = tree.get_centroids_mol_ids()
             with open(self.out_dir / "clusters.pkl", mode="wb") as f:
@@ -409,6 +472,7 @@ def run_multiround_bitbirch(
         branching_factor=branching_factor,
         tolerance=tolerance,
         out_dir=out_dir,
+        n_features=n_features,
     )
     timer = Timer()
     timer.init_timing("total")
@@ -423,7 +487,6 @@ def run_multiround_bitbirch(
     console.print(f"(Initial) Round {round_idx}: Cluster initial batch of fingerprints")
 
     initial_fn = _InitialRound(
-        n_features=n_features,
         refinement_before_midsection=refinement_before_midsection,
         max_fps=max_fps,
         merge_criterion=initial_merge_criterion,
