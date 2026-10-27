@@ -262,3 +262,12 @@ Input streaming does not make the tree constant-memory: memberships and tree
 summaries still grow. Saving a tree may have a substantial temporary memory cost.
 A restart must restore the tree and its committed input position together;
 replaying a batch into a previously updated tree duplicates those inputs.
+
+Large trees can be checkpointed with `bblean.checkpoint.save_checkpoint(tree, path)`
+and restored with `load_checkpoint(path)`. These helpers store graph nodes in
+separate records with integer links, avoiding recursive traversal of the long
+leaf list. They preserve tree state and continued-fit behavior without raising
+Python's recursion limit. The file replacement is atomic on local POSIX storage.
+Input progress must still be committed alongside the tree by the caller. This
+version-specific format uses pickle internally: load only trusted checkpoints,
+verify their checksums, and keep the matching implementation version available.
