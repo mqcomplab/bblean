@@ -50,3 +50,19 @@ def test_empty_and_reject_truncation(tmp_path):
     path.write_bytes(path.read_bytes()[:-4])
     with pytest.raises(ValueError, match='Truncated'):
         load_checkpoint(path)
+
+
+def test_failed_write_preserves_previous_checkpoint(tmp_path, monkeypatch):
+    import bblean.checkpoint as module
+    path = tmp_path/'tree.bb'
+    tree = BitBirch().fit(np.ones((3, 32), dtype=np.uint8))
+    save_checkpoint(tree, path)
+    original = path.read_bytes()
+    def fail(*args, **kwargs):
+        raise OSError('injected checkpoint write failure')
+    monkeypatch.setattr(module._NodePickler, 'dump', fail)
+    with pytest.raises(OSError, match='injected'):
+        save_checkpoint(tree, path)
+    assert path.read_bytes() == original
+    assert load_checkpoint(path).num_fitted_fps == 3
+    assert list(tmp_path.iterdir()) == [path]
