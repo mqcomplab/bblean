@@ -1,3 +1,4 @@
+import io
 import pickle
 import sys
 
@@ -19,7 +20,9 @@ def test_long_leaf_chain_roundtrip_and_resume(tmp_path, compact):
     tree = BitBirch(threshold=.85, branching_factor=4, compact_memberships=compact).fit(x)
     before = sys.getrecursionlimit()
     with pytest.raises(RecursionError):
-        pickle.dumps(tree, protocol=5)
+        # The Python pickler consistently exposes graph recursion across Python
+        # versions; C-pickler recursion limits changed in Python 3.12.
+        pickle._Pickler(io.BytesIO(), protocol=5).dump(tree)
     path = tmp_path/'tree.bb'
     info = save_checkpoint(tree, path)
     restored = load_checkpoint(path)
