@@ -16,9 +16,11 @@ BitBIRCH-Lean requires Python 3.11 or newer. To install from source in editable 
 
     bb --help
 
-BitBIRCH-Lean has optional C++ extensions. These have been currently tested on Linux x86
-only. You should expect a speedup of ~1.8-2.0x on Linux. To install the extensions from
-source run the following command:
+BitBIRCH-Lean has optional C++ extensions, for the similarity calculations and the
+BitBIRCH tree. They give the same clusters as the python implementation, several times
+faster (e.g. 8-13x for 1-2.4M molecules on an Arm Neoverse V2 CPU). Set
+``BITBIRCH_NO_CPP_TREE=1`` to use the python tree with the C++ similarity calculations.
+To install the extensions from source run the following command:
 
 .. code-block:: bash
 

@@ -34,7 +34,7 @@ jobs:
           BITBIRCH_BUILD_NATIVE=1 BITBIRCH_BUILD_CPP=1 pip install --verbose .
 
       - name: run-pytest
-        run: BITBIRCH_CANT_SKIP_CPP_TESTS=1 pytest -s ./tests/test_similarity.py
+        run: BITBIRCH_CANT_SKIP_CPP_TESTS=1 pytest -s ./tests/test_similarity.py ./tests/test_tree.py
 
   cpp-tests-win:
     runs-on: windows-latest
@@ -57,7 +57,7 @@ jobs:
       - name: run-pytest
         run: |
           $env:BITBIRCH_CANT_SKIP_CPP_TESTS="1"
-          pytest -s ./tests/test_similarity.py
+          pytest -s ./tests/test_similarity.py ./tests/test_tree.py
 
 
   # Ubuntu 24.04 for reproducibility in regression tests only

@@ -437,6 +437,47 @@ class _FastNeverMerge(_FastMerge, NeverMerge):
     pass
 
 
+# Criteria that the C++ BitBirch tree implements (bblean/csrc/bitbirch.cpp). Only these
+# exact classes, since subclasses may override check_merge or the hooks
+_CPP_MERGES = frozenset(
+    {
+        _FastDiameterMerge,
+        DiameterMerge,
+        _FastRadiusMerge,
+        RadiusMerge,
+        _FastToleranceDiameterMerge,
+        ToleranceDiameterMerge,
+        _FastFlexibleToleranceDiameterMerge,
+        FlexibleToleranceDiameterMerge,
+        _FastToleranceRadiusMerge,
+        ToleranceRadiusMerge,
+        _FastToleranceLegacyMerge,
+        ToleranceLegacyMerge,
+        _FastNeverMerge,
+        NeverMerge,
+    }
+)
+
+
+def _cpp_merge_params(
+    merge_accept_fn: MergeAcceptFunction, threshold: float
+) -> tuple[str, float, float, float, float] | None:
+    r"""Parameters of a criterion for the C++ BitBirch tree
+
+    The name, threshold, tolerance, decay and offset of the criterion, or None if the
+    C++ tree does not implement it.
+    """
+    if type(merge_accept_fn) not in _CPP_MERGES:
+        return None
+    return (
+        merge_accept_fn.name,
+        float(threshold),
+        float(getattr(merge_accept_fn, "tolerance", 0.0)),
+        float(getattr(merge_accept_fn, "decay", 0.0)),
+        float(getattr(merge_accept_fn, "offset", 0.0)),
+    )
+
+
 def _get_merge_accept_fn(
     merge_criterion: str, tolerance: float = 0.05
 ) -> MergeAcceptFunction:
