@@ -172,12 +172,13 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
     auto acc_in = packed_fps.unchecked<2>();
     auto acc_out = out.mutable_unchecked<2>();
 
-    for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-        for (py::ssize_t j{0}; j != n_features;
-             j += 8) {  // not auto-vec by GCC
-            // Copy the next 8 uint8 values in one go
-            std::memcpy(&acc_out(i, j), BYTE_TO_BITS[acc_in(i, j / 8)].data(),
-                        8);
+    const py::ssize_t n_in = n_features / 8;
+    for (py::ssize_t i{0}; i != n_samples; ++i) {
+        const uint8_t* in = &acc_in(i, 0);
+        uint8_t* o = &acc_out(i, 0);
+        for (py::ssize_t k{0}; k != n_in; ++k) {
+            // Copy the 8 unpacked bits of byte k in one go
+            std::memcpy(o + 8 * k, BYTE_TO_BITS[in[k]].data(), 8);
         }
     }
     return out;
