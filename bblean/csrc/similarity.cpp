@@ -23,95 +23,29 @@ template <typename T>
 using CArrayForcecast =
     py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-// Packed fingerprints (1D or 2D) as rows of 64 bit words (see kernels.hpp).
-// If the rows are whole, aligned words they are viewed in place. Otherwise
-// they are copied, zero padded: all of them by words(), or a block of rows at a
-// time by for_each_block(), so that large arrays are never copied whole.
-class WordRows {
-   public:
-    explicit WordRows(const CArrayForcecast<uint8_t>& arr) {
-        if (arr.ndim() != 1 && arr.ndim() != 2) {
-            throw std::runtime_error("Input array must be 1- or 2-dimensional");
-        }
-        n = arr.ndim() == 2 ? static_cast<size_t>(arr.shape(0)) : 1;
-        n_bytes_ = static_cast<size_t>(arr.shape(arr.ndim() - 1));
-        w64 = (n_bytes_ + 7) / 8;
-        src_ = arr.data();
-        if (n_bytes_ % 8 == 0 &&
-            reinterpret_cast<std::uintptr_t>(src_) % alignof(uint64_t) == 0) {
-            view_ = reinterpret_cast<const uint64_t*>(src_);
-        }
-    }
-
-    // All the rows (copied if they can't be viewed)
-    const uint64_t* words() {
-        if (view_ == nullptr) {
-            copy_.resize(n * w64);
-            copy_rows(0, n, copy_.data());
-            view_ = copy_.data();
-        }
-        return view_;
-    }
-
-    // Calls f(rows, first, count) for consecutive blocks of count rows,
-    // starting at row first
-    template <typename F>
-    void for_each_block(F&& f) const {
-        if (view_ != nullptr) {
-            f(view_, size_t{0}, n);
-            return;
-        }
-        constexpr size_t kBlockRows = 1024;
-        std::vector<uint64_t> block(std::min(n, kBlockRows) * w64);
-        for (size_t first{0}; first < n; first += kBlockRows) {
-            const size_t count = std::min(kBlockRows, n - first);
-            copy_rows(first, count, block.data());
-            f(block.data(), first, count);
-        }
-    }
-
-    // Popcounts of count rows of these fingerprints, as words
-    std::vector<uint32_t> popcounts(const uint64_t* rows, size_t count) const {
-        std::vector<uint32_t> out(count);
-        for (size_t i{0}; i != count; ++i) {
-            out[i] = bblean::popcount(rows + i * w64, w64);
-        }
-        return out;
-    }
-
-    size_t n = 0;    // number of rows
-    size_t w64 = 0;  // words per row
-
-   private:
-    void copy_rows(size_t first, size_t count, uint64_t* out) const {
-        if (w64 == 0) {
-            return;
-        }
-        for (size_t i{0}; i != count; ++i) {
-            out[(i + 1) * w64 - 1] = 0;  // zero padding of the last word
-            std::memcpy(out + i * w64, src_ + (first + i) * n_bytes_, n_bytes_);
-        }
-    }
-
-    const uint8_t* src_ = nullptr;
-    size_t n_bytes_ = 0;
-    const uint64_t* view_ = nullptr;
-    std::vector<uint64_t> copy_;
+// Packed fingerprints (1D: one row, 2D: rows) as n rows of n_bytes bytes, read
+// in place by the kernels (see kernels.hpp)
+struct PackedRows {
+    const uint8_t* data = nullptr;
+    size_t n = 0;        // number of rows
+    size_t n_bytes = 0;  // bytes per row
 };
+
+PackedRows packed_rows(const CArrayForcecast<uint8_t>& arr) {
+    if (arr.ndim() != 1 && arr.ndim() != 2) {
+        throw std::runtime_error("Input array must be 1- or 2-dimensional");
+    }
+    return {arr.data(), arr.ndim() == 2 ? static_cast<size_t>(arr.shape(0)) : 1,
+            static_cast<size_t>(arr.shape(arr.ndim() - 1))};
+}
 
 py::array_t<uint32_t> _popcount_2d(const CArrayForcecast<uint8_t>& arr) {
     if (arr.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
-    const WordRows rows(arr);
+    const PackedRows rows = packed_rows(arr);
     py::array_t<uint32_t> out(rows.n);
-    auto out_ptr = out.mutable_data();
-    rows.for_each_block([&](const uint64_t* block, size_t first, size_t count) {
-        for (size_t i{0}; i != count; ++i) {
-            out_ptr[first + i] =
-                bblean::popcount(block + i * rows.w64, rows.w64);
-        }
-    });
+    bblean::popcounts(rows.data, rows.n, rows.n_bytes, out.mutable_data());
     return out;
 }
 
@@ -119,8 +53,8 @@ uint32_t _popcount_1d(const CArrayForcecast<uint8_t>& arr) {
     if (arr.ndim() != 1) {
         throw std::runtime_error("Input array must be 1-dimensional");
     }
-    WordRows row(arr);
-    return bblean::popcount(row.words(), row.w64);
+    const PackedRows row = packed_rows(arr);
+    return bblean::popcount(row.data, row.n_bytes);
 }
 
 // The BitToByte table has shape (256, 8), and holds, for each
@@ -344,16 +278,12 @@ py::array_t<double> _jt_sim_arr_vec_packed(
         throw std::runtime_error(
             "Shapes should be (N, F) for arr and (F,) for vec");
     }
-    const WordRows rows(arr);
-    WordRows query(vec);
-    const uint64_t* query_words = query.words();
+    const PackedRows rows = packed_rows(arr);
     py::array_t<double> out(rows.n);
-    auto out_ptr = out.mutable_data();
-    rows.for_each_block([&](const uint64_t* block, size_t first, size_t count) {
-        const auto pops = rows.popcounts(block, count);
-        bblean::jt_sims(block, pops.data(), count, rows.w64, query_words,
-                        out_ptr + first);
-    });
+    std::vector<uint32_t> pops(rows.n);
+    bblean::popcounts(rows.data, rows.n, rows.n_bytes, pops.data());
+    bblean::jt_sims(rows.data, pops.data(), rows.n, rows.n_bytes, vec.data(),
+                    out.mutable_data());
     return out;
 }
 
@@ -380,15 +310,15 @@ py::tuple jt_most_dissimilar_packed(
     if (n_features % 8 != 0) {
         throw std::runtime_error("Only features divisible by 8 is supported");
     }
-    // Copied whole if the rows cannot be viewed as words
-    WordRows rows(fps_packed);
-    const uint64_t* words = rows.words();
-    const auto pops = rows.popcounts(words, rows.n);
+    const PackedRows rows = packed_rows(fps_packed);
+    std::vector<uint32_t> pops(rows.n);
+    bblean::popcounts(rows.data, rows.n, rows.n_bytes, pops.data());
     py::array_t<double> sims1(rows.n), sims2(rows.n);
     // The centroid only uses the first n_features features
     const auto pair = bblean::most_dissimilar(
-        words, pops.data(), rows.n, rows.w64, static_cast<size_t>(n_features),
-        sims1.mutable_data(), sims2.mutable_data());
+        rows.data, pops.data(), rows.n, rows.n_bytes,
+        static_cast<size_t>(n_features), sims1.mutable_data(),
+        sims2.mutable_data());
     return py::make_tuple(static_cast<py::ssize_t>(pair.fp1),
                           static_cast<py::ssize_t>(pair.fp2), sims1, sims2);
 }

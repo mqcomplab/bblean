@@ -2,27 +2,29 @@
 // similarity, iSIM, majority centroids and the most dissimilar pair of a set of
 // fingerprints
 //
-// Fingerprints are rows of 64 bit words: a packed (uint8) fingerprint viewed as
-// 64 bit words, zero padded to a whole number of words. The order of the bits
-// within the words does not matter for these calculations.
+// Fingerprints are rows of n_bytes packed (uint8) bytes, at any address. They
+// are read 8 bytes at a time as 64 bit words (load_word), and the last
+// n_bytes % 8 bytes of a row as one zero padded word (load_tail). The order of
+// the bits within the words does not matter for these calculations.
 #pragma once
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <vector>
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #include <intrin.h>  // _BitScanForward64
 #endif
 
-// The rows of 64 bit words are views of the packed bytes. On little endian
-// machines byte j of a row is bits 8 * (j % 8) to 8 * (j % 8) + 7 of word
-// j / 8, so bit position p of a row (counting from the lowest bit of the first
-// word) lies in byte p / 8. most_dissimilar relies on this to use only the
-// first n_columns / 8 bytes for the centroid. The order of the bits within a
-// byte (np.packbits uses big bit order) does not matter here: popcounts and
-// intersections ignore it, and the n_columns cut is at a byte boundary.
+// On little endian machines byte j of a word read at p is bits 8 * j to
+// 8 * j + 7 of the word, so bit position p of a row (counting from the lowest
+// bit of the first word) lies in byte p / 8. most_dissimilar relies on this to
+// use only the first n_columns / 8 bytes for the centroid. The order of the
+// bits within a byte (np.packbits uses big bit order) does not matter here:
+// popcounts and intersections ignore it, and the n_columns cut is at a byte
+// boundary.
 #if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #error "Big endian architectures are not supported"
 #endif
@@ -63,12 +65,44 @@
 
 namespace bblean {
 
-inline uint32_t popcount(const uint64_t* a, size_t w64) {
+// The 8 bytes at p as a 64 bit word. p does not need to be aligned: x86-64 and
+// aarch64 load unaligned words in hardware, and memcpy is the defined way to
+// ask for that in C++ (it compiles to a single load).
+inline uint64_t load_word(const uint8_t* p) {
+    uint64_t w;
+    std::memcpy(&w, p, sizeof(w));
+    return w;
+}
+
+// The n < 8 bytes at p as a 64 bit word, zero padded
+inline uint64_t load_tail(const uint8_t* p, size_t n) {
+    uint64_t w = 0;
+    for (size_t j = 0; j < n; ++j) {
+        w |= uint64_t{p[j]} << (8 * j);
+    }
+    return w;
+}
+
+inline uint32_t popcount(const uint8_t* a, size_t n_bytes) {
+    const size_t n_words = n_bytes / 8;
+    const size_t n_tail = n_bytes % 8;
     uint32_t s = 0;
-    for (size_t k = 0; k < w64; ++k) {
-        s += static_cast<uint32_t>(POPCOUNT_64(a[k]));
+    for (size_t k = 0; k < n_words; ++k) {
+        s += static_cast<uint32_t>(POPCOUNT_64(load_word(a + 8 * k)));
+    }
+    if (n_tail != 0) {
+        s += static_cast<uint32_t>(
+            POPCOUNT_64(load_tail(a + 8 * n_words, n_tail)));
     }
     return s;
+}
+
+// Popcounts of the n rows (of n_bytes bytes each) into out
+inline void popcounts(const uint8_t* rows, size_t n, size_t n_bytes,
+                      uint32_t* out) {
+    for (size_t i = 0; i < n; ++i) {
+        out[i] = popcount(rows + i * n_bytes, n_bytes);
+    }
 }
 
 // Number of trailing zero bits of x (x must not be 0). A wrapper over
@@ -85,28 +119,35 @@ inline int count_trailing_zeros(uint64_t x) { return __builtin_ctzll(x); }
 
 // Calls f(p) for every set bit p of a row
 template <typename F>
-inline void for_each_set_bit(const uint64_t* a, size_t w64, F&& f) {
-    for (size_t k = 0; k < w64; ++k) {
-        for (uint64_t w = a[k]; w; w &= w - 1) {
+inline void for_each_set_bit(const uint8_t* a, size_t n_bytes, F&& f) {
+    const size_t n_words = n_bytes / 8;
+    const size_t n_tail = n_bytes % 8;
+    auto word_bits = [&](uint64_t w, size_t k) {
+        for (; w; w &= w - 1) {
             f(static_cast<int>(k * 64) + count_trailing_zeros(w));
         }
+    };
+    for (size_t k = 0; k < n_words; ++k) {
+        word_bits(load_word(a + 8 * k), k);
+    }
+    if (n_tail != 0) {
+        word_bits(load_tail(a + 8 * n_words, n_tail), n_words);
     }
 }
 
 #if defined(BBLEAN_NEON)
 // Query of V 16-byte vectors held in registers. Byte counts accumulate in u8
-// lanes, at most 8 * V / 2 <= 128 per lane for V <= 32.
+// lanes, at most 8 * V / 2 <= 128 per lane for V <= 32. vld1q_u8 has no
+// alignment requirement.
 template <int V>
 struct NeonQuery {
     uint8x16_t v[V];
-    explicit NeonQuery(const uint64_t* q) {
-        const auto* p = reinterpret_cast<const uint8_t*>(q);
+    explicit NeonQuery(const uint8_t* q) {
         for (int k = 0; k < V; ++k) {
-            v[k] = vld1q_u8(p + 16 * k);
+            v[k] = vld1q_u8(q + 16 * k);
         }
     }
-    uint32_t intersection_count(const uint64_t* a) const {
-        const auto* p = reinterpret_cast<const uint8_t*>(a);
+    uint32_t intersection_count(const uint8_t* p) const {
         uint8x16_t acc0 = vcntq_u8(vandq_u8(vld1q_u8(p), v[0]));
         uint8x16_t acc1 = vcntq_u8(vandq_u8(vld1q_u8(p + 16), v[1]));
         for (int k = 2; k < V; k += 2) {
@@ -120,21 +161,21 @@ struct NeonQuery {
 };
 #endif
 
-// Calls f(i, popcount(row_i & query)) for each of the n rows (rows of w64
-// words)
+// Calls f(i, popcount(row_i & query)) for each of the n rows (of n_bytes bytes
+// each)
 template <typename F>
-inline void for_each_intersection_count(const uint64_t* rows, size_t n,
-                                        size_t w64, const uint64_t* query,
+inline void for_each_intersection_count(const uint8_t* rows, size_t n,
+                                        size_t n_bytes, const uint8_t* query,
                                         F&& f) {
 #if defined(BBLEAN_NEON)
     // 2048 and 1024 bit fingerprints: the query is kept in registers
-    if (w64 == 32 || w64 == 16) {
+    if (n_bytes == 256 || n_bytes == 128) {
         auto scan = [&](const auto& q) {
             for (size_t i = 0; i < n; ++i) {
-                f(i, q.intersection_count(rows + i * w64));
+                f(i, q.intersection_count(rows + i * n_bytes));
             }
         };
-        if (w64 == 32) {
+        if (n_bytes == 256) {
             scan(NeonQuery<16>(query));
         } else {
             scan(NeonQuery<8>(query));
@@ -142,11 +183,20 @@ inline void for_each_intersection_count(const uint64_t* rows, size_t n,
         return;
     }
 #endif
+    const size_t n_words = n_bytes / 8;
+    const size_t n_tail = n_bytes % 8;
+    const uint64_t query_tail =
+        n_tail != 0 ? load_tail(query + 8 * n_words, n_tail) : 0;
     for (size_t i = 0; i < n; ++i) {
-        const uint64_t* r = rows + i * w64;
+        const uint8_t* r = rows + i * n_bytes;
         uint32_t s = 0;
-        for (size_t k = 0; k < w64; ++k) {
-            s += static_cast<uint32_t>(POPCOUNT_64(r[k] & query[k]));
+        for (size_t k = 0; k < n_words; ++k) {
+            s += static_cast<uint32_t>(
+                POPCOUNT_64(load_word(r + 8 * k) & load_word(query + 8 * k)));
+        }
+        if (n_tail != 0) {
+            s += static_cast<uint32_t>(POPCOUNT_64(
+                load_tail(r + 8 * n_words, n_tail) & query_tail));
         }
         f(i, s);
     }
@@ -160,10 +210,10 @@ inline double jt_sim(uint32_t intersection, uint32_t pop_a, uint32_t pop_b) {
 }
 
 // Tanimoto similarities of n rows (with popcounts pops) to query
-inline void jt_sims(const uint64_t* rows, const uint32_t* pops, size_t n,
-                    size_t w64, const uint64_t* query, double* out) {
-    const uint32_t query_pop = popcount(query, w64);
-    for_each_intersection_count(rows, n, w64, query,
+inline void jt_sims(const uint8_t* rows, const uint32_t* pops, size_t n,
+                    size_t n_bytes, const uint8_t* query, double* out) {
+    const uint32_t query_pop = popcount(query, n_bytes);
+    for_each_intersection_count(rows, n, n_bytes, query,
                                 [&](size_t i, uint32_t inter) {
                                     out[i] = jt_sim(inter, pops[i], query_pop);
                                 });
@@ -205,26 +255,30 @@ struct DissimilarPair {
     size_t fp1, fp2;
 };
 
-inline DissimilarPair most_dissimilar(const uint64_t* rows,
+inline DissimilarPair most_dissimilar(const uint8_t* rows,
                                       const uint32_t* pops, size_t n,
-                                      size_t w64, size_t n_columns,
+                                      size_t n_bytes, size_t n_columns,
                                       double* sims1, double* sims2) {
-    std::vector<uint64_t> counts(w64 * 64, 0);
+    const size_t n_words = (n_bytes + 7) / 8;
+    std::vector<uint64_t> counts(n_words * 64, 0);
     for (size_t i = 0; i < n; ++i) {
-        for_each_set_bit(rows + i * w64, w64, [&](int p) { ++counts[p]; });
+        for_each_set_bit(rows + i * n_bytes, n_bytes,
+                         [&](int p) { ++counts[p]; });
     }
-    std::vector<uint64_t> centroid(w64, 0);
+    // The centroid as a row of n_bytes bytes (the words, zero padded)
+    std::vector<uint64_t> centroid(n_words, 0);
     for (size_t p = 0; p < n_columns; ++p) {
         if (static_cast<bool>(
                 centroid_value(counts[p], static_cast<int64_t>(n)))) {
             centroid[p >> 6] |= uint64_t{1} << (p & 63);
         }
     }
-    jt_sims(rows, pops, n, w64, centroid.data(), sims1);
+    const auto* centroid_row = reinterpret_cast<const uint8_t*>(centroid.data());
+    jt_sims(rows, pops, n, n_bytes, centroid_row, sims1);
     const size_t fp1 = first_min_idx(sims1, n);
-    jt_sims(rows, pops, n, w64, rows + fp1 * w64, sims1);
+    jt_sims(rows, pops, n, n_bytes, rows + fp1 * n_bytes, sims1);
     const size_t fp2 = first_min_idx(sims1, n);
-    jt_sims(rows, pops, n, w64, rows + fp2 * w64, sims2);
+    jt_sims(rows, pops, n, n_bytes, rows + fp2 * n_bytes, sims2);
     return {fp1, fp2};
 }
 
