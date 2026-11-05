@@ -6,7 +6,7 @@
 # - BitBIRCH Clustering Refinement Strategies:
 #   https://doi.org/10.1021/acs.jcim.5c00627
 # - BitBIRCh-Lean:
-#   (preprint) https://www.biorxiv.org/content/10.1101/2025.10.22.684015v1
+#   https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
 #
 # Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, comprised
 # exclusively by:
