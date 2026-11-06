@@ -84,7 +84,7 @@ and tag it with `C++`.
 ## CLI Quickstart
 
 <div align="center">
-<img src="bblean-demo-v2.gif" width="600" />
+<img src="https://raw.githubusercontent.com/mqcomplab/bblean/main/bblean-demo-v2.gif" width="600" />
 </div>
 
 BitBIRCH-Lean provides a convenient CLI interface, `bb`. The CLI can be used to convert
