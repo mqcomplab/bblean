@@ -1,11 +1,11 @@
 # BitBIRCH-Lean Python Package: An open-source clustering module based on iSIM.
 #
 # If you find this software useful please cite the following articles:
+# - BitBIRCH-Lean: TO-BE-ADDED
 # - BitBIRCH: efficient clustering of large molecular libraries:
 #   https://doi.org/10.1039/D5DD00030K
 # - BitBIRCH Clustering Refinement Strategies:
 #   https://doi.org/10.1021/acs.jcim.5c00627
-# - BitBIRCH-Lean: TO-BE-ADDED
 #
 # Copyright (C) 2025  The Miranda-Quintana Lab and other BitBirch developers, comprised
 # exclusively by:
@@ -621,11 +621,11 @@ class BitBirch:
 
     If you find this software useful please cite the following articles:
 
+    - BitBIRCH-Lean: TO-BE-ADDED
     - BitBIRCH: efficient clustering of large molecular libraries:
       https://doi.org/10.1039/D5DD00030K
     - BitBIRCH Clustering Refinement Strategies:
       https://doi.org/10.1021/acs.jcim.5c00627
-    - BitBIRCH-Lean: TO-BE-ADDED
 
     Parameters
     ----------

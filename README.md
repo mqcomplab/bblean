@@ -19,12 +19,12 @@ algorithm designed for very large molecular libraries.
 
 If you find this software useful please cite the following articles:
 
+- *BitBIRCH-Lean*:
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
 - *BitBIRCH: efficient clustering of large molecular libraries*:
     https://doi.org/10.1039/D5DD00030K
 - *BitBIRCH Clustering Refinement Strategies*:
     https://doi.org/10.1021/acs.jcim.5c00627
-- *BitBIRCH-Lean*:
-    https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
 
 **NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
 we hit version 1.0
@@ -84,7 +84,7 @@ and tag it with `C++`.
 ## CLI Quickstart
 
 <div align="center">
-<img src="bblean-demo-v2.gif" width="600" />
+<img src="https://raw.githubusercontent.com/mqcomplab/bblean/main/bblean-demo-v2.gif" width="600" />
 </div>
 
 BitBIRCH-Lean provides a convenient CLI interface, `bb`. The CLI can be used to convert

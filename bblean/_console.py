@@ -28,12 +28,12 @@ class BBConsole(Console):
         self.print(
             r"""BitBirch-Lean is developed by the [bold]Miranda-Quintana Lab[/bold] https://github.com/mqcomplab
 If you find this software useful please cite the following articles:
+    [yellow]•[/yellow] [italic]BitBIRCH-Lean[/italic]:
+        https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
     [yellow]•[/yellow] [italic]BitBIRCH: efficient clustering of large molecular libraries[/italic]:
         https://doi.org/10.1039/D5DD00030K
     [yellow]•[/yellow] [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
-        https://doi.org/10.1021/acs.jcim.5c00627
-    [yellow]•[/yellow] [italic]BitBIRCH-Lean[/italic]:
-        https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/"""  # noqa
+        https://doi.org/10.1021/acs.jcim.5c00627"""  # noqa
         )
 
     def print_peak_mem(self, out_dir: Path, indent: bool = True) -> None:
