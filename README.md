@@ -19,12 +19,12 @@ algorithm designed for very large molecular libraries.
 
 If you find this software useful please cite the following articles:
 
+- *BitBIRCH-Lean*:
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
 - *BitBIRCH: efficient clustering of large molecular libraries*:
     https://doi.org/10.1039/D5DD00030K
 - *BitBIRCH Clustering Refinement Strategies*:
     https://doi.org/10.1021/acs.jcim.5c00627
-- *BitBIRCH-Lean*:
-    https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
 
 **NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
 we hit version 1.0
