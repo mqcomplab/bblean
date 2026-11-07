@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import pytest
 
@@ -7,6 +6,7 @@ from inline_snapshot import snapshot
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
 # _cpp_similarity are tested independently
 import bblean.similarity
+import bblean.utils
 import bblean._py_similarity as pysim
 
 try:
@@ -14,7 +14,7 @@ try:
 
     CSIM_AVAIL = True
 except ImportError:
-    if os.getenv("BITBIRCH_CANT_SKIP_CPP_TESTS"):
+    if bblean.utils._env_var_is_on("BITBIRCH_CANT_SKIP_CPP_TESTS"):
         raise
     CSIM_AVAIL = False
 from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints

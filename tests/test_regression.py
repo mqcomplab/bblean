@@ -3,16 +3,15 @@ import gc
 import math
 import time
 import sys
-import os
 import pytest
-import bblean
+import bblean.utils
 
 try:
     import bblean._cpp_similarity as csim  # noqa
 
     CSIM_AVAIL = True
 except ImportError:
-    if os.getenv("BITBIRCH_CANT_SKIP_CPP_TESTS"):
+    if bblean.utils._env_var_is_on("BITBIRCH_CANT_SKIP_CPP_TESTS"):
         raise
     CSIM_AVAIL = False
 

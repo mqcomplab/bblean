@@ -51,7 +51,6 @@ import itertools
 import pickle
 import sys
 import typing_extensions as tpx
-import os
 import random
 from pathlib import Path
 import warnings
@@ -70,7 +69,7 @@ from bblean.merges import (
     _BUILTIN_MERGES,
     DiscardSubcluster,
 )
-from bblean.utils import min_safe_uint
+from bblean.utils import min_safe_uint, _env_var_is_on
 from bblean.fingerprints import (
     pack_fingerprints,
     _get_fingerprints_from_file_seq,
@@ -84,7 +83,7 @@ from bblean.similarity import (
     jt_isim,
 )
 
-if os.getenv("BITBIRCH_NO_EXTENSIONS"):
+if _env_var_is_on("BITBIRCH_NO_EXTENSIONS"):
     from bblean.fingerprints import unpack_fingerprints as _unpack_fingerprints
 else:
     try:

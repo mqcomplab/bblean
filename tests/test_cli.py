@@ -131,6 +131,7 @@ def test_pca(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 
 
 def test_tsne(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    pytest.importorskip("openTSNE")
     runner = CliRunner()
     dir = tmp_path.resolve()
     monkeypatch.chdir(dir)

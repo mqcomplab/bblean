@@ -28,7 +28,8 @@ dependencies = [
     "typer",
     "typing_extensions",
     # Dimensionality reduction
-    "opentsne",
+    # No ARM64 Linux / Windows wheels available for openTSNE, must be installed manually
+    "opentsne; platform_machine != 'aarch64' and platform_machine != 'ARM64'",
     "umap-learn",
     "pynndescent",  # makes umap faster
 ]

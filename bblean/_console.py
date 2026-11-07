@@ -3,17 +3,17 @@ r"""Pretty printing"""
 from pathlib import Path
 import numpy as np
 import typing as tp
-import os
 import multiprocessing as mp
 
 from rich.console import Console
 
 from bblean._memory import get_peak_memory_gib
+from bblean.utils import _env_var_is_on
 
 
 class BBConsole(Console):
     def print_banner(self) -> None:
-        if os.environ.get("BITBIRCHNOBANNER", ""):
+        if _env_var_is_on("BITBIRCHNOBANNER"):
             return
         banner = r"""[bold]
         ______ _ _  ______ _          _        

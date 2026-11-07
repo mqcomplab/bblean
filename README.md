@@ -61,17 +61,17 @@ on a best-effort basis, some releases may not have Windows support.
 To build from source instead (editable mode):
 
 ```bash
-git clone git@github.com:mqcomplab/bblean,
+git clone git@github.com:mqcomplab/bblean
 cd bblean
 
 conda env create --file ./environment.yaml
 conda activate bblean
 
 # C++ extensions are automatically built and installed
-# By default, flags tune the extensions for the native arch
-# to build a more portable binary set BITBIRCH_BUILD_PORTABLE=1
+# BITBIRCH_BUILD_NATIVE=1 tunes them for the native CPU arch (recommended)
+# omit it for a more portable binary
 # to disable the extensions set BITBIRCH_PY_ONLY=1
-pip install -e .
+BITBIRCH_BUILD_NATIVE=1 pip install -e .
 
 bb --help
 ```
@@ -141,8 +141,8 @@ An example usual workflow is as follows:
    additionally generates Murcko scaffold analysis. For a t-SNE
    visualization try `bb plot-tsne <output-path> -- top 20`.
    t-SNE plots use [openTSNE](https://opentsne.readthedocs.io/en/latest/) as a backend,
-   which is a parallel, extremely fast implementation. We recommend you consult the corresponding
-   documentation for info on the available parameters.
+   which is a parallel, extremely fast implementation. We recommend you consult the
+   corresponding documentation for info on the available parameters.
    Still, expect t-SNE plots to be slow for very large datasets (more than 1M molecules).
 
 ### Manually exploring clustering results
