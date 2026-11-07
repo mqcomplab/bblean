@@ -12,22 +12,31 @@ BitBIRCH-Lean requires Python 3.11 or newer. To install from source in editable 
     conda env create --file ./environment.yaml
     conda activate bblean
 
-    pip install -e .
+    BITBIRCH_BUILD_NATIVE=1 pip install -e .
 
     bb --help
 
-BitBIRCH-Lean has optional C++ extensions. These have been currently tested on Linux x86
-only. You should expect a speedup of ~1.8-2.0x on Linux. To install the extensions from
-source run the following command:
+BitBIRCH-Lean has optional C++ extensions. These have been thoroughly tested on Linux x86,
+and partially on Linux aarch64 and macOS arm64.
+You should expect a speedup of up to 4x vs plain python on Linux x86, depending on your CPU.
+The extensions are automatically built and installed when installing from source. By
+default they are built with conservative, portable compilation flags.
+``BITBIRCH_BUILD_NATIVE=1`` (recommended, as in the command above) tunes them for
+the native CPU arch instead, which gives a larger speedup, but the resulting binary may
+not run on other machines with older CPUs. To disable the extensions set
+``BITBIRCH_PY_ONLY=1``.
+On Windows PowerShell, set the variables in a separate command before running ``pip``,
+for example:
 
-.. code-block:: bash
+.. code-block:: powershell
 
-    BITBIRCH_BUILD_CPP=1 pip install -e .
+    $env:BITBIRCH_BUILD_NATIVe=1
+    pip install -e .
 
 If the extensions install successfully, they will be automatically used each time
 BitBIRCH-Lean or its classes are used. No need to do anything else.
 
-If you run into any issues when installing the extensions, please open a GitHub issue in
+If you run into any issues with the extensions, please open a GitHub issue in
 the `issue Tracker <https://github.com/mqcomplab/bblean/issues>`_ and tag it with the
 ``C++`` label.
 

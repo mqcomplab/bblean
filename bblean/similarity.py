@@ -1,6 +1,5 @@
 """Optimized molecular similarity calculators"""
 
-import os
 import warnings
 
 from numpy.typing import NDArray
@@ -36,11 +35,12 @@ __all__ = [
 
 from bblean._py_similarity import centroid_from_sum, centroid
 from bblean.fingerprints import pack_fingerprints, unpack_fingerprints
+from bblean.utils import _env_var_is_on
 
 # jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for
 # speed
 
-if os.getenv("BITBIRCH_NO_EXTENSIONS"):
+if _env_var_is_on("BITBIRCH_NO_EXTENSIONS"):
     from bblean._py_similarity import (
         jt_isim_from_sum,
         jt_isim_unpacked,
