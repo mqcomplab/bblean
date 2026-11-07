@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=aaeb04e4"></script>
+    <script src="_static/documentation_options.js?v=92f87990"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
@@ -381,20 +381,29 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>--file<span class="w"> </span>./environment.yaml
 conda<span class="w"> </span>activate<span class="w"> </span>bblean
 
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+<span class="nv">BITBIRCH_BUILD_NATIVE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 
 bb<span class="w"> </span>--help
 </pre></div>
 </div>
-<p>BitBIRCH-Lean has optional C++ extensions. These have been currently tested on Linux x86
-only. You should expect a speedup of ~1.8-2.0x on Linux. To install the extensions from
-source run the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">BITBIRCH_BUILD_CPP</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+<p>BitBIRCH-Lean has optional C++ extensions. These have been thoroughly tested on Linux x86,
+and partially on Linux aarch64 and macOS arm64.
+You should expect a speedup of up to 4x vs plain python on Linux x86, depending on your CPU.
+The extensions are automatically built and installed when installing from source. By
+default they are built with conservative, portable compilation flags.
+<code class="docutils literal notranslate"><span class="pre">BITBIRCH_BUILD_NATIVE=1</span></code> (recommended, as in the command above) tunes them for
+the native CPU arch instead, which gives a larger speedup, but the resulting binary may
+not run on other machines with older CPUs. To disable the extensions set
+<code class="docutils literal notranslate"><span class="pre">BITBIRCH_PY_ONLY=1</span></code>.
+On Windows PowerShell, set the variables in a separate command before running <code class="docutils literal notranslate"><span class="pre">pip</span></code>,
+for example:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="nv">$env:BITBIRCH_BUILD_NATIVe</span><span class="p">=</span><span class="n">1</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">-e</span> <span class="p">.</span>
 </pre></div>
 </div>
 <p>If the extensions install successfully, they will be automatically used each time
 BitBIRCH-Lean or its classes are used. No need to do anything else.</p>
-<p>If you run into any issues when installing the extensions, please open a GitHub issue in
+<p>If you run into any issues with the extensions, please open a GitHub issue in
 the <a class="reference external" href="https://github.com/mqcomplab/bblean/issues">issue Tracker</a> and tag it with the
 <code class="docutils literal notranslate"><span class="pre">C++</span></code> label.</p>
 </section>

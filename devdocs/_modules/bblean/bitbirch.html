@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=aaeb04e4"></script>
+    <script src="../../_static/documentation_options.js?v=92f87990"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -431,7 +431,6 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tpx</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -450,7 +449,7 @@
     <span class="n">_BUILTIN_MERGES</span><span class="p">,</span>
     <span class="n">DiscardSubcluster</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">min_safe_uint</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">min_safe_uint</span><span class="p">,</span> <span class="n">_env_var_is_on</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">pack_fingerprints</span><span class="p">,</span>
     <span class="n">_get_fingerprints_from_file_seq</span><span class="p">,</span>
@@ -464,7 +463,7 @@
     <span class="n">jt_isim</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"BITBIRCH_NO_EXTENSIONS"</span><span class="p">):</span>
+<span class="k">if</span> <span class="n">_env_var_is_on</span><span class="p">(</span><span class="s2">"BITBIRCH_NO_EXTENSIONS"</span><span class="p">):</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">unpack_fingerprints</span> <span class="k">as</span> <span class="n">_unpack_fingerprints</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>

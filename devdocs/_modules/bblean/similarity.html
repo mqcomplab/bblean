@@ -38,7 +38,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=aaeb04e4"></script>
+    <script src="../../_static/documentation_options.js?v=92f87990"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
@@ -380,7 +380,6 @@
   <h1>Source code for bblean.similarity</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""Optimized molecular similarity calculators"""</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
@@ -416,11 +415,12 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">centroid_from_sum</span><span class="p">,</span> <span class="n">centroid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bblean.fingerprints</span><span class="w"> </span><span class="kn">import</span> <span class="n">pack_fingerprints</span><span class="p">,</span> <span class="n">unpack_fingerprints</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bblean.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_env_var_is_on</span>
 
 <span class="c1"># jt_isim_packed and jt_isim_unpacked are not exposed, only used within functions for</span>
 <span class="c1"># speed</span>
 
-<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"BITBIRCH_NO_EXTENSIONS"</span><span class="p">):</span>
+<span class="k">if</span> <span class="n">_env_var_is_on</span><span class="p">(</span><span class="s2">"BITBIRCH_NO_EXTENSIONS"</span><span class="p">):</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">bblean._py_similarity</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">jt_isim_from_sum</span><span class="p">,</span>
         <span class="n">jt_isim_unpacked</span><span class="p">,</span>
