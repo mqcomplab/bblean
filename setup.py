@@ -1,13 +1,13 @@
 import os
 import platform
 from pathlib import Path
-import tomli
+import tomllib
 
 import setuptools
 
 root = Path(__file__).parent
 with open(root / "pyproject.toml", "rb") as f:
-    pyproject = tomli.load(f)
+    pyproject = tomllib.load(f)
 
 name = pyproject["project"]["name"]
 
@@ -24,7 +24,10 @@ ARM = platform.machine().lower().startswith("arm") and not APPLE_SILICON
 
 # Build C++ extensions (recommended)
 extra_compile_args = []
-if os.getenv("BITBIRCH_BUILD_CPP"):
+build_extensions = os.getenv("BITBIRCH_PY_ONLY") is None
+build_portable = os.getenv("BITBIRCH_BUILD_PORTABLE") is not None
+
+if build_extensions:
     import pybind11
     from pybind11.setup_helpers import Pybind11Extension, WIN
 
@@ -34,16 +37,16 @@ if os.getenv("BITBIRCH_BUILD_CPP"):
         extra_compile_args.append("-O3")  # -O3 includes -ftree-vectorize
     if not WIN:
         if X86:
-            if os.getenv("BITBIRCH_BUILD_NATIVE"):
-                extra_compile_args.extend(
-                    ["-march=native", "-mtune=native", "-mpopcnt"]
-                )
-            else:
+            if build_portable:
                 extra_compile_args.extend(
                     ["-march=nocona", "-mtune=haswell", "-mpopcnt"]
                 )
+            else:
+                extra_compile_args.extend(
+                    ["-march=native", "-mtune=native", "-mpopcnt"]
+                )
         elif APPLE_SILICON:
-            if os.getenv("BITBIRCH_BUILD_NATIVE"):
+            if not build_portable:
                 extra_compile_args.extend(["-mcpu=native"])
     if os.getenv("BITBIRCH_BUILD_CUSTOM_FLAGS"):
         # Override defaults and allow user to specify all flags, useful for attempting

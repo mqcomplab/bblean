@@ -16,18 +16,19 @@ BitBIRCH-Lean requires Python 3.11 or newer. To install from source in editable 
 
     bb --help
 
-BitBIRCH-Lean has optional C++ extensions. These have been currently tested on Linux x86
-only. You should expect a speedup of ~1.8-2.0x on Linux. To install the extensions from
-source run the following command:
-
-.. code-block:: bash
-
-    BITBIRCH_BUILD_CPP=1 pip install -e .
+BitBIRCH-Lean has optional C++ extensions. These have been thoroughly tested on Linux x86,
+and partially on Linux and macOS aarch64.
+You should expect a speedup of up to 4x vs plain python on Linux x86, depending on your CPU.
+The extensions are automatically built and installed, with flags tuning for the native
+CPU arch, when installing from source. To build a more portable binary, with
+conservative compilation flags (expect less speedup in this case) set
+``BITBIRCH_BUILD_PORTABLE=1`` before installing. To disable the extensions set
+``BITBIRCH_PY_ONLY=1``.
 
 If the extensions install successfully, they will be automatically used each time
 BitBIRCH-Lean or its classes are used. No need to do anything else.
 
-If you run into any issues when installing the extensions, please open a GitHub issue in
+If you run into any issues with the extensions, please open a GitHub issue in
 the `issue Tracker <https://github.com/mqcomplab/bblean/issues>`_ and tag it with the
 ``C++`` label.
 

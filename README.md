@@ -67,9 +67,10 @@ cd bblean
 conda env create --file ./environment.yaml
 conda activate bblean
 
-BITBIRCH_BUILD_CPP=1 pip install -e .
-
-# If you want to build without the C++ extensions run this instead:
+# C++ extensions are automatically built and installed
+# By default, flags tune the extensions for the native arch
+# to build a more portable binary set BITBIRCH_BUILD_PORTABLE=1
+# to disable the extensions set BITBIRCH_PY_ONLY=1
 pip install -e .
 
 bb --help

@@ -27,7 +27,7 @@ env:
   CIBW_TEST_REQUIRES: pytest pytest-subtests inline-snapshot
   CIBW_TEST_COMMAND: pytest -k "not regression" {project}/tests
   CIBW_PRERELEASE_PYTHONS: False
-  CIBW_ENVIRONMENT: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.event.inputs.version }} BITBIRCH_BUILD_CPP=1"
+  CIBW_ENVIRONMENT: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.event.inputs.version }} BITBIRCH_BUILD_PORTABLE=1"
   # Build wheels that support both aarch64 and x86_64 on macOS
   CIBW_ARCHS_MACOS: "universal2"
   CIBW_BUILD_VERBOSITY: 3
