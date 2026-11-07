@@ -71,6 +71,7 @@ conda activate bblean
 # BITBIRCH_BUILD_NATIVE=1 tunes them for the native CPU arch (recommended)
 # omit it for a more portable binary
 # to disable the extensions set BITBIRCH_PY_ONLY=1
+# (on Windows PowerShell set variables with $env:BITBIRCH_PY_ONLY=1 before pip)
 BITBIRCH_BUILD_NATIVE=1 pip install -e .
 
 bb --help
