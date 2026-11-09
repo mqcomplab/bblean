@@ -1,0 +1,177 @@
+{
+ "adaptive-flex-tol-diam": {
+  "clusters": 645,
+  "num_fitted": 1500,
+  "sha256": "82cfe03970b34381c43c37e1a2527fb64a0203d5eda3cc9322f7bb7dc243fe67"
+ },
+ "adaptive-tol-diam": {
+  "clusters": 1091,
+  "num_fitted": 1500,
+  "sha256": "7ff85e311dacf7b7b92bec4bbbab127a00b4f6fbfb02b4967dbd2bc12f2cad39"
+ },
+ "adaptive-tol-radius": {
+  "clusters": 1029,
+  "num_fitted": 1500,
+  "sha256": "7df3d19b04c1087a8571e0a10d753b06e0bd2366a32b0f324963d467c90d4d85"
+ },
+ "constant-tolerance": {
+  "clusters": 411,
+  "num_fitted": 1000,
+  "sha256": "7a5f8d13948e4aa64f7e41c2d60ce18a97df58c9b82f75fda24dc3fb9e07730e"
+ },
+ "diameter-bf3-t0.5": {
+  "clusters": 737,
+  "num_fitted": 800,
+  "sha256": "143ed4e6f6f620276f3f3ade9261c3980a998298b251d39ea802bc5fd6a1f57e"
+ },
+ "diameter-bf50-t0.65": {
+  "clusters": 785,
+  "num_fitted": 800,
+  "sha256": "70d342e2c749b135792dd38939fe1915b4838abf09d90d0e5a998f2a0f7e026e"
+ },
+ "diameter-bf7-t0.3": {
+  "clusters": 356,
+  "num_fitted": 800,
+  "sha256": "c7d705efa3aca456425932862bedeedbd33b6c1c1bbaf6aa4ce455a1f8357c34"
+ },
+ "duplicates-and-zeros": {
+  "clusters": 182,
+  "num_fitted": 200,
+  "sha256": "caaaf4f65e65c36823750dffc3713bd2f546f8ce11178494332c454a40ba14fc"
+ },
+ "features-1024": {
+  "clusters": 277,
+  "num_fitted": 500,
+  "sha256": "393561a2f1c23992cb7d6709bf50dc953afe3cabc4a3fa5ca6454e42f0fae339"
+ },
+ "features-1032": {
+  "clusters": 283,
+  "num_fitted": 500,
+  "sha256": "eeaf354f1f4e68d75edded5f71c76bc3ef886c8647699b6f1ed048f737b07f1e"
+ },
+ "features-64": {
+  "clusters": 318,
+  "num_fitted": 500,
+  "sha256": "774ed9553f86b3fe882151a9e8da9240559e8e7d71390ef37d0fc5358f9a85c6"
+ },
+ "features-8": {
+  "clusters": 130,
+  "num_fitted": 500,
+  "sha256": "ba2e48478b0ee4c2b94f741ead710be30ead0974013a7eaf5a9b8c807968037b"
+ },
+ "flexible-tolerance-diameter-bf3-t0.5": {
+  "clusters": 737,
+  "num_fitted": 800,
+  "sha256": "143ed4e6f6f620276f3f3ade9261c3980a998298b251d39ea802bc5fd6a1f57e"
+ },
+ "flexible-tolerance-diameter-bf50-t0.65": {
+  "clusters": 785,
+  "num_fitted": 800,
+  "sha256": "70d342e2c749b135792dd38939fe1915b4838abf09d90d0e5a998f2a0f7e026e"
+ },
+ "flexible-tolerance-diameter-bf7-t0.3": {
+  "clusters": 356,
+  "num_fitted": 800,
+  "sha256": "c7d705efa3aca456425932862bedeedbd33b6c1c1bbaf6aa4ce455a1f8357c34"
+ },
+ "list-input": {
+  "clusters": 328,
+  "num_fitted": 400,
+  "sha256": "ce80b8a58eff3dfa61eab5159e9764b410f56a8f116a7532da9eccb6b111d033"
+ },
+ "never-bf3-t0.5": {
+  "clusters": 800,
+  "num_fitted": 800,
+  "sha256": "361da3ccd0a0a89d885050dae6efd784d938acddf7435a45a4a55fca009a3263"
+ },
+ "never-bf50-t0.65": {
+  "clusters": 800,
+  "num_fitted": 800,
+  "sha256": "1ab3134be37863c36e3050ba558f9a21077d1423cb34958d80c90d6b1e5a8e4f"
+ },
+ "never-bf7-t0.3": {
+  "clusters": 800,
+  "num_fitted": 800,
+  "sha256": "d1046d2667797b65589c3e558dcc2dc75aea8b23de70abd38cd48b2bf84a8910"
+ },
+ "partial-fits-weights-indices": {
+  "clusters": 129,
+  "num_fitted": 600,
+  "sha256": "730dec81f4084edee905b3205359cb9d4c0c2e52e124c25198d6e988f39d3fff"
+ },
+ "python-discard-merge": {
+  "clusters": 247,
+  "num_fitted": 600,
+  "sha256": "eea7ab9df7264e534afac1aa9c205502209406a6ca1b3fe56579bfe21390e7bc"
+ },
+ "python-hook-merge": {
+  "clusters": 415,
+  "num_fitted": 600,
+  "sha256": "dbf0bfcce12709ef165c2ff51f93d9552baa84f11372211da09f12f66c73f57f"
+ },
+ "radius-bf3-t0.5": {
+  "clusters": 433,
+  "num_fitted": 800,
+  "sha256": "8f786011a29a1ca84b7e261ae48ec640cc6b803b3037d3fa4ddf1b5d42df50a7"
+ },
+ "radius-bf50-t0.65": {
+  "clusters": 722,
+  "num_fitted": 800,
+  "sha256": "01c3f8393de4b59cc65f7c76e551dc5700713f68e3edbcfe49585ff7abf63da8"
+ },
+ "radius-bf7-t0.3": {
+  "clusters": 158,
+  "num_fitted": 800,
+  "sha256": "121db99cf75cb04031a4534d047cea56fd5297e9f302ff029101ec1d9d54e8d0"
+ },
+ "refine-recluster": {
+  "clusters": 441,
+  "num_fitted": 1000,
+  "sha256": "44816b8947dcbfea24a20742f0b223c3f8ae81c6732aadf8b4a9656ec346ee3f"
+ },
+ "tolerance-diameter-bf3-t0.5": {
+  "clusters": 753,
+  "num_fitted": 800,
+  "sha256": "c50f84db5839fef6d8c0d140e82ace2562ee96e47f0ab18521be33752821b064"
+ },
+ "tolerance-diameter-bf50-t0.65": {
+  "clusters": 785,
+  "num_fitted": 800,
+  "sha256": "50a58f5ea62fafedc41339873a3000c5c437ee43de7723896e2dce459a45b261"
+ },
+ "tolerance-diameter-bf7-t0.3": {
+  "clusters": 401,
+  "num_fitted": 800,
+  "sha256": "56105b5d840422a82274561962f5f4ea7c66a1b09ed29a6f71d9f7df8e1b4b80"
+ },
+ "tolerance-legacy-bf3-t0.5": {
+  "clusters": 764,
+  "num_fitted": 800,
+  "sha256": "97d13235879a739114f1e19d096586b77d4af3ca386b81b937df92bda58e9ac3"
+ },
+ "tolerance-legacy-bf50-t0.65": {
+  "clusters": 789,
+  "num_fitted": 800,
+  "sha256": "28c0bfbc516b40bcdda8876fbcb1d96eda2bc3bc0d36ffdc830b69fe6e0fbe23"
+ },
+ "tolerance-legacy-bf7-t0.3": {
+  "clusters": 592,
+  "num_fitted": 800,
+  "sha256": "0990dedc8eae3476627d8c8061d23d6f8e305516e61455c2fd63027ea23a2a77"
+ },
+ "tolerance-radius-bf3-t0.5": {
+  "clusters": 546,
+  "num_fitted": 800,
+  "sha256": "ceac1baa87023ae67390ab222199aceda73ec0a2fa47c1f65e236f68e506e09d"
+ },
+ "tolerance-radius-bf50-t0.65": {
+  "clusters": 720,
+  "num_fitted": 800,
+  "sha256": "225ba40d9b040749685752be29b9b9abf16be956c1c0147be05e6cdc9ead498f"
+ },
+ "tolerance-radius-bf7-t0.3": {
+  "clusters": 567,
+  "num_fitted": 800,
+  "sha256": "aebb558d6d5bef1b5f52532c9c4ae831098e9c76236d117320827480813c8f03"
+ }
+}
