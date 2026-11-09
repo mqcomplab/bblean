@@ -58,4 +58,4 @@ def collect_system_specs_and_dump_config(
 
     # Dump config after checking if the output dir has files
     with open(config_path, mode="wt", encoding="utf-8") as f:
-        json.dump(config, f, indent=4)
+        json.dump(config, f, indent=4, default=str)
