@@ -14,3 +14,4 @@ The bblean *user guide* is a work in progress. Expect updates soon!
    user-guide/parameters.rst
    user-guide/notebooks/bitbirch_best_practices.ipynb
    user-guide/linux_memory_setup.rst
+   user-guide/search.rst

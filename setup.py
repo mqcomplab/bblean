@@ -69,6 +69,14 @@ if build_extensions:
             cxx_std=17,
             extra_compile_args=extra_compile_args,
         ),
+        Pybind11Extension(
+            ".".join((name, "_cpp_search")),
+            [str(Path(name) / "csrc" / "search.cpp")],
+            include_dirs=[pybind11.get_include()],
+            language="c++",
+            cxx_std=17,
+            extra_compile_args=extra_compile_args,
+        ),
     ]
 
 setuptools.setup(**_setup_kwargs)

@@ -83,6 +83,42 @@ BitBirch-Lean or its classes are used. No need to do anything else.
 If you run into any issues when installing the extensions, please open a GitHub issue
 and tag it with `C++`.
 
+## Optional similarity search
+
+The `feature/ipickering/bb-ivf` development branch includes a persistent search
+extension based on the latest clustered-search experiments. It can build an
+index from fingerprints, reuse a fitted BitBirch tree or saved memberships,
+and query zstd-compressed lists on disk or directly from S3.
+
+Install this branch's extra from your checkout (the feature is not released yet):
+
+```bash
+pip install -e '.[search]'
+bb-search --help
+```
+
+After release, this extra is installed with `pip install 'bblean[search]'`.
+
+```python
+from bblean.search import SearchIndex
+
+# Cluster and build, or pass clusters=existing_memberships to reuse a partition.
+with SearchIndex.build("fingerprints.npy", "my-index") as index:
+    hits = index.search(query_fp, k=10, n_probe=32)
+    exact = index.search(query_fp, k=10, n_probe=None)
+
+# Reuse an existing fitted tree without refitting it.
+with SearchIndex.from_bitbirch(tree, packed_fingerprints, "tree-index") as index:
+    hits, stats = index.search_with_stats(query_fp, k=10, n_probe=32)
+```
+
+Scores are exact Tanimoto values within the selected lists; routing is
+approximate. Perfect matches (`Tanimoto=1`) are excluded by default, with
+`exclude_identical=False` available for identity lookup. The
+[search guide](docs/src/user-guide/search.rst) covers shard inputs, cluster reuse,
+record IDs, exhaustive controls, S3, storage/memory behavior and the experimental
+provenance. The original in-memory `bblean.ivf.IVFIndex` interface remains available.
+
 ## CLI Quickstart
 
 <div align="center">

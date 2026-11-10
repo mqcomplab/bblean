@@ -1,4 +1,5 @@
 import pickle
+import json
 import numpy as np
 from pathlib import Path
 
@@ -309,6 +310,8 @@ def test_multiround(tmp_path: Path) -> None:
         obj = pickle.load(f)
     assert result.exit_code == 0
     assert EXPECT_MULTIROUND_CLUSTERS == obj[: len(EXPECT_MULTIROUND_CLUSTERS)]
+    config = json.loads((out_dir / "config.json").read_text())
+    assert config["in_dir"] == str(dir)
 
 
 def test_run(tmp_path: Path) -> None:
