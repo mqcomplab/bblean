@@ -21,6 +21,12 @@ __all__ = [
 
 _T = tp.TypeVar("_T")
 
+_ENV_VAR_OFF_VALUES = ("", "0", "OFF", "NO", "FALSE", "F")
+
+
+def _env_var_is_on(name: str, default: str = "") -> bool:
+    return os.getenv(name, default).upper() not in _ENV_VAR_OFF_VALUES
+
 
 def min_safe_uint(nmax: int) -> np.dtype:
     r"""Returns the min uint dtype that holds a (positive) py int, excluding "object".
@@ -110,7 +116,7 @@ def _has_files_or_valid_symlinks(path: Path) -> bool:
 
 def cpp_extensions_are_enabled() -> bool:
     r"""Query whether the C++ BitBRICH extensions are currently enabled"""
-    if os.getenv("BITBIRCH_NO_EXTENSIONS"):
+    if _env_var_is_on("BITBIRCH_NO_EXTENSIONS"):
         return False
     try:
         from bblean._cpp_similarity import jt_isim_from_sum  # noqa

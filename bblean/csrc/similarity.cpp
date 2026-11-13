@@ -6,40 +6,14 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <numeric>
 #include <optional>
 #include <stdexcept>
 #include <vector>
 
-// Scalar popcount intrinsics:
-#if defined(__SSE4_2__) || defined(_M_SSE4_2)
-// Compiler-portable, but *not available in systems that do not have SSE*
-// (which should be almost no CPUs nowadays)
-// Not actually vector instructions, they just live in the SSE header
-// Should be *exactly as fast* as __(builtin_)popcnt(ll) (compile to the same
-// code)
-//
-// nmmintrin.h is the SSE4.2 intrinsics (only) header for all compilers
-// NOTE: This ifdef is probably overkill, almost all cases should be covered by
-// the GCC|Clang|MSVC ifdefs, but it doesn't hurt to add it
-#include <nmmintrin.h>
-#define POPCOUNT_32 _mm_popcnt_u32
-#define POPCOUNT_64 _mm_popcnt_u64
-#elif defined(_MSC_VER)
-// Windows (MSVC compiler)
-#include <intrin.h>
-#define POPCOUNT_32 __popcnt
-#define POPCOUNT_64 __popcnt64
-#elif defined(__GNUC__) || defined(__clang__)
-// GCC | Clang
-#define POPCOUNT_32 __builtin_popcount
-#define POPCOUNT_64 __builtin_popcountll
-#else
-// If popcnt is not hardware supported numpy rolls out its own hand-coded
-// version, fail for simplicity since it is not worth it to support those archs
-#error "Popcount not supported in target architecture"
-#endif
+#include "kernels.hpp"
 
 // TODO: See if worth it to use vector popcount intrinsics (AVX-512, only some
 // CPU) like jt_sim_packed
@@ -49,95 +23,38 @@ template <typename T>
 using CArrayForcecast =
     py::array_t<T, py::array::c_style | py::array::forcecast>;
 
-auto is_8byte_aligned(const py::array_t<uint8_t>& a) -> bool {
-    // Convert between ptr and integer requires reinterpret
-    return reinterpret_cast<std::uintptr_t>(a.data()) % alignof(uint64_t) == 0;
+// Packed fingerprints (1D: one row, 2D: rows) as n rows of n_bytes bytes, read
+// in place by the kernels (see kernels.hpp)
+struct PackedRows {
+    const uint8_t* data = nullptr;
+    size_t n = 0;        // number of rows
+    size_t n_bytes = 0;  // bytes per row
+};
+
+PackedRows packed_rows(const CArrayForcecast<uint8_t>& arr) {
+    if (arr.ndim() != 1 && arr.ndim() != 2) {
+        throw std::runtime_error("Input array must be 1- or 2-dimensional");
+    }
+    return {arr.data(), arr.ndim() == 2 ? static_cast<size_t>(arr.shape(0)) : 1,
+            static_cast<size_t>(arr.shape(arr.ndim() - 1))};
 }
 
-auto print_8byte_alignment_check(const py::array_t<uint8_t>& arr) -> void {
-    py::print("arr buf addr: ", reinterpret_cast<std::uintptr_t>(arr.data()));
-    py::print("uint64_t alignment requirement: ", alignof(uint64_t));
-    py::print("Is 8-byte aligned: ", is_8byte_aligned(arr));
-}
-
-uint32_t _popcount_1d(const py::array_t<uint8_t>& arr) {
-    if (arr.ndim() != 1) {
-        throw std::runtime_error("Input array must be 1-dimensional");
-    }
-#ifdef DEBUG_LOGS
-    print_8byte_alignment_check(arr);
-#endif
-    uint32_t count{0};  // Output scalar
-    py::ssize_t steps = arr.shape(0);
-    if (is_8byte_aligned(arr) && (steps % 64 == 0)) {
-#ifdef DEBUG_LOGS
-        py::print("DEBUG: _popcount_1d fn triggered uint64 + popcount 64");
-#endif
-        // Aligned to 64-bit boundary, interpret as uint64_t
-        steps /= sizeof(uint64_t);
-        auto in_cptr = static_cast<const uint64_t*>(arr.request().ptr);
-        for (py::ssize_t i{0}; i != steps; ++i) {  // not auto-vec by GCC
-            count += POPCOUNT_64(in_cptr[i]);
-        }
-        return count;
-    }
-
-#ifdef DEBUG_LOGS
-    py::print("DEBUG: _popcount_1d fn triggered uint8 + popcount 32");
-#endif
-    // Misaligned, loop over bytes
-    auto in_cptr = arr.data();
-    for (py::ssize_t i{0}; i != steps; ++i) {  // not auto-vec by GCC
-        count += POPCOUNT_32(in_cptr[i]);      // uint8 promoted to uint32
-    }
-    return count;
-}
-
-// TODO: Currently this is pretty slow unless hitting the "uint64_t" branch,
-// maybe two pass approach? first compute all popcounts, then sum (Numpy does
-// this). Maybe the additions could be auto-vec?
 py::array_t<uint32_t> _popcount_2d(const CArrayForcecast<uint8_t>& arr) {
     if (arr.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
-    const py::ssize_t n_samples = arr.shape(0);
-
-    auto out = py::array_t<uint32_t>(n_samples);
-    auto out_ptr = out.mutable_data();
-    std::memset(out_ptr, 0, out.nbytes());
-
-#ifdef DEBUG_LOGS
-    print_8byte_alignment_check(arr);
-#endif
-    py::ssize_t steps = arr.shape(1);
-    if (is_8byte_aligned(arr) && (steps % 64 == 0)) {
-#ifdef DEBUG_LOGS
-        py::print("DEBUG: _popcount_2d fn triggered uint64 + popcount 64");
-#endif
-        // Aligned to 64-bit boundary, interpret as uint64_t
-        steps /= sizeof(uint64_t);
-        auto in_cptr = static_cast<const uint64_t*>(arr.request().ptr);
-        for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-            const uint64_t* row_cptr = in_cptr + i * steps;
-            for (py::ssize_t j{0}; j != steps; ++j) {  // not auto-vec by GCC
-                out_ptr[i] += POPCOUNT_64(row_cptr[j]);
-            }
-        }
-        return out;
-    }
-
-#ifdef DEBUG_LOGS
-    py::print("DEBUG: _popcount_2d fn triggered uint8 + popcount 32");
-#endif
-    // Misaligned, loop over bytes
-    auto in_cptr = arr.data();
-    for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-        const uint8_t* row_cptr = in_cptr + i * steps;
-        for (py::ssize_t j{0}; j != steps; ++j) {  // not auto-vec by GCC
-            out_ptr[i] += POPCOUNT_32(row_cptr[j]);
-        }
-    }
+    const PackedRows rows = packed_rows(arr);
+    py::array_t<uint32_t> out(rows.n);
+    bblean::popcounts(rows.data, rows.n, rows.n_bytes, out.mutable_data());
     return out;
+}
+
+uint32_t _popcount_1d(const CArrayForcecast<uint8_t>& arr) {
+    if (arr.ndim() != 1) {
+        throw std::runtime_error("Input array must be 1-dimensional");
+    }
+    const PackedRows row = packed_rows(arr);
+    return bblean::popcount(row.data, row.n_bytes);
 }
 
 // The BitToByte table has shape (256, 8), and holds, for each
@@ -189,12 +106,13 @@ py::array_t<uint8_t> _nochecks_unpack_fingerprints_2d(
     auto acc_in = packed_fps.unchecked<2>();
     auto acc_out = out.mutable_unchecked<2>();
 
-    for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-        for (py::ssize_t j{0}; j != n_features;
-             j += 8) {  // not auto-vec by GCC
-            // Copy the next 8 uint8 values in one go
-            std::memcpy(&acc_out(i, j), BYTE_TO_BITS[acc_in(i, j / 8)].data(),
-                        8);
+    const py::ssize_t n_in = n_features / 8;
+    for (py::ssize_t i{0}; i != n_samples; ++i) {
+        const uint8_t* in = &acc_in(i, 0);
+        uint8_t* o = &acc_out(i, 0);
+        for (py::ssize_t k{0}; k != n_in; ++k) {
+            // Copy the 8 unpacked bits of byte k in one go
+            std::memcpy(o + 8 * k, BYTE_TO_BITS[in[k]].data(), 8);
         }
     }
     return out;
@@ -225,22 +143,9 @@ py::array_t<uint8_t> centroid_from_sum(const CArrayForcecast<T>& linear_sum,
 
     py::array_t<uint8_t> centroid_unpacked(n_features);
     auto centroid_unpacked_ptr = centroid_unpacked.mutable_data();
-    if (n_samples <= 1) {
-        for (int i{0}; i != n_features;
-             ++i) {  // yes auto-vec by GCC (versioned due to possible alias)
-            // Cast not required, but added for clarity since this is a
-            // narrowing conversion. if n_samples <= 1 then linear_sum is
-            // guaranteed to have a value that a uint8_t can hold (it should be
-            // 0 or 1)
-            // memcpy not possible due to the required cast
-            centroid_unpacked_ptr[i] = static_cast<uint8_t>(linear_sum_cptr[i]);
-        }
-    } else {
-        auto threshold = n_samples * 0.5;
-        for (int i{0}; i != n_features; ++i) {  // not auto-vec by GCC
-            centroid_unpacked_ptr[i] =
-                (linear_sum_cptr[i] >= threshold) ? 1 : 0;
-        }
+    for (int i{0}; i != n_features; ++i) {
+        centroid_unpacked_ptr[i] =
+            bblean::centroid_value(linear_sum_cptr[i], n_samples);
     }
 
     if (!pack) {
@@ -288,16 +193,11 @@ double jt_isim_from_sum(const CArrayForcecast<uint64_t>& linear_sum,
         sum_kq += in_cptr[i];
     }
 
-    if (sum_kq == 0) {
-        return 1.0;
-    }
-
     uint64_t sum_kqsq{0};
     for (py::ssize_t i{0}; i != n_features; ++i) {  // yes auto-vec by GCC
         sum_kqsq += in_cptr[i] * in_cptr[i];
     }
-    auto a = (sum_kqsq - sum_kq) / 2.0;
-    return a / ((a + (n_objects * sum_kq)) - sum_kqsq);
+    return bblean::isim(sum_kq, sum_kqsq, n_objects);
 }
 
 // NOTE: This is only *slightly* faster for C++ than numpy, **only if the
@@ -369,80 +269,22 @@ py::array_t<double> jt_compl_isim(
     return _nochecks_jt_compl_isim_unpacked_u8(fps);
 }
 
-// Contraint: T must be uint64_t or uint8_t
-template <typename T>
-void _calc_arr_vec_jt(const py::array_t<uint8_t>& arr,
-                      const py::array_t<uint8_t>& vec,
-                      const py::ssize_t n_samples, const py::ssize_t n_features,
-                      const uint32_t vec_popcount,
-                      const py::array_t<uint32_t>& cardinalities,
-                      py::array_t<double>& out) {
-    const py::ssize_t steps = n_features / sizeof(T);
-    auto arr_cptr = static_cast<const T*>(arr.request().ptr);
-    auto vec_cptr = static_cast<const T*>(vec.request().ptr);
-    auto card_cptr = cardinalities.data();
-    auto out_ptr = out.mutable_data();
-
-    for (py::ssize_t i{0}; i != n_samples; ++i) {  // not auto-vec by GCC
-        const T* arr_row_cptr = arr_cptr + i * steps;
-        uint32_t intersection{0};
-        for (py::ssize_t j{0}; j != steps; ++j) {  // not auto-vec by GCC
-            if constexpr (std::is_same_v<T, uint64_t>) {
-                intersection += POPCOUNT_64(arr_row_cptr[j] & vec_cptr[j]);
-            } else {
-                intersection += POPCOUNT_32(arr_row_cptr[j] & vec_cptr[j]);
-            }
-        }
-        auto denominator = card_cptr[i] + vec_popcount - intersection;
-        // Cast is technically unnecessary since std::max promotes to double,
-        // but added here for clarity (should compile to nop)
-        out_ptr[i] =
-            intersection / std::max(static_cast<double>(denominator), 1.0);
-    }
-}
-
-// # NOTE: This function is the bottleneck for bb compute calculations
-// In this function, _popcount_2d takes around ~25% of the time, _popcount_1d
-// around 5%. The internal loop with the popcounts is also quite heavy.
-// TODO: Investigate simple SIMD vectorization of these loops
-// TODO: Does this function return a copy?
-py::array_t<double> jt_sim_packed_precalc_cardinalities(
-    const py::array_t<uint8_t>& arr, const py::array_t<uint8_t>& vec,
-    const py::array_t<uint32_t>& cardinalities) {
-    py::ssize_t n_samples = arr.shape(0);
-    py::ssize_t n_features = arr.shape(1);
+py::array_t<double> _jt_sim_arr_vec_packed(
+    const CArrayForcecast<uint8_t>& arr, const CArrayForcecast<uint8_t>& vec) {
     if (arr.ndim() != 2 || vec.ndim() != 1) {
         throw std::runtime_error("arr must be 2D, vec must be 1D");
     }
-    if (n_features != vec.shape(0)) {
+    if (arr.shape(1) != vec.shape(0)) {
         throw std::runtime_error(
             "Shapes should be (N, F) for arr and (F,) for vec");
     }
-    auto out = py::array_t<double>(n_samples);
-
-    if (is_8byte_aligned(arr) && is_8byte_aligned(vec) &&
-        (n_features % 64 == 0)) {
-#ifdef DEBUG_LOGS
-        py::print("DEBUG: jt_sim_packed fn triggered uint64 + popcount 64");
-#endif
-        // Aligned to 64-bit boundary, interpret as uint64_t
-        _calc_arr_vec_jt<uint64_t>(arr, vec, n_samples, n_features,
-                                   _popcount_1d(vec), cardinalities, out);
-        return out;
-    }
-
-#ifdef DEBUG_LOGS
-    py::print("DEBUG: jt_sim_packed fn triggered uint8 + popcount 32");
-#endif
-    // Misaligned, loop over bytes
-    _calc_arr_vec_jt<uint8_t>(arr, vec, n_samples, n_features,
-                              _popcount_1d(vec), cardinalities, out);
+    const PackedRows rows = packed_rows(arr);
+    py::array_t<double> out(rows.n);
+    std::vector<uint32_t> pops(rows.n);
+    bblean::popcounts(rows.data, rows.n, rows.n_bytes, pops.data());
+    bblean::jt_sims(rows.data, pops.data(), rows.n, rows.n_bytes, vec.data(),
+                    out.mutable_data());
     return out;
-}
-
-py::array_t<double> _jt_sim_arr_vec_packed(const py::array_t<uint8_t>& arr,
-                                           const py::array_t<uint8_t>& vec) {
-    return jt_sim_packed_precalc_cardinalities(arr, vec, _popcount_2d(arr));
 }
 
 double jt_isim_unpacked_u8(const CArrayForcecast<uint8_t>& arr) {
@@ -463,58 +305,22 @@ py::tuple jt_most_dissimilar_packed(
     if (fps_packed.ndim() != 2) {
         throw std::runtime_error("Input array must be 2-dimensional");
     }
-    py::ssize_t n_samples = fps_packed.shape(0);
-    py::ssize_t n_features_packed = fps_packed.shape(1);
-
-    auto fps_unpacked =
-        _nochecks_unpack_fingerprints_2d(fps_packed, n_features_opt);
-    py::ssize_t n_features_unpacked = fps_unpacked.shape(1);
-
-    auto linear_sum = py::array_t<uint64_t>(n_features_unpacked);
-    auto linear_sum_ptr = linear_sum.mutable_data();
-    std::memset(linear_sum_ptr, 0, linear_sum.nbytes());
-
-    // TODO: This sum could be vectorized manually or automatically
-    auto fps_unpacked_ptr = fps_unpacked.data();
-    for (py::ssize_t i{0}; i != n_samples; ++i) {
-        const uint8_t* row_cptr = fps_unpacked_ptr + i * n_features_unpacked;
-        for (py::ssize_t j{0}; j != n_features_unpacked;
-             ++j) {  // yes auto-vec by GCC (versioned due to possible alias)
-            linear_sum_ptr[j] += row_cptr[j];
-        }
+    const py::ssize_t n_features =
+        n_features_opt.value_or(fps_packed.shape(1) * 8);
+    if (n_features % 8 != 0) {
+        throw std::runtime_error("Only features divisible by 8 is supported");
     }
-
-    auto centroid_packed =
-        centroid_from_sum<uint64_t>(linear_sum, n_samples, true);
-    auto cardinalities = _popcount_2d(fps_packed);
-
-    auto sims_cent = jt_sim_packed_precalc_cardinalities(
-        fps_packed, centroid_packed, cardinalities);
-    auto sims_cent_ptr = sims_cent.data();
-
-    auto fps_packed_cptr = fps_packed.data();
-
-    // argmin
-    py::ssize_t fp1_idx = std::distance(
-        sims_cent_ptr,
-        std::min_element(sims_cent_ptr, sims_cent_ptr + n_samples));
-    auto fp1_packed = py::array_t<uint8_t>(
-        n_features_packed, fps_packed_cptr + fp1_idx * n_features_packed);
-
-    auto sims_fp1 = jt_sim_packed_precalc_cardinalities(fps_packed, fp1_packed,
-                                                        cardinalities);
-    auto sims_fp1_ptr = sims_fp1.data();
-
-    // argmin
-    py::ssize_t fp2_idx = std::distance(
-        sims_fp1_ptr, std::min_element(sims_fp1_ptr, sims_fp1_ptr + n_samples));
-    auto fp2_packed = py::array_t<uint8_t>(
-        n_features_packed, fps_packed_cptr + fp2_idx * n_features_packed);
-
-    auto sims_fp2 = jt_sim_packed_precalc_cardinalities(fps_packed, fp2_packed,
-                                                        cardinalities);
-
-    return py::make_tuple(fp1_idx, fp2_idx, sims_fp1, sims_fp2);
+    const PackedRows rows = packed_rows(fps_packed);
+    std::vector<uint32_t> pops(rows.n);
+    bblean::popcounts(rows.data, rows.n, rows.n_bytes, pops.data());
+    py::array_t<double> sims1(rows.n), sims2(rows.n);
+    // The centroid only uses the first n_features features
+    const auto pair = bblean::most_dissimilar(
+        rows.data, pops.data(), rows.n, rows.n_bytes,
+        static_cast<size_t>(n_features), sims1.mutable_data(),
+        sims2.mutable_data());
+    return py::make_tuple(static_cast<py::ssize_t>(pair.fp1),
+                          static_cast<py::ssize_t>(pair.fp2), sims1, sims2);
 }
 
 PYBIND11_MODULE(_cpp_similarity, m) {

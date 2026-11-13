@@ -3,17 +3,17 @@ r"""Pretty printing"""
 from pathlib import Path
 import numpy as np
 import typing as tp
-import os
 import multiprocessing as mp
 
 from rich.console import Console
 
 from bblean._memory import get_peak_memory_gib
+from bblean.utils import _env_var_is_on
 
 
 class BBConsole(Console):
     def print_banner(self) -> None:
-        if os.environ.get("BITBIRCHNOBANNER", ""):
+        if _env_var_is_on("BITBIRCHNOBANNER"):
             return
         banner = r"""[bold]
         ______ _ _  ______ _          _        
@@ -28,12 +28,12 @@ class BBConsole(Console):
         self.print(
             r"""BitBirch-Lean is developed by the [bold]Miranda-Quintana Lab[/bold] https://github.com/mqcomplab
 If you find this software useful please cite the following articles:
+    [yellow]•[/yellow] [italic]BitBIRCH-Lean[/italic]:
+        https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
     [yellow]•[/yellow] [italic]BitBIRCH: efficient clustering of large molecular libraries[/italic]:
         https://doi.org/10.1039/D5DD00030K
     [yellow]•[/yellow] [italic]BitBIRCH Clustering Refinement Strategies[/italic]:
-        https://doi.org/10.1021/acs.jcim.5c00627
-    [yellow]•[/yellow] [italic]BitBIRCH-Lean[/italic]:
-        (preprint) https://www.biorxiv.org/content/10.1101/2025.10.22.684015v1"""  # noqa
+        https://doi.org/10.1021/acs.jcim.5c00627"""  # noqa
         )
 
     def print_peak_mem(self, out_dir: Path, indent: bool = True) -> None:

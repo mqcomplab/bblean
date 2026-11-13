@@ -19,12 +19,12 @@ algorithm designed for very large molecular libraries.
 
 If you find this software useful please cite the following articles:
 
+- *BitBIRCH-Lean*:
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC13673950/
 - *BitBIRCH: efficient clustering of large molecular libraries*:
     https://doi.org/10.1039/D5DD00030K
 - *BitBIRCH Clustering Refinement Strategies*:
     https://doi.org/10.1021/acs.jcim.5c00627
-- *BitBIRCH-Lean*:
-    (preprint) https://www.biorxiv.org/content/10.1101/2025.10.22.684015v1
 
 **NOTE**: BitBirch-Lean is currently beta software, expect minor breaking changes until
 we hit version 1.0
@@ -61,16 +61,18 @@ on a best-effort basis, some releases may not have Windows support.
 To build from source instead (editable mode):
 
 ```bash
-git clone git@github.com:mqcomplab/bblean,
+git clone git@github.com:mqcomplab/bblean
 cd bblean
 
 conda env create --file ./environment.yaml
 conda activate bblean
 
-BITBIRCH_BUILD_CPP=1 pip install -e .
-
-# If you want to build without the C++ extensions run this instead:
-pip install -e .
+# C++ extensions are automatically built and installed
+# BITBIRCH_BUILD_NATIVE=1 tunes them for the native CPU arch (recommended)
+# omit it for a more portable binary
+# to disable the extensions set BITBIRCH_PY_ONLY=1
+# (on Windows PowerShell set variables with $env:BITBIRCH_PY_ONLY=1 before pip)
+BITBIRCH_BUILD_NATIVE=1 pip install -e .
 
 bb --help
 ```
@@ -84,7 +86,7 @@ and tag it with `C++`.
 ## CLI Quickstart
 
 <div align="center">
-<img src="bblean-demo-v2.gif" width="600" />
+<img src="https://raw.githubusercontent.com/mqcomplab/bblean/main/bblean-demo-v2.gif" width="600" />
 </div>
 
 BitBIRCH-Lean provides a convenient CLI interface, `bb`. The CLI can be used to convert
@@ -140,8 +142,8 @@ An example usual workflow is as follows:
    additionally generates Murcko scaffold analysis. For a t-SNE
    visualization try `bb plot-tsne <output-path> -- top 20`.
    t-SNE plots use [openTSNE](https://opentsne.readthedocs.io/en/latest/) as a backend,
-   which is a parallel, extremely fast implementation. We recommend you consult the corresponding
-   documentation for info on the available parameters.
+   which is a parallel, extremely fast implementation. We recommend you consult the
+   corresponding documentation for info on the available parameters.
    Still, expect t-SNE plots to be slow for very large datasets (more than 1M molecules).
 
 ### Manually exploring clustering results

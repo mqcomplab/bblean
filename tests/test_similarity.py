@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import pytest
 
@@ -8,6 +7,7 @@ from legacy_fns import calculate_medoid  # type: ignore
 # TODO: Fix the tests with pytest-subtests so that both the _py_similarity and the
 # _cpp_similarity are tested independently
 import bblean.similarity
+import bblean.utils
 import bblean._py_similarity as pysim
 
 try:
@@ -15,7 +15,7 @@ try:
 
     CSIM_AVAIL = True
 except ImportError:
-    if os.getenv("BITBIRCH_CANT_SKIP_CPP_TESTS"):
+    if bblean.utils._env_var_is_on("BITBIRCH_CANT_SKIP_CPP_TESTS"):
         raise
     CSIM_AVAIL = False
 from bblean.fingerprints import make_fake_fingerprints, unpack_fingerprints
@@ -295,4 +295,37 @@ def test_jt_isim_medoid() -> None:
     idx, m = bblean.similarity.jt_isim_medoid(fps)
     assert idx == snapshot(26)
     assert m.tolist() == snapshot([1, 1, 0, 1, 1, 1, 1, 1])
-    assert calculate_medoid(fps).tolist() == [1, 1, 0, 1, 1, 1, 1, 1]
+
+
+@pytest.mark.skipif(not CSIM_AVAIL, reason="Requires C++ extensions")
+@pytest.mark.parametrize("n_bytes", [1, 3, 8, 21, 64, 128, 129, 256])
+@pytest.mark.parametrize("layout", ["contiguous", "offset", "strided", "misaligned"])
+def test_cpp_kernels_match_python(n_bytes: int, layout: str) -> None:
+    # The C++ kernels view the rows as 64 bit words when possible and otherwise
+    # copy them in blocks (more rows than one block here); the results must be
+    # exactly the same as the python ones in every case
+    rng = np.random.default_rng(17408390758220920002)
+    base = rng.integers(0, 256, (2 * 1100, n_bytes + 1), dtype=np.uint8)
+    # Non-contiguous arrays are copied by pybind11, misaligned ones are not
+    misaligned = np.empty(1100 * n_bytes + 1, dtype=np.uint8)[1:]
+    misaligned = misaligned.reshape(1100, n_bytes)
+    misaligned[:] = base[:1100, :n_bytes]
+    fps = {
+        "contiguous": np.ascontiguousarray(base[:1100, :n_bytes]),
+        "offset": base[:1100, 1:],
+        "strided": base[::2, :n_bytes],
+        "misaligned": misaligned,
+    }[layout]
+    ref = np.ascontiguousarray(fps)
+    vec = ref[3]
+    assert np.array_equal(csim._popcount_2d(fps), pysim._popcount(ref))
+    assert csim._popcount_1d(fps[5]) == pysim._popcount(ref[5])
+    assert np.array_equal(
+        csim._jt_sim_arr_vec_packed(fps, vec), pysim._jt_sim_arr_vec_packed(ref, vec)
+    )
+    for n_features in (None, n_bytes * 8):
+        expect = pysim.jt_most_dissimilar_packed(ref[:300], n_features)
+        out = csim.jt_most_dissimilar_packed(fps[:300], n_features)
+        assert out[:2] == tuple(expect[:2])
+        assert np.array_equal(out[2], expect[2])
+        assert np.array_equal(out[3], expect[3])

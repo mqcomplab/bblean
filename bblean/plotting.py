@@ -15,8 +15,6 @@ from rdkit.Chem import Draw
 import colorcet
 from sklearn.preprocessing import StandardScaler, normalize as normalize_features
 from sklearn.decomposition import PCA
-from openTSNE.sklearn import TSNE
-from openTSNE.affinity import Multiscale
 import umap
 
 from bblean.utils import batched, _num_avail_cpus, _has_files_or_valid_symlinks
@@ -347,7 +345,7 @@ def pca_plot(
     scaling: str = "normalize",
     whiten: bool = False,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
-    r"""Create a t-SNE plot from a cluster analysis"""
+    r"""Create a PCA plot from a cluster analysis"""
     color_labels: list[int] = []
     for num, label in zip(c.sizes, c.labels):
         color_labels.extend([label - 1] * num)  # color labels start with 0
@@ -409,6 +407,14 @@ def tsne_plot(
     dof: float = 1.0,
 ) -> tuple[plt.Figure, tuple[plt.Axes, ...]]:
     r"""Create a t-SNE plot from a cluster analysis"""
+    try:
+        from openTSNE.sklearn import TSNE
+        from openTSNE.affinity import Multiscale
+    except ImportError as err:
+        raise ImportError(
+            "t-SNE plots require openTSNE, which is not installed by default on"
+            " ARM64 Linux or Windows. Install it manually with 'pip install openTSNE'"
+        ) from err
     if workers is None:
         workers = _num_avail_cpus()
     color_labels: list[int] = []
