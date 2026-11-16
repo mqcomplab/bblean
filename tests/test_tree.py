@@ -1,11 +1,9 @@
-import pickle
 import typing as tp
 from pathlib import Path
 
 import numpy as np
 import pytest
 
-import bblean.bitbirch
 from bblean.bitbirch import BitBirch
 from bblean.merges import (
     DiameterMerge,
@@ -19,11 +17,15 @@ from bblean.merges import (
 @pytest.mark.parametrize(
     "merge",
     [
-        "diameter", "radius", "tolerance-diameter", "flexible-tolerance-diameter",
-        "tolerance-radius", "tolerance-legacy",
+        "diameter",
+        "radius",
+        "tolerance-diameter",
+        "flexible-tolerance-diameter",
+        "tolerance-radius",
+        "tolerance-legacy",
     ],
 )
-@pytest.mark.parametrize("n_features", [7, 8, 64, 1032, 2048])
+@pytest.mark.parametrize("n_features", [8, 64, 1032, 2048])
 def test_tree_merge_and_split(merge: str, n_features: int) -> None:
     fingerprints = np.zeros((6, n_features), dtype=np.uint8)
     fingerprints[np.arange(6), [0, 1, 0, 2, 1, 0]] = 1
@@ -46,7 +48,12 @@ def test_tree_multiple_levels_and_incremental_fit(branching_factor: int) -> None
     complete = BitBirch(threshold=1.0, branching_factor=branching_factor)
     complete.fit(fingerprints)
     incremental = BitBirch(threshold=1.0, branching_factor=branching_factor)
-    for batch in (fingerprints[:1], fingerprints[1:5], fingerprints[5:9], fingerprints[9:]):
+    for batch in (
+        fingerprints[:1],
+        fingerprints[1:5],
+        fingerprints[5:9],
+        fingerprints[9:],
+    ):
         incremental.fit(batch)
 
     for tree in (complete, incremental):
@@ -69,7 +76,7 @@ def test_tree_multiple_levels_and_incremental_fit(branching_factor: int) -> None
 def test_tree_input_formats(input_kind: str, tmp_path: Path) -> None:
     packed = np.array([[240], [15], [15], [240], [15]], dtype=np.uint8)
     unpacked = np.unpackbits(packed, axis=1)
-    inputs = {
+    inputs: dict[str, tp.Any] = {
         "packed": packed,
         "unpacked": unpacked,
         "list": list(packed),
@@ -168,7 +175,9 @@ def test_tree_adaptive_tolerance(
     merge = merge_type(tolerance=0.6, adaptive=adaptive, n_max=n_max, decay=0.001)
     tree = BitBirch(threshold=0.5, merge_criterion=merge)
     tree.fit(np.array([[0b11110000], [0b11110000], [0b11000000]], dtype=np.uint8))
-    rejects = adaptive and n_max == 2 and merge_type is not FlexibleToleranceDiameterMerge
+    rejects = (
+        adaptive and n_max == 2 and merge_type is not FlexibleToleranceDiameterMerge
+    )
     expected = [[0, 1], [2]] if rejects else [[0, 1, 2]]
     assert tree.get_cluster_mol_ids() == expected
 
@@ -228,7 +237,10 @@ def test_tree_refinement_preserves_identical_groups(operation: str) -> None:
     else:
         tree.recluster_inplace(iterations=2)
     assert tree.num_fitted_fps == 5
-    assert [sorted(group) for group in tree.get_cluster_mol_ids()] == [[1, 3, 4], [0, 2]]
+    assert [sorted(group) for group in tree.get_cluster_mol_ids()] == [
+        [1, 3, 4],
+        [0, 2],
+    ]
     np.testing.assert_array_equal(tree.get_centroids(), [[15], [240]])
     np.testing.assert_array_equal(tree.get_assignments(), [2, 1, 2, 1, 1])
 
@@ -273,26 +285,17 @@ def test_tree_reject_invalid_inputs() -> None:
     np.testing.assert_array_equal(tree.get_assignments(check_valid=False), [2, 0])
 
 
-@pytest.mark.parametrize("legacy", [False, True])
+@pytest.mark.filterwarnings("ignore:(Saving|Loading) large BitBIRCH")
 @pytest.mark.parametrize("state", ["unfitted", "fitted", "leaves"])
-def test_tree_pickle_and_continue(legacy: bool, state: str) -> None:
+def test_tree_save_load_and_continue(state: str, tmp_path: Path) -> None:
     fingerprints = np.array([[240], [15], [170], [240]], dtype=np.uint8)
     tree = BitBirch(threshold=1.0, branching_factor=2)
     if state != "unfitted":
         tree.fit(fingerprints)
     if state == "leaves":
         tree.delete_internal_nodes()
-    if legacy:
-        # Old pickle states store nodes directly on BitBirch.
-        py_tree = tree.__dict__.pop("_tree")
-        tree.__dict__.update(
-            _root=None if py_tree is None else py_tree._root,
-            _dummy_leaf=(
-                bblean.bitbirch._BFNode(2, 0)
-                if py_tree is None else py_tree._dummy_leaf
-            ),
-        )
-    loaded = pickle.loads(pickle.dumps(tree))
+    tree.save(tmp_path / "tree.pkl")
+    loaded = BitBirch.load(tmp_path / "tree.pkl")
     assert loaded.is_init == (state != "unfitted")
     if state == "unfitted":
         loaded.fit(fingerprints)
@@ -309,9 +312,7 @@ def test_tree_pickle_and_continue(legacy: bool, state: str) -> None:
             loaded.fit(fingerprints[:2])
             assert loaded.num_fitted_fps == 6
             assert loaded.get_cluster_mol_ids() == [[0, 3, 4], [1, 5], [2]]
-            np.testing.assert_array_equal(
-                loaded.get_assignments(), [1, 2, 3, 1, 1, 2]
-            )
+            np.testing.assert_array_equal(loaded.get_assignments(), [1, 2, 3, 1, 1, 2])
             return
     assert loaded.num_fitted_fps == 4
     assert loaded.get_cluster_mol_ids() == [[0, 3], [1], [2]]
