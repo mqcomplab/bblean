@@ -635,23 +635,6 @@ class _PyTree:
     def _only_has_leaves(self) -> bool:
         return self._root is None
 
-    def _insert(self, subcluster: _BFSubcluster, params: _FitParams) -> bool:
-        # Returns False if the merge criterion discarded the subcluster
-        root = tp.cast(_BFNode, self._root)
-        try:
-            split = root.insert_bf_subcluster(
-                subcluster, params.merge_accept_fn, params.threshold
-            )
-        except DiscardSubcluster:
-            return False
-
-        if split:
-            new_subcluster1, new_subcluster2 = _split_node(root)
-            self._root = _BFNode(params.branching_factor, self.n_features)
-            self._root.append_subcluster(new_subcluster1)
-            self._root.append_subcluster(new_subcluster2)
-        return True
-
     def fit(
         self,
         X: _Input,
@@ -678,15 +661,32 @@ class _PyTree:
         else:
             it_weights = iter(weights)
 
+        threshold = params.threshold
+        branching_factor = params.branching_factor
+        merge_accept_fn = params.merge_accept_fn
+        self._root = cast("_BFNode", self._root)
+
         arr_idx = 0
         for idx, fp in iterable:
             subcluster = _BFSubcluster.from_fingerprint(fp, idx, next(it_weights))
-            inserted = self._insert(subcluster, params)
+            try:
+                split = self._root.insert_bf_subcluster(
+                    subcluster, merge_accept_fn, threshold
+                )
+            except DiscardSubcluster:
+                self.has_discarded = True
+                self.num_fitted_fps += 1
+                arr_idx += 1
+                continue
+
+            if split:
+                new_subcluster1, new_subcluster2 = _split_node(self._root)
+                self._root = _BFNode(branching_factor, n_features)
+                self._root.append_subcluster(new_subcluster1)
+                self._root.append_subcluster(new_subcluster2)
+
             self.num_fitted_fps += 1
             arr_idx += 1
-            if not inserted:
-                self.has_discarded = True
-                continue
             if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
                 mmanager.release_curr_page_and_update_addr()
 
@@ -702,6 +702,10 @@ class _PyTree:
         # The array iterator either copies, un-sparsifies, or does nothing with the
         # array rows, depending on the kind of X passed
         arr_iterable = _get_array_iterable(X, input_is_packed=False, dtype=X[0].dtype)
+        merge_accept_fn = params.merge_accept_fn
+        threshold = params.threshold
+        branching_factor = params.branching_factor
+        self._root = cast("_BFNode", self._root)
         idx_provider: tp.Iterable[tp.Sequence[int]]
         arr_idx = 0
         if reinsert_index_seqs is None:
@@ -711,12 +715,24 @@ class _PyTree:
 
         for idxs, buf in zip(idx_provider, arr_iterable):
             subcluster = _BFSubcluster(buf, idxs, check_indices=check_indices)
-            inserted = self._insert(subcluster, params)
+            try:
+                split = self._root.insert_bf_subcluster(
+                    subcluster, merge_accept_fn, threshold
+                )
+            except DiscardSubcluster:
+                self.has_discarded = True
+                self.num_fitted_fps += len(idxs)
+                arr_idx += 1
+                continue
+
+            if split:
+                new_subcluster1, new_subcluster2 = _split_node(self._root)
+                self._root = _BFNode(branching_factor, n_features)
+                self._root.append_subcluster(new_subcluster1)
+                self._root.append_subcluster(new_subcluster2)
+
             self.num_fitted_fps += len(idxs)
             arr_idx += 1
-            if not inserted:
-                self.has_discarded = True
-                continue
             if mmanager.can_release and mmanager.should_release_curr_page(arr_idx):
                 mmanager.release_curr_page_and_update_addr()
 
