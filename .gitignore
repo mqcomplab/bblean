@@ -73,6 +73,8 @@ cluster-mol-ids*.json
 config*.json
 timings*.json
 max-rss.txt
+*.smi
+!chembl-33-natural-products-subset.smi
 
 # Pickle
 *.pkl
