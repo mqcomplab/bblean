@@ -1,5 +1,6 @@
 # type: ignore
 import gc
+from pathlib import Path
 import math
 import time
 import sys
@@ -21,11 +22,15 @@ except Exception:
     # Not available in Windows
     pass
 
-from bblean.fingerprints import make_fake_fingerprints
+import bblean._cpp_tree
+from bblean.fingerprints import fps_from_smiles, make_fake_fingerprints
+from bblean.smiles import load_smiles
 
 
 # NOTE: The reproducibility for allocations for 25k fps is not very good
-def test_memory_regression(subtests, tmp_path) -> None:
+def test_memory_regression(subtests, tmp_path, monkeypatch) -> None:
+    # The bounds are for the python tree (with the C++ similarity functions)
+    monkeypatch.setattr(bblean._cpp_tree, "_cpp_bitbirch", None)
     if "memray" not in sys.modules:
         pytest.skip(
             "memory regression tests require memray, only avaliable in Linux and macOS"
@@ -61,7 +66,10 @@ def test_memory_regression(subtests, tmp_path) -> None:
 
 
 # NOTE: This test is pretty fragile and may fail if CI machines change
-def test_speed_regression(subtests) -> None:
+def test_speed_regression(subtests, monkeypatch) -> None:
+    # The bounds are for the python tree (with the C++ similarity functions); the
+    # C++ tree is checked by test_cpp_tree_speed_regression
+    monkeypatch.setattr(bblean._cpp_tree, "_cpp_bitbirch", None)
     all_fps_nums = [10_000, 15_000, 20_000]
     # Fitting 15_000 fps should take ~ 1.15-1.00s or less:
     # - py3.11
@@ -96,3 +104,28 @@ def test_speed_regression(subtests) -> None:
                 f" (max: {max_allowed_ns:_})"
             )
             assert total_time_ns < max_allowed_ns
+
+
+def test_cpp_tree_speed_regression(monkeypatch) -> None:
+    # Real fingerprints, since fake ones are much denser and understate the speedup
+    if bblean._cpp_tree._cpp_bitbirch is None:
+        if bblean.utils._env_var_is_on("BITBIRCH_CANT_SKIP_CPP_TESTS"):
+            raise ImportError("The C++ BitBirch tree is not available")
+        pytest.skip("C++ BitBirch tree not available")
+    smiles = load_smiles(Path(__file__).parent / "chembl-sample-3k.smi")
+    fps = fps_from_smiles(smiles, kind="ecfp4", n_features=2048, pack=True)
+
+    def min_fit_time_ns() -> int:
+        times = []
+        for _ in range(5):
+            gc.collect()
+            start_ns = time.process_time_ns()
+            bblean.BitBirch(branching_factor=50, threshold=0.65).fit(fps)
+            times.append(time.process_time_ns() - start_ns)
+        return min(times)
+
+    cpp_ns = min_fit_time_ns()
+    monkeypatch.setattr(bblean._cpp_tree, "_cpp_bitbirch", None)
+    python_ns = min_fit_time_ns()
+    print(f"C++ tree: {cpp_ns:_} ns, python tree: {python_ns:_} ns")
+    assert python_ns > 3 * cpp_ns

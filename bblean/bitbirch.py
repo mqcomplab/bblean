@@ -63,6 +63,11 @@ import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
 from bblean._memory import _mmap_file_and_madvise_sequential, _ArrayMemPagesManager
+from bblean._cpp_tree import (
+    _CppTree,
+    _cpp_tree_supports_input,
+    _cpp_tree_supports,
+)
 from bblean.merges import (
     MergeAcceptFunction,
     _get_merge_accept_fn,
@@ -771,6 +776,14 @@ class _PyTree:
         return assignments
 
 
+def _new_tree(
+    n_features: int, params: _FitParams, cpp_supports_input: bool
+) -> _PyTree | _CppTree:
+    if cpp_supports_input and _cpp_tree_supports(params, n_features):
+        return _CppTree(n_features)
+    return _PyTree(params.branching_factor, n_features)
+
+
 class BitBirch:
     r"""Implements the BitBIRCH clustering algorithm, 'Lean' version
 
@@ -865,7 +878,7 @@ class BitBirch:
                 self._merge_accept_fn = _get_merge_accept_fn(merge_criterion, tolerance)
 
         # Tree state
-        self._tree: _PyTree | None = None
+        self._tree: _PyTree | _CppTree | None = None
         # TODO: Type correctly
         self._global_clustering_centroid_labels: NDArray[np.int64] | None = None
         self._n_global_clusters = 0
@@ -900,7 +913,7 @@ class BitBirch:
         return self._tree is not None
 
     @property
-    def _fitted_tree(self) -> _PyTree:
+    def _fitted_tree(self) -> _PyTree | _CppTree:
         if self._tree is None:
             raise ValueError("The model has not been fitted yet.")
         return self._tree
@@ -997,7 +1010,11 @@ class BitBirch:
             raise ValueError("Internal nodes were released, call reset() before fit()")
         params = self._fit_params()
         if self._tree is None:
-            self._tree = _PyTree(self.branching_factor, n_features)
+            self._tree = _new_tree(
+                n_features,
+                params,
+                _cpp_tree_supports_input(X, input_is_packed),
+            )
         self._tree.fit(
             X,
             n_features,
@@ -1051,7 +1068,7 @@ class BitBirch:
             raise ValueError("Internal nodes were released, call reset() before fit()")
         params = self._fit_params()
         if self._tree is None:
-            self._tree = _PyTree(self.branching_factor, n_features)
+            self._tree = _new_tree(n_features, params, cpp_supports_input=True)
         self._tree.fit_buffers(
             X,
             n_features,
@@ -1523,9 +1540,18 @@ class BitBirch:
         warnings.warn(msg)
         _old_limit = sys.getrecursionlimit()
         sys.setrecursionlimit(1_000_000_000)
-        with open(path, mode="rb") as f:
-            tree = pickle.load(f)
-        sys.setrecursionlimit(_old_limit)
+        try:
+            with open(path, mode="rb") as f:
+                tree = pickle.load(f)
+        except ModuleNotFoundError as e:
+            if e.name != "bblean._cpp_bitbirch":
+                raise
+            raise ValueError(
+                f"{path} was saved with the C++ BitBirch tree, which needs the C++"
+                " extensions of bblean, but they are not installed"
+            ) from e
+        finally:
+            sys.setrecursionlimit(_old_limit)
         if not isinstance(tree, cls):
             raise ValueError("Path does not contain a bitbirch object")
         return tree

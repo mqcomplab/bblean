@@ -36,6 +36,10 @@ for example:
 If the extensions install successfully, they will be automatically used each time
 BitBIRCH-Lean or its classes are used. No need to do anything else.
 
+The extensions include a C++ BitBIRCH tree, which gives the same clusters as the python
+tree. Set ``BITBIRCH_NO_CPP_TREE=1`` to use the python tree with the other C++
+extensions.
+
 If you run into any issues with the extensions, please open a GitHub issue in
 the `issue Tracker <https://github.com/mqcomplab/bblean/issues>`_ and tag it with the
 ``C++`` label.
