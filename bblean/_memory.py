@@ -107,6 +107,10 @@ class _ArrayMemPagesManager:
             _can_release = can_release
         return cls(_can_release, pagesizex, iters_per_pagex, curr_page_start_addr)
 
+    @property
+    def iters_per_page(self) -> int:
+        return self._iters_per_pagex
+
     def should_release_curr_page(self, row_idx: int) -> bool:
         return row_idx % self._iters_per_pagex == 0
 
