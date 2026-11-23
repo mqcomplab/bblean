@@ -60,6 +60,9 @@ if build_extensions:
 
     if _env_var_is_on("BITBIRCH_DEBUG_EXT"):
         extra_compile_args.append("-fopt-info-vec-all")  # print loop vectorization info
+    # Search routing must match its NumPy reference bit-for-bit, so fused
+    # multiply-add contraction (enabled by -march=native or Clang defaults) is off
+    search_compile_args = extra_compile_args + ([] if WIN else ["-ffp-contract=off"])
     _setup_kwargs["ext_modules"] = [
         Pybind11Extension(
             ".".join((name, "_cpp_similarity")),
@@ -75,7 +78,7 @@ if build_extensions:
             include_dirs=[pybind11.get_include()],
             language="c++",
             cxx_std=17,
-            extra_compile_args=extra_compile_args,
+            extra_compile_args=search_compile_args,
         ),
     ]
 
