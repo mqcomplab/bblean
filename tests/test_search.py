@@ -609,3 +609,14 @@ def test_cli_build_reusing_assignments_and_query(
         fps, fps[0]
     )
     assert out["stats"]["candidates"] == len(fps)
+
+
+def test_cli_reports_unreadable_input_without_traceback(tmp_path: Path) -> None:
+    from bblean.search.cli import main
+
+    empty = tmp_path / "empty.npy"
+    empty.write_bytes(b"")
+    with pytest.raises(SystemExit) as exc:
+        main(["build", str(empty), "-o", str(tmp_path / "out")])
+    assert exc.value.code == 2
+    assert not (tmp_path / "out").exists()

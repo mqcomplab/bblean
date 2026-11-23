@@ -106,7 +106,7 @@ def main(argv: tp.Sequence[str] | None = None) -> None:
                 if args.stats:
                     out["stats"] = asdict(stats)
                 print(json.dumps(out))
-    except (ValueError, OSError, ImportError) as exc:
+    except (ValueError, OSError, EOFError, ImportError) as exc:
         parser.exit(2, f"bb-search: {exc}\n")
 
 
