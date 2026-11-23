@@ -83,6 +83,53 @@ BitBirch-Lean or its classes are used. No need to do anything else.
 If you run into any issues when installing the extensions, please open a GitHub issue
 and tag it with `C++`.
 
+## Optional similarity search (experimental)
+
+The optional `search` extra turns BitBIRCH clusters into a persistent,
+compressed similarity-search index. It can cluster new fingerprints, reuse a
+fitted `BitBirch` tree or saved memberships, and query lists on local disk or
+directly from S3 with byte-range reads. It is not yet in a PyPI release; until it
+is, install it from GitHub (a C++ compiler is used for the optional extensions,
+as for the base package):
+
+```bash
+python -m pip install 'bblean[search] @ git+https://github.com/mqcomplab/bblean.git@feature/mirek/clustered-search'
+bb-search --help
+```
+
+From a source checkout use `pip install -e '.[search]'`. Once released, the extra
+installs with `python -m pip install 'bblean[search]'`. The base `bblean` package
+does not import the extra's dependencies (`zstandard`, `boto3`).
+
+```python
+import bblean
+from bblean.search import SearchIndex
+
+smiles = [
+    "CCO", "CCCO", "CCCCO", "CCN", "CCCN", "CC(=O)O", "CC(=O)OC", "CC(=O)N",
+    "c1ccccc1", "Cc1ccccc1", "Oc1ccccc1", "Nc1ccccc1", "c1ccncc1", "Cc1ccncc1",
+    "C1CCCCC1", "OC1CCCCC1",
+]
+fps = bblean.fps_from_smiles(smiles, kind="ecfp4", pack=True)
+query = bblean.fps_from_smiles(["CCCCN"], kind="ecfp4", pack=True)[0]
+
+# Clusters the fingerprints and writes a new directory (never overwrites one)
+with SearchIndex.build(fps, "demo-search-index") as index:
+    for hit in index.search(query, k=3, n_probe=2):  # approximate: 2 lists
+        print(hit.index, smiles[hit.index], round(hit.similarity, 3))
+    exact = index.search(query, k=3, n_probe=None)  # exhaustive reference
+```
+
+Returned `index` values are original row positions (or your own uint64 `ids=`);
+the index stores fingerprints, not SMILES, so map hits back to your own records.
+Scores are exact Tanimoto values for the lists that were searched; routing is
+approximate. Perfect matches (`Tanimoto=1`) are excluded by default; pass
+`exclude_identical=False` for identity lookup. Ties are ordered by increasing ID.
+`SearchIndex.from_bitbirch(tree, fps, path)` and
+`SearchIndex.from_clusters(fps, memberships, path)` reuse existing clusterings.
+The [search guide](docs/src/user-guide/search.rst) covers shards, cluster reuse,
+record IDs, exhaustive controls, S3, storage/memory behavior and provenance.
+
 ## CLI Quickstart
 
 <div align="center">

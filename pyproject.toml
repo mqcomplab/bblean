@@ -62,6 +62,10 @@ documentation = "https://github.com/mqcomplab/bblean.git"
 
 [project.scripts]
 bb="bblean.cli:app"
+bb-search="bblean.search.cli:main"
+
+[project.optional-dependencies]
+search = ["zstandard>=0.22", "boto3>=1.28"]
 
 [tool.setuptools_scm]
 version_file = "bblean/_version.py"
