@@ -12,17 +12,42 @@ exhaustive reference.
 Installation
 ------------
 
-This feature is on the development branch. Install from this checkout until it
-is released::
+The extension is experimental and not yet in a PyPI release. Until it is,
+install it from GitHub, or use ``pip install -e '.[search]'`` in a source
+checkout::
 
-    pip install -e '.[search]'
+    python -m pip install 'bblean[search] @ git+https://github.com/mqcomplab/bblean.git@feature/mirek/clustered-search'
     bb-search --help
 
-The extra adds ``zstandard`` for compressed storage and ``boto3`` for S3. After
-release, the equivalent installation is ``pip install 'bblean[search]'``. Normal
+The extra adds ``zstandard`` for compressed storage and ``boto3`` for S3. Once
+released, the equivalent installation is ``python -m pip install 'bblean[search]'``. Normal
 package builds include the native search kernels. ``BITBIRCH_PY_ONLY=1`` builds
 a Python-only package, and ``BITBIRCH_NO_EXTENSIONS=1`` selects the NumPy search
 fallback at runtime. Core clustering does not import either optional dependency.
+
+Quick start
+-----------
+
+This example is self-contained and runs from any directory:
+
+.. code-block:: python
+
+    import bblean
+    from bblean.search import SearchIndex
+
+    smiles = [
+        "CCO", "CCCO", "CCCCO", "CCN", "CCCN", "CC(=O)O", "CC(=O)OC", "CC(=O)N",
+        "c1ccccc1", "Cc1ccccc1", "Oc1ccccc1", "Nc1ccccc1", "c1ccncc1", "Cc1ccncc1",
+        "C1CCCCC1", "OC1CCCCC1",
+    ]
+    fps = bblean.fps_from_smiles(smiles, kind="ecfp4", pack=True)
+    query = bblean.fps_from_smiles(["CCCCN"], kind="ecfp4", pack=True)[0]
+
+    # Clusters the fingerprints and writes a new directory (never overwrites one)
+    with SearchIndex.build(fps, "demo-search-index") as index:
+        for hit in index.search(query, k=3, n_probe=2):  # approximate: 2 lists
+            print(hit.index, smiles[hit.index], round(hit.similarity, 3))
+        exact = index.search(query, k=3, n_probe=None)  # exhaustive reference
 
 Building a new index
 --------------------
@@ -145,19 +170,24 @@ Searching and interpreting results
         )
 
 Returned scores are exact binary Tanimoto values. Results are ordered by
-decreasing similarity, then increasing original record ID. Perfect
-``Tanimoto=1`` matches are excluded by default, matching the nonempty-query
-protocol in the study. Set ``exclude_identical=False`` to include them, or use
-``exclude_ids=[id1, id2]`` to exclude particular records. Empty/empty similarity
-is zero, consistent with core BBLean and RDKit.
+decreasing similarity, then increasing original record ID. Each
+``SearchResult.index`` (also available as ``.id``) is the original zero-based
+row position across all input shards, or the matching entry of ``ids`` when
+explicit record IDs were supplied. The index stores fingerprints and IDs only;
+``SearchResult.smi`` is always ``None``, so map IDs back to SMILES or other
+records in your own storage. Perfect ``Tanimoto=1`` matches are excluded by
+default, following the nearest-other-neighbor protocol of the original
+clustered-search experiments; this means a query that is itself in the database
+does not return itself. Set ``exclude_identical=False`` for identity lookup, or
+use ``exclude_ids=[id1, id2]`` to exclude particular records only. Empty/empty
+similarity is zero, consistent with core BBLean and RDKit.
 
 ``n_probe=None`` (or a budget at least as large as ``n_lists``) scans every list
 without routing and returns the exhaustive result for the same exclusions.
 ``threshold`` filters only the selected candidates; approximate routing cannot
 guarantee all database hits above a threshold. Fewer than ``k`` eligible results
 are returned when necessary. Choose a probe budget on representative validation
-queries; the small overlapping development panels in the paper are not a
-general recall guarantee.
+queries; no probe budget is a general recall guarantee.
 
 ``SearchStats`` reports list and candidate counts, selected blocks, logical
 range reads, GET attempts and retries, observed payload bytes, and timings.
@@ -215,23 +245,34 @@ file SHA-256 hashes. Arrays use explicit little-endian numeric dtypes and
 versions for reproducibility; the current format does not support insert/delete
 updates in place.
 
-``bblean.ivf.IVFIndex`` and the branch's older hidden CLI commands remain
-available for existing in-memory medoid indexes. ``bblean.search.SearchIndex``
-is the preferred API for sparse-summary routing and compressed storage.
-The new format does not read the research worker's directory layout directly;
-reuse its original memberships/fingerprint shards to build a package index.
+The format does not read directory layouts produced by other experimental
+indexes (for example the in-memory medoid IVF prototype); rebuild from their
+original memberships and fingerprint shards with ``from_clusters``.
 
-Algorithm provenance
----------------------
+Relation to other experimental search work
+-------------------------------------------
+
+``bblean.search`` is the only search API in this package. The in-memory
+medoid-routed IVF prototype (``bblean.ivf.IVFIndex``) and Dynamic Probe
+Selection are on separate experimental branches and are not part of ``main``.
+Compared with that IVF prototype, this extension routes with sparse summaries
+instead of one medoid per list, excludes ``Tanimoto=1`` matches by default,
+breaks score ties by ID, returns IDs rather than SMILES, and persists compressed
+lists instead of keeping fingerprints in memory. ``n_probe`` remains a fixed
+per-query budget; adaptive per-query probe selection is not implemented.
+
+Provenance and scope of claims
+------------------------------
 
 The sparse routing heuristic, split-summary scheme, balanced reuse of fine
 clusters, strict candidate accounting, zstd layouts and S3 range strategy derive
-from the November 2026 clustered-search experiments. The curated scientific
-record is `mqcomplab/bb-clustered-search
-<https://github.com/mqcomplab/bb-clustered-search>`_, snapshot ``1990812``.
-The package uses current main's portable native kernels instead of the worker's
-runtime-built AVX-512 libraries, and a versioned portable storage format.
-It does not claim the worker's measured latency, cost or billion-record recall.
+from the authors' November 2026 clustered-search experiments. This module is a
+new, portable re-implementation of those choices: it uses the package's portable native kernels (with a NumPy fallback)
+instead of the experiments' runtime-built AVX-512 worker libraries, a versioned
+storage format, and no cloud infrastructure. It has been tested for correctness
+against an exhaustive scan, but it has not been re-benchmarked. Latency, cost and
+recall figures reported for the original experiments do not transfer to this
+implementation and should be measured anew.
 
 API
 ----

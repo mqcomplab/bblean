@@ -83,41 +83,52 @@ BitBirch-Lean or its classes are used. No need to do anything else.
 If you run into any issues when installing the extensions, please open a GitHub issue
 and tag it with `C++`.
 
-## Optional similarity search
+## Optional similarity search (experimental)
 
-The `feature/ipickering/bb-ivf` development branch includes a persistent search
-extension based on the latest clustered-search experiments. It can build an
-index from fingerprints, reuse a fitted BitBirch tree or saved memberships,
-and query zstd-compressed lists on disk or directly from S3.
-
-Install this branch's extra from your checkout (the feature is not released yet):
+The optional `search` extra turns BitBIRCH clusters into a persistent,
+compressed similarity-search index. It can cluster new fingerprints, reuse a
+fitted `BitBirch` tree or saved memberships, and query lists on local disk or
+directly from S3 with byte-range reads. It is not yet in a PyPI release; until it
+is, install it from GitHub (a C++ compiler is used for the optional extensions,
+as for the base package):
 
 ```bash
-pip install -e '.[search]'
+python -m pip install 'bblean[search] @ git+https://github.com/mqcomplab/bblean.git@feature/mirek/clustered-search'
 bb-search --help
 ```
 
-After release, this extra is installed with `pip install 'bblean[search]'`.
+From a source checkout use `pip install -e '.[search]'`. Once released, the extra
+installs with `python -m pip install 'bblean[search]'`. The base `bblean` package
+does not import the extra's dependencies (`zstandard`, `boto3`).
 
 ```python
+import bblean
 from bblean.search import SearchIndex
 
-# Cluster and build, or pass clusters=existing_memberships to reuse a partition.
-with SearchIndex.build("fingerprints.npy", "my-index") as index:
-    hits = index.search(query_fp, k=10, n_probe=32)
-    exact = index.search(query_fp, k=10, n_probe=None)
+smiles = [
+    "CCO", "CCCO", "CCCCO", "CCN", "CCCN", "CC(=O)O", "CC(=O)OC", "CC(=O)N",
+    "c1ccccc1", "Cc1ccccc1", "Oc1ccccc1", "Nc1ccccc1", "c1ccncc1", "Cc1ccncc1",
+    "C1CCCCC1", "OC1CCCCC1",
+]
+fps = bblean.fps_from_smiles(smiles, kind="ecfp4", pack=True)
+query = bblean.fps_from_smiles(["CCCCN"], kind="ecfp4", pack=True)[0]
 
-# Reuse an existing fitted tree without refitting it.
-with SearchIndex.from_bitbirch(tree, packed_fingerprints, "tree-index") as index:
-    hits, stats = index.search_with_stats(query_fp, k=10, n_probe=32)
+# Clusters the fingerprints and writes a new directory (never overwrites one)
+with SearchIndex.build(fps, "demo-search-index") as index:
+    for hit in index.search(query, k=3, n_probe=2):  # approximate: 2 lists
+        print(hit.index, smiles[hit.index], round(hit.similarity, 3))
+    exact = index.search(query, k=3, n_probe=None)  # exhaustive reference
 ```
 
-Scores are exact Tanimoto values within the selected lists; routing is
-approximate. Perfect matches (`Tanimoto=1`) are excluded by default, with
-`exclude_identical=False` available for identity lookup. The
-[search guide](docs/src/user-guide/search.rst) covers shard inputs, cluster reuse,
-record IDs, exhaustive controls, S3, storage/memory behavior and the experimental
-provenance. The original in-memory `bblean.ivf.IVFIndex` interface remains available.
+Returned `index` values are original row positions (or your own uint64 `ids=`);
+the index stores fingerprints, not SMILES, so map hits back to your own records.
+Scores are exact Tanimoto values for the lists that were searched; routing is
+approximate. Perfect matches (`Tanimoto=1`) are excluded by default; pass
+`exclude_identical=False` for identity lookup. Ties are ordered by increasing ID.
+`SearchIndex.from_bitbirch(tree, fps, path)` and
+`SearchIndex.from_clusters(fps, memberships, path)` reuse existing clusterings.
+The [search guide](docs/src/user-guide/search.rst) covers shards, cluster reuse,
+record IDs, exhaustive controls, S3, storage/memory behavior and provenance.
 
 ## CLI Quickstart
 
