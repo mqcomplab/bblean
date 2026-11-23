@@ -1,7 +1,7 @@
 """Persistent search correctness against independent exhaustive references.
 
 Small deterministic fixtures exercise the algorithm and storage paths; these
-tests do not claim to reproduce the paper's billion-record timings or recall.
+tests do not reproduce the original experiments' large-scale timings or recall.
 """
 
 import io
@@ -10,8 +10,10 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import typing as tp
 
 import numpy as np
+from numpy.typing import NDArray
 import pytest
 from rdkit import DataStructs
 
@@ -24,14 +26,21 @@ from bblean.search._storage import S3Store  # noqa: E402
 from bblean.search._utils import POPCOUNT, native  # noqa: E402
 
 
-def oracle(fps, query, ids=None, k=10, exclude=True, threshold=0):
+def oracle(
+    fps: NDArray[np.uint8],
+    query: NDArray[np.uint8],
+    ids: tp.Any = None,
+    k: int = 10,
+    exclude: bool = True,
+    threshold: float = 0,
+) -> list[tuple[int, float]]:
     """RDKit's binary Tanimoto with deterministic record-ID ties."""
     q = DataStructs.CreateFromBitString("".join(map(str, np.unpackbits(query))))
-    scores = []
+    sims = []
     for row in fps:
         fp = DataStructs.CreateFromBitString("".join(map(str, np.unpackbits(row))))
-        scores.append(DataStructs.TanimotoSimilarity(q, fp))
-    scores = np.array(scores)
+        sims.append(DataStructs.TanimotoSimilarity(q, fp))
+    scores = np.array(sims)
     ids = np.arange(len(fps), dtype=np.uint64) if ids is None else ids
     keep = (scores >= threshold) & ((scores < 1) if exclude else True)
     ids, scores = ids[keep], scores[keep]
@@ -39,12 +48,12 @@ def oracle(fps, query, ids=None, k=10, exclude=True, threshold=0):
     return [(int(i), float(s)) for i, s in zip(ids[order], scores[order])]
 
 
-def pairs(results):
+def pairs(results: tp.Iterable[tp.Any]) -> list[tuple[int, float]]:
     return [(r.index, r.similarity) for r in results]
 
 
 @pytest.fixture
-def fps():
+def fps() -> NDArray[np.uint8]:
     a = np.random.default_rng(31).integers(0, 256, (127, 32), dtype=np.uint8)
     a[3] = a[0]
     a[4:6] = 0
@@ -52,7 +61,7 @@ def fps():
 
 
 @pytest.fixture
-def index(tmp_path, fps):
+def index(tmp_path: Path, fps: NDArray[np.uint8]) -> tp.Iterator[SearchIndex]:
     with SearchIndex.from_clusters(
         fps,
         [np.arange(i, min(i + 30, len(fps))) for i in range(0, len(fps), 30)],
@@ -65,7 +74,13 @@ def index(tmp_path, fps):
 
 @pytest.mark.parametrize("fallback", [False, True])
 @pytest.mark.parametrize("include_identical", [False, True])
-def test_full_probe_matches_rdkit(index, fps, monkeypatch, fallback, include_identical):
+def test_full_probe_matches_rdkit(
+    index: SearchIndex,
+    fps: NDArray[np.uint8],
+    monkeypatch: pytest.MonkeyPatch,
+    fallback: bool,
+    include_identical: bool,
+) -> None:
     if fallback:
         monkeypatch.setenv("BITBIRCH_NO_EXTENSIONS", "1")
     for query in (fps[0], fps[4], np.full(fps.shape[1], 1, np.uint8)):
@@ -85,7 +100,7 @@ def test_full_probe_matches_rdkit(index, fps, monkeypatch, fallback, include_ide
         assert stats.blocks_read == len(index._arrays["blocks"])
 
 
-def test_probe_recall_is_monotone(index, fps):
+def test_probe_recall_is_monotone(index: SearchIndex, fps: NDArray[np.uint8]) -> None:
     for query in fps[:4]:
         truth = {i for i, _ in oracle(fps, query)}
         recalls, work = [], []
@@ -103,15 +118,15 @@ def test_probe_recall_is_monotone(index, fps):
 
 
 def test_strict_lists_even_when_ranges_include_unselected_bytes(
-    index, fps, monkeypatch
-):
+    index: SearchIndex, fps: NDArray[np.uint8], monkeypatch: pytest.MonkeyPatch
+) -> None:
     scores = np.zeros(index.n_lists)
     scores[0], scores[-1] = 3, 2
     monkeypatch.setattr("bblean.search.index.route", lambda *args: scores)
     results, stats = index.search_with_stats(
         fps[10], k=len(fps), n_probe=2, io_workers=1, exclude_identical=False
     )
-    expected = set()
+    expected: set[int] = set()
     for i in (0, index.n_lists - 1):
         b = index._arrays["blocks"]
         selected = b[b["list"] == i]
@@ -124,7 +139,7 @@ def test_strict_lists_even_when_ranges_include_unselected_bytes(
     assert stats.candidates == len(expected)
 
 
-def test_reopen_and_verify(index, fps):
+def test_reopen_and_verify(index: SearchIndex, fps: NDArray[np.uint8]) -> None:
     directory = index.path
     expected = pairs(index.search(fps[9], n_probe=4))
     index.close()
@@ -135,7 +150,9 @@ def test_reopen_and_verify(index, fps):
         reopened.search(fps[0])
 
 
-def test_concurrent_queries_and_bounded_range_workers(index, fps, monkeypatch):
+def test_concurrent_queries_and_bounded_range_workers(
+    index: SearchIndex, fps: NDArray[np.uint8], monkeypatch: pytest.MonkeyPatch
+) -> None:
     from concurrent.futures import ThreadPoolExecutor
     from bblean.search._storage import plan_ranges
 
@@ -145,7 +162,7 @@ def test_concurrent_queries_and_bounded_range_workers(index, fps, monkeypatch):
         lambda blocks, **kwargs: plan_ranges(blocks, max_span=1, **kwargs),
     )
 
-    def run(query):
+    def run(query: NDArray[np.uint8]) -> list[tuple[int, float]]:
         results, stats = index.search_with_stats(query, n_probe=None, io_workers=3)
         assert stats.read_requests == stats.blocks_read
         return pairs(results)
@@ -155,7 +172,9 @@ def test_concurrent_queries_and_bounded_range_workers(index, fps, monkeypatch):
     assert actual == [oracle(fps, query) for query in fps[:6]]
 
 
-def test_custom_uint64_ids_and_exclusions(tmp_path, fps):
+def test_custom_uint64_ids_and_exclusions(
+    tmp_path: Path, fps: NDArray[np.uint8]
+) -> None:
     ids = np.arange(len(fps), dtype=np.uint64)[::-1] + np.uint64(2**63 + 7)
     with SearchIndex.from_clusters(
         fps, [np.arange(len(fps))], tmp_path / "ids", ids=ids, n_lists=1, summary_size=9
@@ -172,7 +191,7 @@ def test_custom_uint64_ids_and_exclusions(tmp_path, fps):
         assert all(r.id == r.index for r in out)
 
 
-def test_mixed_small_and_large_python_integer_ids(tmp_path):
+def test_mixed_small_and_large_python_integer_ids(tmp_path: Path) -> None:
     fps = np.array([[128], [192], [64]], dtype=np.uint8)
     ids = [2**64 - 1, 0, 2**63]
     with SearchIndex.from_clusters(
@@ -184,7 +203,7 @@ def test_mixed_small_and_large_python_integer_ids(tmp_path):
         assert pairs(hits) == [(2**63, 0.0)]
 
 
-def test_shards_unpacked_and_padding(tmp_path):
+def test_shards_unpacked_and_padding(tmp_path: Path) -> None:
     bits = np.random.default_rng(4).integers(0, 2, (33, 13), dtype=np.uint8)
     p = np.packbits(bits, axis=1)
     for name, array in [("a", bits[:10]), ("b", bits[10:])]:
@@ -205,7 +224,9 @@ def test_shards_unpacked_and_padding(tmp_path):
             idx.search(np.array([0, 1], np.uint8))
 
 
-def test_tree_reuse_does_not_refit_or_change_memberships(tmp_path, fps, monkeypatch):
+def test_tree_reuse_does_not_refit_or_change_memberships(
+    tmp_path: Path, fps: NDArray[np.uint8], monkeypatch: pytest.MonkeyPatch
+) -> None:
     tree = BitBirch(threshold=0.5).fit(fps)
     before = [list(x) for x in tree.get_cluster_mol_ids(sort=False)]
     monkeypatch.setattr(
@@ -216,7 +237,9 @@ def test_tree_reuse_does_not_refit_or_change_memberships(tmp_path, fps, monkeypa
     assert before == tree.get_cluster_mol_ids(sort=False)
 
 
-def test_build_clusters_new_fingerprints(tmp_path, fps):
+def test_build_clusters_new_fingerprints(
+    tmp_path: Path, fps: NDArray[np.uint8]
+) -> None:
     with SearchIndex.build(
         fps, tmp_path / "automatic", batch_size=19, bitbirch_kwargs={"threshold": 0.4}
     ) as idx:
@@ -225,7 +248,9 @@ def test_build_clusters_new_fingerprints(tmp_path, fps):
 
 
 @pytest.mark.parametrize("n,lists", [(1, 1), (6, 4), (9, 12)])
-def test_zero_fingerprints_and_small_list_limits(tmp_path, n, lists):
+def test_zero_fingerprints_and_small_list_limits(
+    tmp_path: Path, n: int, lists: int
+) -> None:
     fps = np.zeros((n, 2), dtype=np.uint8)
     with SearchIndex.from_clusters(
         fps, [np.arange(n)], tmp_path / "small", n_lists=lists, block_size=1
@@ -248,7 +273,9 @@ def test_zero_fingerprints_and_small_list_limits(tmp_path, n, lists):
         [[0, 1, 2, 3, 0]],
     ],
 )
-def test_invalid_partition_is_transactional(tmp_path, fps, clusters):
+def test_invalid_partition_is_transactional(
+    tmp_path: Path, fps: NDArray[np.uint8], clusters: list[list[tp.Any]]
+) -> None:
     output = tmp_path / "bad"
     with pytest.raises(ValueError):
         SearchIndex.from_clusters(fps[:4], clusters, output, batch_size=2)
@@ -256,7 +283,9 @@ def test_invalid_partition_is_transactional(tmp_path, fps, clusters):
     assert not list(tmp_path.glob(".bad-*"))
 
 
-def test_reject_overwrite_and_duplicate_ids(index, fps, tmp_path):
+def test_reject_overwrite_and_duplicate_ids(
+    index: SearchIndex, fps: NDArray[np.uint8], tmp_path: Path
+) -> None:
     with pytest.raises(FileExistsError):
         SearchIndex.from_clusters(fps, [np.arange(len(fps))], index.path)
     with pytest.raises(ValueError, match="unique"):
@@ -282,12 +311,14 @@ def test_reject_overwrite_and_duplicate_ids(index, fps, tmp_path):
         dict(exclude_ids=[-1]),
     ],
 )
-def test_invalid_query_options(index, fps, kwargs):
+def test_invalid_query_options(
+    index: SearchIndex, fps: NDArray[np.uint8], kwargs: dict[str, tp.Any]
+) -> None:
     with pytest.raises(ValueError):
         index.search(fps[0], **kwargs)
 
 
-def test_threshold_and_ties(index, fps):
+def test_threshold_and_ties(index: SearchIndex, fps: NDArray[np.uint8]) -> None:
     for threshold in (0, 0.3, 0.7, 1):
         assert pairs(
             index.search(
@@ -296,7 +327,7 @@ def test_threshold_and_ties(index, fps):
         ) == oracle(fps, fps[0], exclude=False, threshold=threshold)
 
 
-def test_corrupt_metadata_and_payload(index):
+def test_corrupt_metadata_and_payload(index: SearchIndex) -> None:
     path = index.path
     index.close()
     meta = path / "mean_pop.npy"
@@ -313,7 +344,7 @@ def test_corrupt_metadata_and_payload(index):
             idx.verify()
 
 
-def test_manifest_path_and_version_validation(index):
+def test_manifest_path_and_version_validation(index: SearchIndex) -> None:
     path = index.path
     index.close()
     manifest = path / "manifest.json"
@@ -330,26 +361,26 @@ def test_manifest_path_and_version_validation(index):
 
 
 class FakeS3:
-    def __init__(self):
-        self.objects = {}
-        self.calls = []
-        self.uploaded = []
-        self.bodies = []
+    def __init__(self) -> None:
+        self.objects: dict[tuple[str, str], bytes] = {}
+        self.calls: list[tuple[str, str | None]] = []
+        self.uploaded: list[str] = []
+        self.bodies: list[io.BytesIO] = []
         self.interrupt = False
 
-    def head_object(self, Bucket, Key):
+    def head_object(self, Bucket: str, Key: str) -> dict[str, int]:
         if (Bucket, Key) not in self.objects:
             raise FileNotFoundError(Key)
         return {"ContentLength": len(self.objects[Bucket, Key])}
 
-    def upload_file(self, filename, bucket, key):
+    def upload_file(self, filename: str, bucket: str, key: str) -> None:
         self.objects[bucket, key] = Path(filename).read_bytes()
         self.uploaded.append(key)
 
-    def get_object(self, Bucket, Key, **kwargs):
+    def get_object(self, Bucket: str, Key: str, **kwargs: tp.Any) -> dict[str, tp.Any]:
         self.calls.append((Key, kwargs.get("Range")))
         raw = self.objects[Bucket, Key]
-        response = {}
+        response: dict[str, tp.Any] = {}
         if "Range" in kwargs:
             start, end = map(int, kwargs["Range"].removeprefix("bytes=").split("-"))
             response["ContentRange"] = f"bytes {start}-{end}/{len(raw)}"
@@ -359,10 +390,10 @@ class FakeS3:
             self.interrupt = False
 
             class Interrupted(io.BytesIO):
-                def read(self, n=-1):
+                def read(self, n: int | None = -1) -> bytes:
                     if self.tell():
                         raise OSError("Interrupted body")
-                    return super().read(min(n, 7))
+                    return super().read(min(-1 if n is None else n, 7))
 
             body = Interrupted(raw)
         self.bodies.append(body)
@@ -370,7 +401,9 @@ class FakeS3:
         return response
 
 
-def test_s3_open_range_reads_retries_and_cache(index, fps, tmp_path):
+def test_s3_open_range_reads_retries_and_cache(
+    index: SearchIndex, fps: NDArray[np.uint8], tmp_path: Path
+) -> None:
     client = FakeS3()
     index.upload("s3://testing/index", client=client)
     assert client.uploaded[-1] == "index/manifest.json"
@@ -388,7 +421,7 @@ def test_s3_open_range_reads_retries_and_cache(index, fps, tmp_path):
         assert stats.fetched_bytes_lower_bound
         assert stats.fetched_bytes == (index.path / "data.bin").stat().st_size
         payload_calls = [r for key, r in client.calls if key.endswith("data.bin")]
-        assert payload_calls[1].startswith("bytes=7-")
+        assert str(payload_calls[1]).startswith("bytes=7-")
         assert stats.s3_get_attempts == len(payload_calls)
         cloud.search(fps[0], n_probe=None)
         assert len([r for key, r in client.calls if key.endswith("data.bin")]) > len(
@@ -402,7 +435,7 @@ def test_s3_open_range_reads_retries_and_cache(index, fps, tmp_path):
     assert all(b.closed for b in client.bodies)
 
 
-def test_s3_range_failure_never_returns_partial_results():
+def test_s3_range_failure_never_returns_partial_results() -> None:
     client = FakeS3()
     client.objects["testing", "empty/data.bin"] = b""
     store = S3Store("s3://testing/empty", client=client, max_retries=1)
@@ -411,10 +444,14 @@ def test_s3_range_failure_never_returns_partial_results():
     assert len(client.calls) == 2 and all(b.closed for b in client.bodies)
 
 
-def test_s3_sdk_retry_attempt_accounting(index, fps):
+def test_s3_sdk_retry_attempt_accounting(
+    index: SearchIndex, fps: NDArray[np.uint8]
+) -> None:
     class RetryingClient(FakeS3):
-        def get_object(self, **kwargs):
-            response = super().get_object(**kwargs)
+        def get_object(
+            self, Bucket: str, Key: str, **kwargs: tp.Any
+        ) -> dict[str, tp.Any]:
+            response = super().get_object(Bucket=Bucket, Key=Key, **kwargs)
             response["ResponseMetadata"] = {"RetryAttempts": 2}
             return response
 
@@ -428,7 +465,7 @@ def test_s3_sdk_retry_attempt_accounting(index, fps):
         assert stats.retries == 2 * calls
 
 
-def test_s3_service_retry_and_permission_error():
+def test_s3_service_retry_and_permission_error() -> None:
     from botocore.exceptions import ClientError
 
     class Client(FakeS3):
@@ -436,7 +473,9 @@ def test_s3_service_retry_and_permission_error():
         status = 503
         attempts = 0
 
-        def get_object(self, **kwargs):
+        def get_object(
+            self, Bucket: str, Key: str, **kwargs: tp.Any
+        ) -> dict[str, tp.Any]:
             self.attempts += 1
             if self.attempts == 1:
                 raise ClientError(
@@ -446,7 +485,7 @@ def test_s3_service_retry_and_permission_error():
                     },
                     "GetObject",
                 )
-            return super().get_object(**kwargs)
+            return super().get_object(Bucket=Bucket, Key=Key, **kwargs)
 
     client = Client()
     client.objects["testing", "service/data.bin"] = b"12345"
@@ -461,7 +500,9 @@ def test_s3_service_retry_and_permission_error():
     assert client.attempts == 1
 
 
-def test_missing_extra_has_actionable_error(tmp_path, fps, monkeypatch):
+def test_missing_extra_has_actionable_error(
+    tmp_path: Path, fps: NDArray[np.uint8], monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setitem(sys.modules, "zstandard", None)
     with pytest.raises(ImportError, match=r"bblean\[search\]"):
         SearchIndex.from_clusters(
@@ -470,7 +511,9 @@ def test_missing_extra_has_actionable_error(tmp_path, fps, monkeypatch):
 
 
 @pytest.mark.parametrize("width", [1, 3, 8, 21, 129, 256])
-def test_native_and_fallback_agree(tmp_path, monkeypatch, width):
+def test_native_and_fallback_agree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, width: int
+) -> None:
     lib = native()
     if lib is None:
         if os.environ.get("BITBIRCH_CANT_SKIP_CPP_TESTS") == "1":
@@ -498,7 +541,7 @@ def test_native_and_fallback_agree(tmp_path, monkeypatch, width):
         )
 
 
-def test_sparse_escape_and_invalid_postings():
+def test_sparse_escape_and_invalid_postings() -> None:
     units = np.array([0, 1, 65535, 65536, 2**32 - 1], np.uint64)
     np.testing.assert_array_equal(
         _routing.decode_gaps(_routing.encode_gaps(units)), units
@@ -510,7 +553,7 @@ def test_sparse_escape_and_invalid_postings():
         _routing.decode_gaps(np.array([65535, 0], np.uint16))
 
 
-def test_optional_dependencies_not_imported_with_core():
+def test_optional_dependencies_not_imported_with_core() -> None:
     code = """
 import sys
 class Block:
@@ -526,7 +569,9 @@ import bblean.search
     )
 
 
-def test_cli_build_reusing_assignments_and_query(tmp_path, fps):
+def test_cli_build_reusing_assignments_and_query(
+    tmp_path: Path, fps: NDArray[np.uint8]
+) -> None:
     np.save(tmp_path / "fps.npy", fps)
     np.save(tmp_path / "q.npy", fps[0])
     np.save(tmp_path / "labels.npy", np.arange(len(fps)) // 15)

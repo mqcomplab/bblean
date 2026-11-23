@@ -12,10 +12,13 @@ import os
 from pathlib import Path
 import tempfile
 from contextlib import ExitStack
+import typing as tp
 
 import numpy as np
+from numpy.typing import NDArray
 
 from ._routing import encode_gaps, quantization, split_summaries
+from ._source import FingerprintSource
 from ._utils import (
     POPCOUNT,
     integer_ids,
@@ -43,7 +46,9 @@ ASSIGNMENT = np.dtype([("start", "<u8"), ("rows", "<u8"), ("list", "<u4")])
 SUMMARY = np.dtype([("rows", "<u8"), ("mean_pop", "<f4"), ("list", "<u4")])
 
 
-def centroid(source, rows, batch_size):
+def centroid(
+    source: FingerprintSource, rows: NDArray[np.integer], batch_size: int
+) -> NDArray[np.uint8]:
     counts = np.zeros(source.width * 8, np.uint64)
     for at in range(0, len(rows), batch_size):
         counts += np.unpackbits(source.take(rows[at : at + batch_size]), axis=1).sum(
@@ -52,7 +57,12 @@ def centroid(source, rows, batch_size):
     return np.packbits(2 * counts >= len(rows))
 
 
-def split_capacity(source, rows, capacity, batch_size):
+def split_capacity(
+    source: FingerprintSource,
+    rows: NDArray[np.integer],
+    capacity: int,
+    batch_size: int,
+) -> tp.Iterator[NDArray[np.integer]]:
     """Experimental Tanimoto-difference bisection with deterministic row ties."""
     pending = [rows]
     while pending:
@@ -80,15 +90,15 @@ def split_capacity(source, rows, capacity, batch_size):
 
 
 class SummaryWriter:
-    def __init__(self, root, work, n_features):
+    def __init__(self, root: Path, work: Path, n_features: int) -> None:
         self.root, self.work = root, work
         self.n_features = n_features
-        self.buffer = []
+        self.buffer: list[NDArray[np.uint8]] = []
         self.written = 0
         self.meta = (work / "summary.bin").open("wb")
         self.edges, self.lut = quantization()
 
-    def add(self, fps, list_id):
+    def add(self, fps: NDArray[np.uint8], list_id: int) -> None:
         frequencies = np.unpackbits(fps, axis=1)[:, : self.n_features].mean(axis=0)
         code = (
             np.clip(
@@ -107,7 +117,7 @@ class SummaryWriter:
         if len(self.buffer) >= max(1, (8 * 1024**2) // self.n_features):
             self.flush()
 
-    def flush(self):
+    def flush(self) -> None:
         if not self.buffer:
             return
         if self.written + len(self.buffer) > np.iinfo(np.uint32).max:
@@ -126,10 +136,11 @@ class SummaryWriter:
         self.written += len(self.buffer)
         self.buffer.clear()
 
-    def finish(self):
+    def finish(self) -> None:
         self.flush()
         self.meta.close()
-        meta = np.memmap(self.work / "summary.bin", dtype=SUMMARY, mode="r")
+        # NumPy stubs omit the private _mmap attribute that is closed below
+        meta: tp.Any = np.memmap(self.work / "summary.bin", dtype=SUMMARY, mode="r")
         for name, field in [
             ("summary_rows", "rows"),
             ("mean_pop", "mean_pop"),
@@ -172,17 +183,17 @@ class SummaryWriter:
 
 
 def build(
-    source,
-    output,
-    clusters,
+    source: FingerprintSource,
+    output: str | os.PathLike[str],
+    clusters: tp.Iterable[tp.Any],
     *,
-    n_lists=None,
-    centrals=None,
-    ids=None,
-    batch_size=65536,
-    summary_size=32,
-    block_size=256 * 1024,
-):
+    n_lists: int | None = None,
+    centrals: tp.Any = None,
+    ids: tp.Any = None,
+    batch_size: int = 65536,
+    summary_size: int = 32,
+    block_size: int = 256 * 1024,
+) -> Path:
     batch_size = positive_int(batch_size, "batch_size")
     summary_size = positive_int(summary_size, "summary_size")
     block_size = positive_int(block_size, "block_size")
@@ -213,7 +224,7 @@ def build(
         ExitStack() as stack,
     ):
 
-        def track(array):
+        def track(array: tp.Any) -> tp.Any:
             stack.callback(array._mmap.close)
             return array
 
@@ -301,7 +312,7 @@ def build(
         seeded[seeds] = True
         with (work / "assignments.bin").open("wb") as af:
 
-            def assign(unit, start, count, label):
+            def assign(unit: tp.Any, start: int, count: int, label: int) -> None:
                 nonlocal remaining
                 np.array(
                     (int(unit["start"]) + start, count, label), dtype=ASSIGNMENT
@@ -355,7 +366,7 @@ def build(
         try:
             with (root / "data.bin").open("wb") as payload:
 
-                def flush(label):
+                def flush(label: int) -> None:
                     nonlocal filled
                     if not filled:
                         return
@@ -390,12 +401,14 @@ def build(
                     labels = split_summaries(fps, summary_size)
                     for piece in np.unique(labels):
                         selected = np.flatnonzero(labels == piece)
-                        chosen = fps[selected]
-                        summaries.add(chosen, label)
+                        piece_fps = fps[selected]
+                        summaries.add(piece_fps, label)
                         at = 0
                         while at < len(selected):
                             count = min(len(selected) - at, block_rows - filled)
-                            buffer_fp[filled : filled + count] = chosen[at : at + count]
+                            buffer_fp[filled : filled + count] = piece_fps[
+                                at : at + count
+                            ]
                             row_ids = rows[selected[at : at + count]]
                             buffer_ids[filled : filled + count] = (
                                 row_ids if ids is None else ids[row_ids]

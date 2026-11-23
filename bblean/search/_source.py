@@ -3,15 +3,23 @@
 from __future__ import annotations
 
 from pathlib import Path
+import typing as tp
 
 import numpy as np
+from numpy.typing import NDArray
 
 from ._utils import packed, positive_int
 
 
 class FingerprintSource:
-    def __init__(self, source, *, input_is_packed=True, n_features=None):
-        self._owned = []
+    def __init__(
+        self,
+        source: tp.Any,
+        *,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+    ) -> None:
+        self._owned: list[tp.Any] = []
         if isinstance(source, (str, Path)):
             source = [Path(source)]
         if (
@@ -49,14 +57,14 @@ class FingerprintSource:
         self.n = positive_int(int(self.ends[-1]), "number of fingerprints")
         self.width = (self.n_features + 7) // 8
 
-    def _convert(self, a):
+    def _convert(self, a: NDArray[tp.Any]) -> NDArray[np.uint8]:
         if self.input_is_packed:
             return packed(a, self.n_features)
         if not np.all((a == 0) | (a == 1)):
             raise ValueError("Unpacked fingerprints must be binary")
         return np.packbits(a.astype(np.uint8), axis=1, bitorder="big")
 
-    def take(self, rows):
+    def take(self, rows: tp.Any) -> NDArray[np.uint8]:
         rows = np.asarray(rows, dtype=np.int64)
         if rows.ndim != 1 or np.any(rows < 0) or np.any(rows >= self.n):
             raise ValueError("Fingerprint row out of bounds")
@@ -67,11 +75,11 @@ class FingerprintSource:
             out[at] = self._convert(self.arrays[s][rows[at] - self.starts[s]])
         return out
 
-    def batches(self, size):
+    def batches(self, size: int) -> tp.Iterator[NDArray[np.uint8]]:
         for start in range(0, self.n, size):
             yield self.take(np.arange(start, min(start + size, self.n)))
 
-    def close(self):
+    def close(self) -> None:
         for a in self._owned:
             a._mmap.close()
         self._owned.clear()

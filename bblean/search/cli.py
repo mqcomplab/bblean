@@ -5,13 +5,17 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict
 import json
+import typing as tp
 
 import numpy as np
+from numpy.typing import NDArray
 
 from .index import SearchIndex
 
 
-def members_from_assignments(labels):
+def members_from_assignments(
+    labels: NDArray[np.integer],
+) -> tp.Iterator[NDArray[np.intp]]:
     """Translate any integer label vocabulary into zero-based row memberships."""
     if labels.ndim != 1 or not len(labels) or labels.dtype.kind not in "iu":
         raise ValueError("Assignments must be a nonempty 1D integer array")
@@ -21,7 +25,7 @@ def members_from_assignments(labels):
     return (order[a:b] for a, b in zip(cuts[:-1], cuts[1:]))
 
 
-def main(argv=None):
+def main(argv: tp.Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="Create a new compressed index")
@@ -98,7 +102,7 @@ def main(argv=None):
                     exclude_identical=not args.include_identical,
                     input_is_packed=not args.unpacked,
                 )
-                out = {"results": [asdict(r) for r in results]}
+                out: dict[str, tp.Any] = {"results": [asdict(r) for r in results]}
                 if args.stats:
                     out["stats"] = asdict(stats)
                 print(json.dumps(out))

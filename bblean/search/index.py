@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import tempfile
 import time
+import typing as tp
 
 import numpy as np
+from numpy.typing import NDArray
+import typing_extensions as tpx
 
 from ._build import BLOCK, FORMAT, VERSION, build
 from ._routing import route
@@ -46,27 +50,40 @@ class SearchIndex:
     Build from packed fingerprints, ``.npy`` shards, an existing BitBirch tree,
     or explicit zero-based row memberships. ``n_probe=None`` scans all lists
     and supplies an exhaustive control. Perfect (Tanimoto=1) matches are excluded
-    by default to match the study; set ``exclude_identical=False`` for identity
-    lookup. Empty/empty similarity is zero, as in core BBLean and RDKit.
+    by default (nearest-other-neighbor protocol); set ``exclude_identical=False``
+    for identity lookup. Empty/empty similarity is zero, as in core BBLean and
+    RDKit.
     """
+
+    location: str
+    path: Path
+    metadata: dict[str, tp.Any]
+    n_records: int
+    n_features: int
+    n_lists: int
+    _arrays: dict[str, tp.Any]
+    _cache: tempfile.TemporaryDirectory[str] | None
+    _closed: bool
+    _store: LocalStore | S3Store
+    _list_block_offsets: NDArray[np.intp]
 
     @classmethod
     def build(
         cls,
-        fingerprints,
-        directory,
+        fingerprints: tp.Any,
+        directory: str | os.PathLike[str],
         *,
-        clusters=None,
-        centrals=None,
-        n_lists=None,
-        ids=None,
-        input_is_packed=True,
-        n_features=None,
-        bitbirch_kwargs=None,
-        batch_size=65536,
-        summary_size=32,
-        block_size=256 * 1024,
-    ):
+        clusters: tp.Any = None,
+        centrals: tp.Any = None,
+        n_lists: int | None = None,
+        ids: tp.Any = None,
+        input_is_packed: bool = True,
+        n_features: int | None = None,
+        bitbirch_kwargs: dict[str, tp.Any] | None = None,
+        batch_size: int = 65536,
+        summary_size: int = 32,
+        block_size: int = 256 * 1024,
+    ) -> tpx.Self:
         """Build a new index without overwriting an existing destination.
 
         ``clusters`` is a fitted BitBirch object or an iterable of nonempty
@@ -118,17 +135,36 @@ class SearchIndex:
         return cls.open(path)
 
     @classmethod
-    def from_bitbirch(cls, tree, fingerprints, directory, **kwargs):
+    def from_bitbirch(
+        cls,
+        tree: tp.Any,
+        fingerprints: tp.Any,
+        directory: str | os.PathLike[str],
+        **kwargs: tp.Any,
+    ) -> tpx.Self:
         """Reuse a fitted tree without fitting or modifying it."""
         return cls.build(fingerprints, directory, clusters=tree, **kwargs)
 
     @classmethod
-    def from_clusters(cls, fingerprints, members, directory, **kwargs):
+    def from_clusters(
+        cls,
+        fingerprints: tp.Any,
+        members: tp.Iterable[tp.Any],
+        directory: str | os.PathLike[str],
+        **kwargs: tp.Any,
+    ) -> tpx.Self:
         """Reuse saved zero-based memberships without loading pickle files."""
         return cls.build(fingerprints, directory, clusters=members, **kwargs)
 
     @classmethod
-    def open(cls, directory, *, client=None, cache_dir=None, verify=True):
+    def open(
+        cls,
+        directory: str | os.PathLike[str],
+        *,
+        client: tp.Any = None,
+        cache_dir: str | os.PathLike[str] | None = None,
+        verify: bool = True,
+    ) -> tpx.Self:
         """Open local storage or an S3 prefix without downloading its FP payload.
 
         S3 routing metadata is cached locally under a manifest-content hash;
@@ -209,7 +245,7 @@ class SearchIndex:
             self.close()
             raise
 
-    def _check_manifest(self):
+    def _check_manifest(self) -> None:
         m = self.metadata
         if (
             m.get("format") != FORMAT
@@ -234,7 +270,7 @@ class SearchIndex:
             ):
                 raise ValueError("Invalid file size/checksum in search manifest")
 
-    def _validate_arrays(self):
+    def _validate_arrays(self) -> None:
         a = self._arrays
         for name, dtype in _ARRAYS.items():
             if a[name].ndim != 1 or a[name].dtype != dtype:
@@ -294,16 +330,16 @@ class SearchIndex:
 
     def search(
         self,
-        query,
-        k=10,
-        n_probe=1,
+        query: tp.Any,
+        k: int = 10,
+        n_probe: int | None = 1,
         *,
-        threshold=0.0,
-        exclude_identical=True,
-        exclude_ids=(),
-        input_is_packed=True,
-        io_workers=8,
-    ):
+        threshold: float = 0.0,
+        exclude_identical: bool = True,
+        exclude_ids: tp.Iterable[int] = (),
+        input_is_packed: bool = True,
+        io_workers: int = 8,
+    ) -> list[SearchResult]:
         """Return exact scores sorted by decreasing score, then increasing ID.
 
         Only selected lists are searched; ``threshold`` filters their results,
@@ -323,16 +359,16 @@ class SearchIndex:
 
     def search_with_stats(
         self,
-        query,
-        k=10,
-        n_probe=1,
+        query: tp.Any,
+        k: int = 10,
+        n_probe: int | None = 1,
         *,
-        threshold=0.0,
-        exclude_identical=True,
-        exclude_ids=(),
-        input_is_packed=True,
-        io_workers=8,
-    ):
+        threshold: float = 0.0,
+        exclude_identical: bool = True,
+        exclude_ids: tp.Iterable[int] = (),
+        input_is_packed: bool = True,
+        io_workers: int = 8,
+    ) -> tuple[list[SearchResult], SearchStats]:
         """Return ``(results, stats)`` without shared per-query mutable state."""
         if self._closed:
             raise RuntimeError("Search index is closed")
@@ -368,7 +404,7 @@ class SearchIndex:
         best_ids, best_scores = np.empty(0, np.uint64), np.empty(0, np.float64)
         kernel = native()
 
-        def consume(item):
+        def consume(item: tp.Any) -> None:
             nonlocal best_ids, best_scores
             decoded, read_stats, decode_seconds = item
             for name in (
@@ -412,12 +448,13 @@ class SearchIndex:
                 best_ids, best_scores = merged_ids[ix], merged_scores[ix]
                 stats.score_seconds += time.perf_counter() - t
 
+        task: tuple[int, int, tp.Any] | None
         if io_workers == 1:
             for task in ranges:
                 consume(self._read_decode(task))
         else:
             with ThreadPoolExecutor(max_workers=io_workers) as pool:
-                pending = deque()
+                pending: deque[Future[tp.Any]] = deque()
                 for _ in range(io_workers):
                     task = next(ranges, None)
                     if task is None:
@@ -433,7 +470,9 @@ class SearchIndex:
             SearchResult(int(i), float(s)) for i, s in zip(best_ids, best_scores)
         ], stats
 
-    def _read_decode(self, task):
+    def _read_decode(
+        self, task: tuple[int, int, tp.Any]
+    ) -> tuple[list[tp.Any], SearchStats, float]:
         start, length, blocks = task
         t = time.perf_counter()
         data, stats = self._store.read(start, length)
@@ -462,7 +501,7 @@ class SearchIndex:
             decoded.append((columns[0].reshape(rows, width), columns[1], columns[2]))
         return decoded, stats, time.perf_counter() - t
 
-    def verify(self):
+    def verify(self) -> None:
         """Verify every local file including the full compressed payload."""
         if self._closed:
             raise RuntimeError("Search index is closed")
@@ -472,7 +511,7 @@ class SearchIndex:
             if sha256(self.path / name) != info["sha256"]:
                 raise ValueError(f"Index checksum mismatch: {name}")
 
-    def upload(self, uri, *, client=None):
+    def upload(self, uri: str, *, client: tp.Any = None) -> None:
         """Explicitly upload a local index to a new S3 prefix, manifest last.
 
         Uses boto3's managed multipart upload for payloads larger than 5 GB.
@@ -497,7 +536,7 @@ class SearchIndex:
         for name in [*self.metadata["files"], "manifest.json"]:
             client.upload_file(str(self.path / name), bucket, key(name))
 
-    def close(self):
+    def close(self) -> None:
         """Release metadata mappings and any temporary S3 metadata cache."""
         if getattr(self, "_closed", True):
             return
@@ -510,10 +549,10 @@ class SearchIndex:
         if self._cache is not None:
             self._cache.cleanup()
 
-    def __enter__(self):
+    def __enter__(self) -> tpx.Self:
         if self._closed:
             raise RuntimeError("Search index is closed")
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: object) -> None:
         self.close()

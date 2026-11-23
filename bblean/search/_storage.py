@@ -3,19 +3,20 @@
 from __future__ import annotations
 
 from pathlib import Path
+import typing as tp
 from urllib.parse import urlsplit
 
 from .types import SearchStats
 
 
-def s3_location(uri):
+def s3_location(uri: tp.Any) -> tuple[str, str]:
     parsed = urlsplit(str(uri))
     if parsed.scheme != "s3" or not parsed.netloc or parsed.query or parsed.fragment:
         raise ValueError("Expected s3://bucket/prefix")
     return parsed.netloc, parsed.path.strip("/")
 
 
-def s3_client(client=None):
+def s3_client(client: tp.Any = None) -> tp.Any:
     if client is not None:
         return client
     try:
@@ -30,10 +31,10 @@ def s3_client(client=None):
 
 
 class LocalStore:
-    def __init__(self, root):
+    def __init__(self, root: str | Path) -> None:
         self.path = Path(root) / "data.bin"
 
-    def read(self, start, length):
+    def read(self, start: int, length: int) -> tuple[bytes, SearchStats]:
         stats = SearchStats(read_requests=1)
         with self.path.open("rb") as f:
             f.seek(start)
@@ -45,11 +46,17 @@ class LocalStore:
 
 
 class S3Store:
-    def __init__(self, uri, client=None, max_retries=3):
+    def __init__(
+        self, uri: tp.Any, client: tp.Any = None, max_retries: int = 3
+    ) -> None:
         self.bucket, self.prefix = s3_location(uri)
         self.client = s3_client(client)
         self.max_retries = max_retries
-        self.retryable = (OSError, EOFError, TimeoutError)
+        self.retryable: tuple[type[BaseException], ...] = (
+            OSError,
+            EOFError,
+            TimeoutError,
+        )
         try:
             from botocore.exceptions import (
                 ConnectionError,
@@ -69,10 +76,10 @@ class S3Store:
                 ResponseStreamingError,
             )
 
-    def key(self, name):
+    def key(self, name: str) -> str:
         return f"{self.prefix}/{name}" if self.prefix else name
 
-    def read_file(self, name):
+    def read_file(self, name: str) -> bytes:
         body = self.client.get_object(Bucket=self.bucket, Key=self.key(name))["Body"]
         try:
             data = body.read(1024 * 1024 + 1)
@@ -82,7 +89,9 @@ class S3Store:
         finally:
             body.close()
 
-    def download_file(self, name, destination, expected_bytes):
+    def download_file(
+        self, name: str, destination: str | Path, expected_bytes: int
+    ) -> None:
         body = self.client.get_object(Bucket=self.bucket, Key=self.key(name))["Body"]
         total = 0
         try:
@@ -100,7 +109,7 @@ class S3Store:
         finally:
             body.close()
 
-    def read(self, start, length):
+    def read(self, start: int, length: int) -> tuple[bytes, SearchStats]:
         stats = SearchStats(read_requests=1)
         data = bytearray()
         for attempt in range(self.max_retries + 1):
@@ -158,12 +167,12 @@ class S3Store:
 
 
 def plan_ranges(
-    blocks,
-    amplification=2.0,
-    max_span=8 * 1024**2,
-    row_bytes=268,
-    max_decoded=16 * 1024**2,
-):
+    blocks: tp.Any,
+    amplification: float = 2.0,
+    max_span: int = 8 * 1024**2,
+    row_bytes: int = 268,
+    max_decoded: int = 16 * 1024**2,
+) -> tp.Iterator[tuple[int, int, tp.Any]]:
     """Merge selected compressed blocks without scoring any intervening blocks."""
     at = 0
     while at < len(blocks):

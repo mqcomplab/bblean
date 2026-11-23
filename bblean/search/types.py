@@ -8,8 +8,10 @@ class SearchResult:
     """A record ID and its exact binary Tanimoto score.
 
     ``index`` is the original row position, or the user-supplied uint64 ID.
-    ``smi`` is reserved for compatibility with the original IVF interface;
-    persistent search does not store or hydrate molecular structures.
+    ``smi`` is always ``None``: persistent search stores fingerprints and IDs,
+    not molecular structures, so map ``index`` back to your own SMILES/records.
+    The field keeps result objects shape-compatible with the experimental
+    in-memory IVF prototype, which returned SMILES.
     """
 
     index: int

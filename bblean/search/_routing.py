@@ -5,12 +5,17 @@ The score is a heuristic, not an admissible bound on unvisited fingerprints.
 
 from __future__ import annotations
 
+import typing as tp
+
 import numpy as np
+from numpy.typing import NDArray
 
 from ._utils import POPCOUNT, native, tanimoto
 
 
-def split_summaries(fps, target_rows=32):
+def split_summaries(
+    fps: NDArray[np.uint8], target_rows: int = 32
+) -> NDArray[np.uint32]:
     """Deterministic farthest-first initialization and two majority-centroid passes.
 
     The target controls the number of centers, not a hard population bound.
@@ -49,15 +54,18 @@ def split_summaries(fps, target_rows=32):
     return labels
 
 
-def quantization():
+def quantization() -> tuple[NDArray[np.float64], NDArray[np.float32]]:
     edges = np.linspace(np.sqrt(0.05), 1.0, 8) ** 2
     centers = ((edges[:-1] + edges[1:]) / 2).astype(np.float32)
     centers[-1] = 1.0
     return edges, centers
 
 
-def encode_gaps(units, previous=0):
-    gaps = np.diff(np.asarray(units, np.int64), prepend=previous)
+def encode_gaps(units: tp.Any, previous: int = 0) -> NDArray[np.uint16]:
+    # NumPy's stubs resolve diff(int64, prepend=int) to a timedelta overload
+    gaps = tp.cast(
+        NDArray[np.int64], np.diff(np.asarray(units, np.int64), prepend=previous)
+    )
     if np.any(gaps < 0) or np.any(gaps > np.iinfo(np.uint32).max):
         raise ValueError("Posting IDs must be increasing uint32 values")
     big = gaps >= 65535
@@ -71,8 +79,8 @@ def encode_gaps(units, previous=0):
     return out
 
 
-def decode_gaps(words):
-    out = []
+def decode_gaps(words: NDArray[np.uint16]) -> NDArray[np.uint64]:
+    out: list[int] = []
     at = unit = 0
     while at < len(words):
         gap = int(words[at])
@@ -89,7 +97,9 @@ def decode_gaps(words):
     return np.asarray(out, dtype=np.uint64)
 
 
-def route(query, arrays, n_lists):
+def route(
+    query: NDArray[np.uint8], arrays: tp.Mapping[str, tp.Any], n_lists: int
+) -> NDArray[np.float64]:
     bit_offsets, code_offsets = arrays["bit_offsets"], arrays["code_offsets"]
     deltas, codes = arrays["deltas"], arrays["codes"]
     means, rows, lists = (
