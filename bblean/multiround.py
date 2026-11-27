@@ -210,7 +210,9 @@ class _InitialRound:
         if self.refinement_before_midsection == "none":
             fps_bfs, mols_bfs = tree._bf_to_np()
         elif self.refinement_before_midsection in ["split", "full"]:
-            fps_bfs, mols_bfs = tree._bf_to_np_refine(fp_file, initial_mol=start_idx)
+            fps_bfs, mols_bfs = tree._bf_to_np_refine(
+                fp_file, initial_mol=start_idx, input_is_packed=self.input_is_packed
+            )
             if self.refinement_before_midsection == "full":
                 # Finish the first refinement step internally in this round
                 tree.reset()
@@ -248,6 +250,7 @@ class _TreeMergingRound:
         all_fp_paths: tp.Sequence[Path] = (),
         check_indices: bool = True,
         n_features: int | None = None,
+        input_is_packed: bool = True,
     ) -> None:
         self.all_fp_paths = list(all_fp_paths)
         self.branching_factor = branching_factor
@@ -259,6 +262,7 @@ class _TreeMergingRound:
         self.merge_criterion = merge_criterion
         self.check_indices = check_indices
         self.n_features = n_features
+        self.input_is_packed = input_is_packed
 
     def __call__(
         self, batch_info: tuple[str, tp.Sequence[tuple[BufPath | SplitBufPath, Path]]]
@@ -298,7 +302,9 @@ class _TreeMergingRound:
         # round
         tree.delete_internal_nodes()
         if self.split_largest_cluster:
-            fps_bfs, mols_bfs = tree._bf_to_np_refine(self.all_fp_paths)
+            fps_bfs, mols_bfs = tree._bf_to_np_refine(
+                self.all_fp_paths, input_is_packed=self.input_is_packed
+            )
         else:
             fps_bfs, mols_bfs = tree._bf_to_np()
         _save_bufs_and_mol_idxs(
@@ -525,6 +531,7 @@ def run_multiround_bitbirch(
             split_largest_cluster=split_largest_after_each_midsection_round,
             merge_criterion=midsection_merge_criterion,
             threshold=threshold + midsection_threshold_change,
+            input_is_packed=input_is_packed,
             **common_kwargs,
         )
         num_ps = min(num_midsection_processes, len(batches))

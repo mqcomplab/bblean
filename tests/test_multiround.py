@@ -45,6 +45,48 @@ def test_multiround_bitbirch(tmp_path: Path) -> None:
     assert EXPECT_CLUSTERS == clusters[: len(EXPECT_CLUSTERS)]
 
 
+def test_multiround_bitbirch_unpacked_matches_packed(tmp_path: Path) -> None:
+    packed_dir = tmp_path / "packed"
+    unpacked_dir = tmp_path / "unpacked"
+    packed_dir.mkdir()
+    unpacked_dir.mkdir()
+    for seed in (1, 3):
+        unpacked = make_fake_fingerprints(100, n_features=64, seed=seed, pack=False)
+        np.save(unpacked_dir / f"fps.{seed:04d}.npy", unpacked)
+        np.save(packed_dir / f"fps.{seed:04d}.npy", np.packbits(unpacked, axis=-1))
+
+    out_packed = tmp_path / "out_packed"
+    out_unpacked = tmp_path / "out_unpacked"
+    out_packed.mkdir()
+    out_unpacked.mkdir()
+
+    run_multiround_bitbirch(
+        sorted(packed_dir.glob("*.npy")),
+        out_packed,
+        input_is_packed=True,
+        num_initial_processes=1,
+        bin_size=2,
+        threshold=0.65,
+        refinement_before_midsection="full",
+        split_largest_after_each_midsection_round=True,
+    )
+    run_multiround_bitbirch(
+        sorted(unpacked_dir.glob("*.npy")),
+        out_unpacked,
+        input_is_packed=False,
+        num_initial_processes=1,
+        bin_size=2,
+        threshold=0.65,
+        refinement_before_midsection="full",
+        split_largest_after_each_midsection_round=True,
+    )
+    with open(out_packed / "clusters.pkl", mode="rb") as f:
+        clusters_packed = pickle.load(f)
+    with open(out_unpacked / "clusters.pkl", mode="rb") as f:
+        clusters_unpacked = pickle.load(f)
+    assert clusters_unpacked == clusters_packed
+
+
 EXPECT_CLUSTERS = [
     [
         368,
